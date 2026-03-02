@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // No rewrites needed natively for /api since pages/api/[[...slug]].ts handles Express
+  // Reduces function size and fixes Vercel zip limits
+  experimental: {
+    serverComponentsExternalPackages: ['@prisma/client', 'bcryptjs'],
+  },
 };
 
 export default nextConfig;
