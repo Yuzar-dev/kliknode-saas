@@ -155,7 +155,7 @@ export default function OperatorPage() {
         setEncoding(true);
         try {
             const supabase = createClient();
-            const { error } = await supabase.from('physical_cards').insert({ uid: uid.trim(), warehouse, status: encodeStatus.toLowerCase() });
+            const { error } = await supabase.from('physical_cards').insert({ uid: uid.trim(), warehouse, status: encodeStatus });
             if (error) {
                 if (error.code === '23505') throw new Error('Cette carte existe déjà');
                 throw error;
@@ -168,7 +168,7 @@ export default function OperatorPage() {
         setOpenStatusMenu(null);
         try {
             const supabase = createClient();
-            const { error } = await supabase.from('physical_cards').update({ status: newStatus.toLowerCase() }).eq('id', cardId);
+            const { error } = await supabase.from('physical_cards').update({ status: newStatus }).eq('id', cardId);
             if (error) throw error;
             toast.success(`Statut mis à jour : ${STATUS_BADGE[newStatus]?.label || newStatus}`);
             loadData();
@@ -199,7 +199,7 @@ export default function OperatorPage() {
             const supabase = createClient();
             let success = 0; let failed = 0;
             for (const u of generatedUids) {
-                const { error } = await supabase.from('physical_cards').insert({ uid: u, warehouse: batchWarehouse, status: batchStatus.toLowerCase() });
+                const { error } = await supabase.from('physical_cards').insert({ uid: u, warehouse: batchWarehouse, status: batchStatus });
                 if (!error) success++; else failed++;
             }
             setGeneratedUids([]); loadData();
