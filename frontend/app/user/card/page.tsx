@@ -18,6 +18,7 @@ interface CardData {
     theme: string;
     bioVisible: boolean;
     socialLinks: any[];
+    publicSlug?: string;
 }
 
 const COLOR_PRESETS = [
@@ -51,7 +52,7 @@ export default function CardEditorPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+            const { data, error } = await supabase.from('cards').select('*').eq('user_id', user.id).single();
             if (error && error.code !== 'PGRST116') throw error;
 
             if (data) {
@@ -68,10 +69,18 @@ export default function CardEditorPage() {
                     theme: data.theme || 'light',
                     bioVisible: data.bio_visible !== false, // Default to true
                     socialLinks: data.social_links || [],
-                    publicSlug: data.public_slug || data.id,
+                    publicSlug: data.public_slug || user.id, // Fallback to user.id for slug
                 };
                 setCard(mappedData as any);
                 setForm(mappedData);
+            } else {
+                // If no card exists yet, pull the basic details from user
+                const { data: userData } = await supabase.from('users').select('first_name, last_name, email').eq('id', user.id).single();
+                if (userData) {
+                    setForm({
+                        firstName: userData.first_name || '', lastName: userData.last_name || '', email: userData.email || '', primaryColor: '#0666EB', theme: 'light', bioVisible: true
+                    });
+                }
             }
         } catch (e: any) {
             console.error(e);
@@ -89,6 +98,7 @@ export default function CardEditorPage() {
             const formattedWebsite = formatUrl(form.website || '');
 
             const updatePayload = {
+                user_id: user.id,
                 first_name: form.firstName, last_name: form.lastName,
                 job_title: form.jobTitle, company_name: form.companyName,
                 bio: form.bio, phone_mobile: form.phoneMobile,
@@ -96,9 +106,10 @@ export default function CardEditorPage() {
                 website: formattedWebsite,
                 cover_url: form.coverUrl, primary_color: form.primaryColor, theme: form.theme,
                 bio_visible: form.bioVisible,
+                public_slug: card?.publicSlug || user.id, // Make sure public_slug is saved during upsert
             };
 
-            const { error } = await supabase.from('profiles').update(updatePayload).eq('id', user.id);
+            const { error } = await supabase.from('cards').upsert(updatePayload, { onConflict: 'user_id' });
             if (error) throw error;
 
             toast.success('Carte sauvegardée !');
@@ -132,7 +143,7 @@ export default function CardEditorPage() {
                 .getPublicUrl(filePath);
 
             setForm(f => ({ ...f, avatarUrl: publicUrl }));
-            await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
+            await supabase.from('cards').upsert({ user_id: user.id, avatar_url: publicUrl, public_slug: card?.publicSlug || user.id }, { onConflict: 'user_id' });
             toast.success('Photo mise à jour !');
         } catch (e: any) {
             console.error(e);

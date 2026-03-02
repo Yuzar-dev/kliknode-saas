@@ -23,7 +23,7 @@ export default function SettingsPage() {
             if (!user) return;
 
             const { data, error } = await supabase
-                .from('profiles')
+                .from('users')
                 .select('first_name, last_name, email, role')
                 .eq('id', user.id)
                 .single();

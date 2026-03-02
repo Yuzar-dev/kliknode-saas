@@ -65,13 +65,13 @@ export async function middleware(request: NextRequest) {
     // 4. Role-based Redirection
     if (user) {
         // Fetch profile with role
-        const { data: profile } = await supabase
-            .from('profiles')
+        const { data: userData } = await supabase
+            .from('users')
             .select('role')
             .eq('id', user.id)
             .single();
 
-        const role = profile?.role || 'employee';
+        const role = userData?.role || 'employee';
 
         // Redirect from login/signup if already auth
         if (isPublicPath && (pathname === '/login' || pathname === '/signup')) {

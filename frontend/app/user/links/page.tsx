@@ -82,29 +82,33 @@ export default function LinksPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            const { data: profile, error } = await supabase
-                .from('profiles')
+            const { data: cardData, error } = await supabase
+                .from('cards')
                 .select('*')
-                .eq('id', user.id)
+                .eq('user_id', user.id)
                 .single();
 
-            if (error) throw error;
-            if (profile) {
-                setLinks(profile.social_links || []);
+            if (error && error.code !== 'PGRST116') throw error;
+
+            if (cardData) {
+                setLinks(cardData.social_links || []);
                 setCard({
-                    firstName: profile.first_name || '',
-                    lastName: profile.last_name || '',
-                    jobTitle: profile.job_title || '',
-                    companyName: profile.company_name || '',
-                    bio: profile.bio || '',
-                    email: profile.email || '',
-                    phoneMobile: profile.phone_mobile || '',
-                    city: profile.city || '',
-                    country: profile.country || '',
-                    avatarUrl: profile.avatar_url || '',
-                    coverUrl: profile.cover_url || '',
-                    primaryColor: profile.primary_color || '#0666EB',
+                    firstName: cardData.first_name || '',
+                    lastName: cardData.last_name || '',
+                    jobTitle: cardData.job_title || '',
+                    companyName: cardData.company_name || '',
+                    bio: cardData.bio || '',
+                    email: cardData.email || '',
+                    phoneMobile: cardData.phone_mobile || '',
+                    city: cardData.city || '',
+                    country: cardData.country || '',
+                    avatarUrl: cardData.avatar_url || '',
+                    coverUrl: cardData.cover_url || '',
+                    primaryColor: cardData.primary_color || '#0666EB',
                 });
+            } else {
+                // If no card yet, set empty links
+                setLinks([]);
             }
         } catch (e: any) {
             console.error(e);
@@ -121,9 +125,8 @@ export default function LinksPage() {
             if (!user) return;
 
             const { error } = await supabase
-                .from('profiles')
-                .update({ social_links: newLinks })
-                .eq('id', user.id);
+                .from('cards')
+                .upsert({ user_id: user.id, social_links: newLinks, public_slug: user.id }, { onConflict: 'user_id' });
 
             if (error) throw error;
         } catch (e) {

@@ -51,18 +51,18 @@ function LoginForm() {
             if (!authData.user) throw new Error("Erreur de connexion");
 
             // 2. Fetch profile to get role
-            const { data: profile, error: profileError } = await supabase
-                .from('profiles')
+            const { data: userData, error: profileError } = await supabase
+                .from('users')
                 .select('role, first_name')
                 .eq('id', authData.user.id)
                 .single();
 
             if (profileError) throw profileError;
 
-            const role = profile?.role || 'employee';
+            const role = userData?.role || 'employee';
 
             // Show success message
-            toast.success(`Bienvenue ${profile.first_name || data.email} !`);
+            toast.success(`Bienvenue ${userData?.first_name || data.email} !`);
 
             // 3. Redirect based on role
             if (role === 'super_admin') {

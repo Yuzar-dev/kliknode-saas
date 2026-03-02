@@ -21,34 +21,34 @@ export default function ActivatePage() {
         try {
             const supabase = createClient();
 
-            // Fetch card by UID
-            const { data: card, error } = await supabase
-                .from('cards')
+            // Fetch physical card by UID
+            const { data: physicalCard, error } = await supabase
+                .from('physical_cards')
                 .select(`
                     status,
-                    assigned_user_id,
-                    profiles ( id, public_slug )
+                    cards ( public_slug, user_id )
                 `)
                 .eq('uid', uid)
                 .single();
 
-            if (error || !card) {
+            if (error || !physicalCard) {
+                console.error("Card fetch error:", error);
                 setStatus('not_found');
                 return;
             }
 
-            if (card.status === 'UNASSIGNED' || card.status === 'READY' || card.status === 'ENCODED') {
+            if (physicalCard.status === 'in_stock' || physicalCard.status === 'reserved') {
                 setStatus('activating');
                 // Redirect to global signup page with card reference
                 setTimeout(() => router.push(`/signup?card_id=${uid}`), 1000);
                 return;
             }
 
-            if (card.status === 'ACTIVE') {
+            if (physicalCard.status === 'paired') {
                 setStatus('activating');
-                // Try to get public slug, fallback to profile ID
-                const profile = card.profiles as any;
-                const slug = profile?.public_slug || profile?.id;
+                const virtualCard = physicalCard.cards as any;
+                const slug = virtualCard?.public_slug || virtualCard?.user_id;
+
                 if (slug) {
                     setTimeout(() => router.push(`/p/${slug}`), 1000);
                 } else {
@@ -58,11 +58,11 @@ export default function ActivatePage() {
             }
 
             // Other statuses
-            if (card.status === 'INACTIVE') setStatus('reserved'); // mapped for UI
-            else if (card.status === 'LOST') setStatus('lost');
+            if (physicalCard.status === 'lost') setStatus('lost');
             else setStatus('not_found');
 
-        } catch {
+        } catch (e) {
+            console.error("Activate page error:", e);
             setStatus('not_found');
         }
     };

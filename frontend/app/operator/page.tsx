@@ -88,7 +88,7 @@ export default function OperatorPage() {
         const supabase = createClient();
         const channel = supabase
             .channel('operator-cards-changes')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'cards' }, () => loadData())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'physical_cards' }, () => loadData())
             .subscribe();
         return () => { supabase.removeChannel(channel); };
     }, [filterStatus]);
@@ -107,8 +107,8 @@ export default function OperatorPage() {
         setLoading(true);
         try {
             const supabase = createClient();
-            let query = supabase.from('cards')
-                .select(`id, uid, status, warehouse, created_at, profiles(id, first_name, last_name, public_slug)`)
+            let query = supabase.from('physical_cards')
+                .select(`id, uid, status, warehouse, created_at, cards(public_slug, users(first_name, last_name))`)
                 .order('created_at', { ascending: false })
                 .limit(100);
 
@@ -117,17 +117,22 @@ export default function OperatorPage() {
             const { data: cardsData } = await query;
 
             if (cardsData) {
-                setCards(cardsData.map((c: any) => ({
-                    id: c.id, uid: c.uid, status: c.status, warehouse: c.warehouse, createdAt: c.created_at,
-                    pairedCard: c.profiles ? {
-                        publicSlug: c.profiles.public_slug || c.profiles.id,
-                        firstName: c.profiles.first_name,
-                        lastName: c.profiles.last_name
-                    } : null
-                })));
+                setCards(cardsData.map((c: any) => {
+                    const virtualCard = c.cards ? (Array.isArray(c.cards) ? c.cards[0] : c.cards) : null;
+                    const user = virtualCard?.users ? (Array.isArray(virtualCard.users) ? virtualCard.users[0] : virtualCard.users) : null;
+
+                    return {
+                        id: c.id, uid: c.uid, status: c.status, warehouse: c.warehouse, createdAt: c.created_at,
+                        pairedCard: virtualCard && user ? {
+                            publicSlug: virtualCard.public_slug || 'unknown',
+                            firstName: user.first_name || '',
+                            lastName: user.last_name || ''
+                        } : null
+                    };
+                }));
             }
 
-            const { data: allCards } = await supabase.from('cards').select('status, created_at');
+            const { data: allCards } = await supabase.from('physical_cards').select('status, created_at');
             if (allCards) {
                 const today = new Date(); today.setHours(0, 0, 0, 0);
                 const thisWeek = new Date(); thisWeek.setDate(today.getDate() - today.getDay());
@@ -150,7 +155,7 @@ export default function OperatorPage() {
         setEncoding(true);
         try {
             const supabase = createClient();
-            const { error } = await supabase.from('cards').insert({ uid: uid.trim(), warehouse, status: encodeStatus });
+            const { error } = await supabase.from('physical_cards').insert({ uid: uid.trim(), warehouse, status: encodeStatus.toLowerCase() });
             if (error) {
                 if (error.code === '23505') throw new Error('Cette carte existe déjà');
                 throw error;
@@ -163,7 +168,7 @@ export default function OperatorPage() {
         setOpenStatusMenu(null);
         try {
             const supabase = createClient();
-            const { error } = await supabase.from('cards').update({ status: newStatus }).eq('id', cardId);
+            const { error } = await supabase.from('physical_cards').update({ status: newStatus.toLowerCase() }).eq('id', cardId);
             if (error) throw error;
             toast.success(`Statut mis à jour : ${STATUS_BADGE[newStatus]?.label || newStatus}`);
             loadData();
@@ -194,7 +199,7 @@ export default function OperatorPage() {
             const supabase = createClient();
             let success = 0; let failed = 0;
             for (const u of generatedUids) {
-                const { error } = await supabase.from('cards').insert({ uid: u, warehouse: batchWarehouse, status: batchStatus });
+                const { error } = await supabase.from('physical_cards').insert({ uid: u, warehouse: batchWarehouse, status: batchStatus.toLowerCase() });
                 if (!error) success++; else failed++;
             }
             setGeneratedUids([]); loadData();
@@ -431,14 +436,14 @@ export default function OperatorPage() {
                                 <p className="text-[11px] font-bold text-apple-secondary dark:text-gray-500 uppercase tracking-widest mt-1">Registre de l'inventaire en temps réel</p>
                             </div>
                             <div className="flex gap-2 p-1.5 bg-gray-100 dark:bg-white/5 rounded-2xl border border-gray-200 dark:border-white/5 shadow-inner">
-                                {['all', 'READY', 'ENCODED', 'ACTIVE', 'INACTIVE', 'LOST'].map(s => (
+                                {['all', 'ready', 'encoded', 'active', 'inactive', 'lost'].map((s: string) => (
                                     <button key={s} onClick={() => setFilterStatus(s)}
                                         className={`px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all duration-500 ${filterStatus === s
                                             ? 'bg-white dark:bg-[#1C1C1E] text-apple-textDark dark:text-white shadow-lg border border-gray-100 dark:border-white/10'
                                             : 'text-apple-secondary dark:text-gray-500 hover:text-apple-textDark dark:hover:text-white'
                                             }`}
                                     >
-                                        {s === 'all' ? 'Tous' : STATUS_BADGE[s]?.label || s}
+                                        {s === 'all' ? 'Tous' : STATUS_BADGE[s.toUpperCase()]?.label || s}
                                     </button>
                                 ))}
                             </div>
@@ -470,7 +475,7 @@ export default function OperatorPage() {
                                     </thead>
                                     <tbody className="divide-y divide-gray-50 dark:divide-white/5">
                                         {cards.map(card => {
-                                            const badge = STATUS_BADGE[card.status] || { label: card.status, bg: 'rgba(0,0,0,0.05)', text: '#666' };
+                                            const badge = STATUS_BADGE[(card.status || '').toUpperCase()] || { label: card.status, bg: 'rgba(0,0,0,0.05)', text: '#666' };
                                             return (
                                                 <tr key={card.id} className="group hover:bg-white/40 dark:hover:bg-white/5 transition-all duration-300">
                                                     <td className="px-6 py-5">

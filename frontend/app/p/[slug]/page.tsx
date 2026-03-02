@@ -6,6 +6,8 @@ import toast from 'react-hot-toast';
 
 interface CardData {
     id: string;
+    userId: string;
+    companyId: string | null;
     publicSlug: string;
     firstName: string | null;
     lastName: string | null;
@@ -65,12 +67,12 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
             try {
                 const supabase = createClient();
 
-                let query = supabase.from('profiles').select('*');
+                let query = supabase.from('cards').select('*, users ( company_id )');
 
                 // UUID regex
                 const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(slug);
                 if (isUuid) {
-                    query = query.or(`id.eq.${slug},public_slug.eq.${slug}`);
+                    query = query.or(`user_id.eq.${slug},public_slug.eq.${slug}`);
                 } else {
                     query = query.eq('public_slug', slug);
                 }
@@ -83,7 +85,9 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
 
                 const mappedData: CardData = {
                     id: data.id,
-                    publicSlug: data.public_slug || data.id,
+                    userId: data.user_id,
+                    companyId: data.users?.company_id || null,
+                    publicSlug: data.public_slug || data.user_id,
                     firstName: data.first_name,
                     lastName: data.last_name,
                     jobTitle: data.job_title,
@@ -160,13 +164,16 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
         setIsSharing(true);
         try {
             const supabase = createClient();
-            const { error } = await supabase.from('contacts').insert({
-                profile_id: card!.id,
+            const { error } = await supabase.from('contacts_leads').insert({
+                card_id: card!.id,
+                user_id: card!.userId,
+                company_id: card!.companyId,
                 first_name: formData.firstName,
                 last_name: formData.lastName,
                 email: formData.email,
                 phone: formData.phone,
-                notes: formData.notes
+                notes: formData.notes,
+                source: 'web_link'
             });
 
             if (error) throw error;

@@ -50,16 +50,16 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
             if (!authUser) return;
 
             // Only fetch notifications if possible. We use a try-catch to handle missing columns gracefully.
-            const { data: profile, error: profileErr } = await supabase.from('profiles').select('*').eq('id', authUser.id).single();
+            const { data: userData, error: userErr } = await supabase.from('users').select('*').eq('id', authUser.id).single();
 
-            if (!profileErr && profile) {
-                setLastRead(profile.notification_last_read || null);
+            if (!userErr && userData) {
+                setLastRead(userData.notification_last_read || null);
             }
 
             const { data: contacts } = await supabase
-                .from('contacts')
+                .from('contacts_leads')
                 .select('*')
-                .eq('profile_id', authUser.id) // Use profile_id filter consistently
+                .eq('user_id', authUser.id) // Use user_id filter consistently
                 .order('created_at', { ascending: false })
                 .limit(5);
 
@@ -76,7 +76,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
             if (!authUser) return;
 
             const now = new Date().toISOString();
-            await supabase.from('profiles').update({ notification_last_read: now }).eq('id', authUser.id);
+            await supabase.from('users').update({ notification_last_read: now }).eq('id', authUser.id);
             setLastRead(now);
             setShowNotifications(false);
         } catch (err) {
