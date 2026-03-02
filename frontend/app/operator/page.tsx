@@ -34,11 +34,10 @@ const GLASS = {
 };
 
 const STATUS_BADGE: Record<string, { label: string; bg: string; text: string }> = {
-    READY: { label: 'Prêt', bg: 'rgba(245,158,11,0.1)', text: '#F59E0B' },
-    ENCODED: { label: 'Encodée', bg: 'rgba(79,70,229,0.1)', text: '#4F46E5' },
-    ACTIVE: { label: 'Active', bg: 'rgba(16,185,129,0.1)', text: '#059669' },
-    INACTIVE: { label: 'Inactive', bg: 'rgba(6,102,235,0.1)', text: '#0666EB' },
-    LOST: { label: 'Perdue', bg: 'rgba(239,68,68,0.1)', text: '#DC2626' },
+    in_stock: { label: 'En Stock', bg: 'rgba(245,158,11,0.1)', text: '#F59E0B' },
+    reserved: { label: 'Réservée / Encodée', bg: 'rgba(79,70,229,0.1)', text: '#4F46E5' },
+    paired: { label: 'Pairée (Active)', bg: 'rgba(16,185,129,0.1)', text: '#059669' },
+    lost: { label: 'Perdue', bg: 'rgba(239,68,68,0.1)', text: '#DC2626' },
 };
 
 // NFC UID prefixes with chip type labels
@@ -63,7 +62,7 @@ export default function OperatorPage() {
 
     const [uid, setUid] = useState('');
     const [warehouse, setWarehouse] = useState('oujda');
-    const [encodeStatus, setEncodeStatus] = useState('READY');
+    const [encodeStatus, setEncodeStatus] = useState('in_stock');
     const [encoding, setEncoding] = useState(false);
     const [cards, setCards] = useState<PhysicalCard[]>([]);
     const [stats, setStats] = useState<Stats | null>(null);
@@ -78,7 +77,7 @@ export default function OperatorPage() {
     // Batch generator state
     const [batchQty, setBatchQty] = useState(5);
     const [batchWarehouse, setBatchWarehouse] = useState('oujda');
-    const [batchStatus, setBatchStatus] = useState('READY');
+    const [batchStatus, setBatchStatus] = useState('in_stock');
     const [batchPrefixIdx, setBatchPrefixIdx] = useState(0);
     const [generatedUids, setGeneratedUids] = useState<string[]>([]);
     const [batchEncoding, setBatchEncoding] = useState(false);
@@ -141,7 +140,7 @@ export default function OperatorPage() {
                     total: allCards.length,
                     today: allCards.filter((c: any) => new Date(c.created_at) >= today).length,
                     thisWeek: allCards.filter((c: any) => new Date(c.created_at) >= thisWeek).length,
-                    paired: allCards.filter((c: any) => c.status === 'ACTIVE').length,
+                    paired: allCards.filter((c: any) => c.status === 'paired').length,
                     byStatus: {} as any
                 };
                 allCards.forEach((c: any) => { statsObj.byStatus[c.status] = (statsObj.byStatus[c.status] || 0) + 1; });
@@ -346,8 +345,10 @@ export default function OperatorPage() {
                                         <select value={encodeStatus} onChange={(e) => setEncodeStatus(e.target.value)}
                                             className="w-full rounded-[1.2rem] border border-gray-200 dark:border-white/10 bg-white/40 dark:bg-black/20 px-5 py-4 text-sm focus:outline-none appearance-none font-bold"
                                         >
-                                            <option value="READY">Prêt (Défaut)</option>
-                                            <option value="ENCODED">Encodée</option>
+                                            <option value="in_stock">En stock (Vierge)</option>
+                                            <option value="reserved">Réservée (Encodée)</option>
+                                            <option value="paired">Pairée (Active)</option>
+                                            <option value="lost">Perdue</option>
                                         </select>
                                     </div>
                                 </div>
@@ -403,8 +404,10 @@ export default function OperatorPage() {
                                     <select value={batchStatus} onChange={(e) => setBatchStatus(e.target.value)}
                                         className="w-full rounded-[1.2rem] border border-gray-200 dark:border-white/10 bg-white/40 dark:bg-black/20 px-4 py-4 text-xs focus:outline-none appearance-none font-bold"
                                     >
-                                        <option value="READY">Prêt (Défaut)</option>
-                                        <option value="ENCODED">Encodée</option>
+                                        <option value="in_stock">En stock (Vierge)</option>
+                                        <option value="reserved">Réservée (Encodée)</option>
+                                        <option value="paired">Pairée (Active)</option>
+                                        <option value="lost">Perdue</option>
                                     </select>
                                 </div>
                             </div>
@@ -436,14 +439,14 @@ export default function OperatorPage() {
                                 <p className="text-[11px] font-bold text-apple-secondary dark:text-gray-500 uppercase tracking-widest mt-1">Registre de l'inventaire en temps réel</p>
                             </div>
                             <div className="flex gap-2 p-1.5 bg-gray-100 dark:bg-white/5 rounded-2xl border border-gray-200 dark:border-white/5 shadow-inner">
-                                {['all', 'ready', 'encoded', 'active', 'inactive', 'lost'].map((s: string) => (
+                                {['all', 'in_stock', 'reserved', 'paired', 'lost'].map((s: string) => (
                                     <button key={s} onClick={() => setFilterStatus(s)}
                                         className={`px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all duration-500 ${filterStatus === s
                                             ? 'bg-white dark:bg-[#1C1C1E] text-apple-textDark dark:text-white shadow-lg border border-gray-100 dark:border-white/10'
                                             : 'text-apple-secondary dark:text-gray-500 hover:text-apple-textDark dark:hover:text-white'
                                             }`}
                                     >
-                                        {s === 'all' ? 'Tous' : STATUS_BADGE[s.toUpperCase()]?.label || s}
+                                        {s === 'all' ? 'Tous' : STATUS_BADGE[s]?.label || s}
                                     </button>
                                 ))}
                             </div>
@@ -475,7 +478,7 @@ export default function OperatorPage() {
                                     </thead>
                                     <tbody className="divide-y divide-gray-50 dark:divide-white/5">
                                         {cards.map(card => {
-                                            const badge = STATUS_BADGE[(card.status || '').toUpperCase()] || { label: card.status, bg: 'rgba(0,0,0,0.05)', text: '#666' };
+                                            const badge = STATUS_BADGE[card.status] || { label: card.status, bg: 'rgba(0,0,0,0.05)', text: '#666' };
                                             return (
                                                 <tr key={card.id} className="group hover:bg-white/40 dark:hover:bg-white/5 transition-all duration-300">
                                                     <td className="px-6 py-5">
@@ -577,7 +580,7 @@ export default function OperatorPage() {
                         {Object.entries(STATUS_BADGE)
                             .filter(([k]) => {
                                 const current = cards.find(c => c.id === openStatusMenu);
-                                return k !== 'ACTIVE' && k !== current?.status;
+                                return k !== 'paired' && k !== current?.status;
                             })
                             .map(([k, v]) => (
                                 <button key={k}
