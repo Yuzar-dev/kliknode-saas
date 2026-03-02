@@ -1,0 +1,109 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@config "../tailwind.config.ts";
+
+@theme {
+  --color-apple-bg-light: #F5F5F7;
+  --color-apple-text-dark: #1D1D1F;
+  --color-apple-secondary: #86868B;
+  --color-space-gray: #4B4B4C;
+  --color-titanium: #C6C6C6;
+
+  --shadow-glass-light: 0 8px 32px rgba(0, 0, 0, 0.06);
+  --shadow-glass-dark: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+:root {
+  --background: #F5F5F7;
+  --foreground: #1D1D1F;
+}
+
+.dark {
+  --background: #000000;
+  --foreground: #F5F5F7;
+}
+
+@layer base {
+  body {
+    @apply bg-apple-bgLight dark:bg-black text-apple-textDark dark:text-apple-bgLight;
+    font-family: 'Poppins', -apple-system, sans-serif;
+  }
+}
+
+@utility klik-glass {
+  background-color: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: var(--shadow-glass-light);
+  will-change: transform, backdrop-filter;
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 500ms;
+}
+
+@utility klik-glass-hover {
+  &:hover {
+    transform: translateY(-0.25rem) scale(1.01);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+}
+
+.dark .klik-glass {
+  background-color: rgba(28, 28, 30, 0.6);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-glass-dark);
+}
+
+@utility btn-titanium {
+  border-radius: 9999px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 500ms;
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+@utility btn-titanium-primary {
+  background: linear-gradient(90deg, #334155 0%, #0F172A 100%);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  font-weight: 700;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: linear-gradient(90deg, #475569 0%, #1E293B 100%);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  }
+}
+
+
+/* Custom Scrollbar */
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-gray-200 dark:bg-white/10 rounded-full;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

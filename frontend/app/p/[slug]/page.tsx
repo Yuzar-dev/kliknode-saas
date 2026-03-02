@@ -1,0 +1,502 @@
+'use client';
+
+import { useState, useEffect, use } from 'react';
+import { createClient } from '@/utils/supabase/client';
+import toast from 'react-hot-toast';
+
+interface CardData {
+    id: string;
+    publicSlug: string;
+    firstName: string | null;
+    lastName: string | null;
+    jobTitle: string | null;
+    companyName: string | null;
+    bio: string | null;
+    avatarUrl: string | null;
+    coverUrl: string | null;
+    phoneMobile: string | null;
+    phoneOffice: string | null;
+    email: string | null;
+    website: string | null;
+    city: string | null;
+    country: string | null;
+    primaryColor: string | null;
+    theme: string | null;
+    bioVisible: boolean;
+    socialLinks: any[];
+    user: {
+        firstName: string | null;
+        lastName: string | null;
+        company: {
+            name: string;
+            branding: any;
+        } | null;
+    };
+}
+
+const normalizeUrl = (url: string) => {
+    if (!url) return '#';
+    const trimmed = url.trim();
+    if (trimmed.match(/^[a-z0-9]+:\/\//i) || trimmed.startsWith('mailto:') || trimmed.startsWith('tel:')) {
+        return trimmed;
+    }
+    return `https://${trimmed}`;
+};
+
+export default function PublicProfilePage({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = use(params);
+    const [card, setCard] = useState<CardData | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [showModal, setShowModal] = useState(false);
+    const [isSharing, setIsSharing] = useState(false);
+    const [isScrolled, setIsScrolled] = useState(false);
+
+    // Form state for Exchange Contact
+    const [formData, setFormData] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        notes: ''
+    });
+
+    useEffect(() => {
+        const fetchCard = async () => {
+            try {
+                const supabase = createClient();
+
+                let query = supabase.from('profiles').select('*');
+
+                // UUID regex
+                const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(slug);
+                if (isUuid) {
+                    query = query.or(`id.eq.${slug},public_slug.eq.${slug}`);
+                } else {
+                    query = query.eq('public_slug', slug);
+                }
+
+                const { data, error } = await query.single();
+
+                if (error || !data) {
+                    throw new Error('Carte introuvable');
+                }
+
+                const mappedData: CardData = {
+                    id: data.id,
+                    publicSlug: data.public_slug || data.id,
+                    firstName: data.first_name,
+                    lastName: data.last_name,
+                    jobTitle: data.job_title,
+                    companyName: data.company_name,
+                    bio: data.bio,
+                    avatarUrl: data.avatar_url,
+                    coverUrl: data.cover_url,
+                    phoneMobile: data.phone_mobile,
+                    phoneOffice: data.phone_office,
+                    email: data.email,
+                    website: data.website,
+                    city: data.city,
+                    country: data.country,
+                    primaryColor: data.primary_color,
+                    theme: data.theme || 'light',
+                    bioVisible: data.bio_visible !== false,
+                    socialLinks: data.social_links || [],
+                    user: {
+                        firstName: data.first_name,
+                        lastName: data.last_name,
+                        company: null
+                    }
+                };
+
+                setCard(mappedData);
+            } catch (error: any) {
+                console.error('Error fetching card:', error);
+                toast.error(error.message || 'Carte introuvable');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchCard();
+
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 150);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [slug]);
+
+    const handleSaveContact = () => {
+        if (!card) return;
+
+        const vCardData = [
+            'BEGIN:VCARD',
+            'VERSION:3.0',
+            `FN:${card.firstName} ${card.lastName}`,
+            `N:${card.lastName};${card.firstName};;;`,
+            card.companyName ? `ORG:${card.companyName}` : '',
+            card.jobTitle ? `TITLE:${card.jobTitle}` : '',
+            card.phoneMobile ? `TEL;TYPE=CELL:${card.phoneMobile}` : '',
+            card.phoneOffice ? `TEL;TYPE=WORK:${card.phoneOffice}` : '',
+            card.email ? `EMAIL:${card.email}` : '',
+            card.website ? `URL:${card.website}` : '',
+            card.bio ? `NOTE:${card.bio.replace(/\n/g, '\\n')}` : '',
+            'END:VCARD'
+        ].filter(line => line !== '').join('\n');
+
+        const blob = new Blob([vCardData], { type: 'text/vcard' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `${card.firstName}_${card.lastName}.vcf`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('Contact prêt à être enregistré !');
+    };
+
+    const handleExchangeSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSharing(true);
+        try {
+            const supabase = createClient();
+            const { error } = await supabase.from('contacts').insert({
+                profile_id: card!.id,
+                first_name: formData.firstName,
+                last_name: formData.lastName,
+                email: formData.email,
+                phone: formData.phone,
+                notes: formData.notes
+            });
+
+            if (error) throw error;
+
+            toast.success('Vos informations ont été envoyées !');
+            setShowModal(false);
+            setFormData({ firstName: '', lastName: '', email: '', phone: '', notes: '' });
+        } catch (error: any) {
+            toast.error('Erreur lors de l\'envoi.');
+        } finally {
+            setIsSharing(false);
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
+    if (!card) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-background-light dark:bg-background-dark p-6 text-center">
+                <span className="material-symbols-outlined text-6xl text-slate-300 mb-4">error</span>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Profil introuvable</h1>
+                <p className="text-slate-500 mt-2">Ce lien semble être invalide ou la carte a été désactivée.</p>
+                <button onClick={() => window.location.href = '/'} className="mt-6 text-primary font-medium hover:underline">Retour site</button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="font-display min-h-screen flex justify-center selection:bg-spaceGray/20 relative overflow-x-hidden bg-apple-bgLight dark:bg-black">
+            {/* Background Layer: Image vs Ambient Glow PJ Style */}
+            {card.coverUrl && !card.coverUrl.startsWith('linear-gradient') && card.coverUrl !== 'default' ? (
+                /* Full Screen Image Background */
+                <div
+                    className="fixed inset-0 z-0 pointer-events-none"
+                    style={{
+                        backgroundImage: `url(${card.coverUrl})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        backgroundAttachment: 'fixed'
+                    }}
+                />
+            ) : (
+                /* Ambient Glow "PJ Style" - Unified & Fixed */
+                <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-apple-bgLight dark:bg-black">
+                    {/* Primary Soft Ambient Wash (Top Corner) - Matched to Preview */}
+                    <div
+                        className="absolute -top-[15%] -left-[10%] w-[120%] h-[70%] blur-[100px] opacity-[0.25] dark:opacity-[0.3]"
+                        style={{
+                            background: `radial-gradient(circle at 25% 25%, ${card.coverUrl === 'default' ? (card.theme === 'dark' ? '#000000' : '#FFFFFF') : (card.coverUrl?.match(/#[a-fA-F0-9]{6}/)?.[0] || card.primaryColor || '#0666EB')}, transparent 80%)`
+                        }}
+                    />
+                    {/* Secondary Balanced Glow (Bottom Right hint) - Matched to Preview */}
+                    <div
+                        className="absolute -bottom-[10%] -right-[10%] w-[70%] h-[40%] blur-[80px] opacity-[0.1] dark:opacity-[0.15]"
+                        style={{
+                            background: `radial-gradient(circle at center, ${card.coverUrl === 'default' ? (card.theme === 'dark' ? '#000000' : '#FFFFFF') : (card.coverUrl?.match(/#[a-fA-F0-9]{6}/)?.[0] || card.primaryColor || '#0666EB')}, transparent 70%)`
+                        }}
+                    />
+
+                    {/* The "Flow" - Ultra-diffused center glow (No visible edges) */}
+                    <div
+                        className="absolute -top-[20%] left-1/2 -translate-x-1/2 w-[180%] h-[70%] blur-[140px] opacity-[0.3] dark:opacity-[0.15] pointer-events-none"
+                        style={{
+                            background: `radial-gradient(circle at 50% 0%, white 0%, transparent 80%)`
+                        }}
+                    />
+                </div>
+            )}
+
+            <div className="w-full max-w-md relative z-10 flex flex-col min-h-screen pb-32">
+
+                {/* Fixed Top Navigation - Integrated Flow Style */}
+                <div className={`fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 transition-all duration-700 h-24 pointer-events-none ${isScrolled ? 'backdrop-blur-2xl bg-white/10 dark:bg-black/20 shadow-[0_1px_30px_rgba(0,0,0,0.03)]' : ''}`}>
+                    <div className="flex items-center justify-between p-4 px-6 h-20 pointer-events-auto">
+                        <button className="flex items-center justify-center w-12 h-12 rounded-full bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/50 dark:border-white/10 shadow-sm text-apple-textDark dark:text-white hover:bg-white/60 dark:hover:bg-white/10 transition-all active:scale-95">
+                            <span className="material-symbols-outlined font-light">arrow_back</span>
+                        </button>
+                        <button onClick={() => {
+                            if (navigator.share) {
+                                navigator.share({
+                                    title: `${card.firstName} ${card.lastName} - VCard`,
+                                    url: window.location.href
+                                });
+                            } else {
+                                navigator.clipboard.writeText(window.location.href);
+                                toast.success('Lien copié !');
+                            }
+                        }} className="flex items-center justify-center w-12 h-12 rounded-full bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/50 dark:border-white/10 shadow-sm text-apple-textDark dark:text-white hover:bg-white/60 dark:hover:bg-white/10 transition-all active:scale-95">
+                            <span className="material-symbols-outlined font-light">ios_share</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Profile Header (Centralized Content) */}
+                <div className="pt-24 pb-8 flex flex-col items-center px-6">
+                    {/* Squircle Avatar with Border */}
+                    <div className="relative group">
+                        <div className="absolute inset-0 bg-gradient-to-tr from-gray-200 to-white dark:from-gray-800 dark:to-gray-700 rounded-[2.8rem] blur-xl opacity-20 group-hover:opacity-40 transition-opacity" />
+                        <div className="relative h-44 w-44 rounded-[2.5rem] bg-white dark:bg-[#1C1C1E] p-2 shadow-2xl border border-white/50 dark:border-white/10">
+                            <div
+                                className="h-full w-full rounded-[2rem] bg-cover bg-center overflow-hidden"
+                                style={{ backgroundImage: `url(${card.avatarUrl || 'https://via.placeholder.com/300'})` }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Identity Area */}
+                    <div className="mt-8 text-center space-y-2">
+                        <h1 className="text-4xl font-extrabold tracking-tight text-apple-textDark dark:text-white">{card.firstName} {card.lastName}</h1>
+                        <p className="text-apple-secondary dark:text-gray-400 font-bold text-lg">{card.jobTitle || 'Digital Artisan'}</p>
+
+                        <div className="flex items-center justify-center gap-1.5 text-apple-secondary/60 dark:text-gray-500 text-sm py-1 font-bold">
+                            <span className="material-symbols-outlined text-[18px]">location_on</span>
+                            <span>{card.city || 'Paris'}{card.country ? `, ${card.country}` : ''}</span>
+                        </div>
+
+                        {/* Status Badge */}
+                        <div className="mt-4 flex justify-center">
+                            <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-white/40 dark:bg-white/5 border border-white/50 dark:border-white/10 shadow-sm backdrop-blur-md">
+                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-[pulse_2s_infinite]"></span>
+                                <span className="text-xs font-bold text-apple-textDark dark:text-white uppercase tracking-wider">Open to Collaborations</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Quick Action Buttons (Alex Sterling Style) */}
+                    <div className="flex items-center gap-6 mt-10 w-full max-w-sm">
+                        <a href={`mailto:${card.email}`} className="flex-1 flex items-center justify-center gap-2.5 h-16 rounded-full text-white shadow-2xl active:scale-95 transition-all hover:brightness-110"
+                            style={{ background: card.primaryColor || '#0666EB' }}>
+                            <span className="material-symbols-outlined font-light text-[22px]">mail</span>
+                            <span className="font-bold tracking-wide">Say Hello</span>
+                        </a>
+                        <a href={`tel:${card.phoneMobile}`} className="h-16 w-16 flex items-center justify-center rounded-full bg-white shadow-xl text-apple-textDark dark:bg-[#1C1C1E] dark:text-white border border-gray-100 dark:border-white/5 hover:scale-105 active:scale-95 transition-all">
+                            <span className="material-symbols-outlined font-light">call</span>
+                        </a>
+                        <a href={`sms:${card.phoneMobile}`} className="h-16 w-16 flex items-center justify-center rounded-full bg-white shadow-xl text-apple-textDark dark:bg-[#1C1C1E] dark:text-white border border-gray-100 dark:border-white/5 hover:scale-105 active:scale-95 transition-all">
+                            <span className="material-symbols-outlined font-light">chat_bubble</span>
+                        </a>
+                    </div>
+                </div>
+
+                {/* About Section - Glassmorphism */}
+                {card.bioVisible && card.bio && (
+                    <div className="mt-6 px-6 relative">
+                        {/* Floating Branding Badge */}
+                        <div className="absolute -top-4 -right-2 z-20">
+                            <div className="klik-glass h-12 px-4 flex items-center justify-center gap-2 rounded-2xl shadow-lg border border-white/60 dark:border-white/10">
+                                <img src="/logo-dark.svg" alt="Klik" className="h-5 w-5 dark:brightness-0 dark:invert" />
+                                <span className="text-[10px] font-black tracking-widest uppercase text-apple-textDark dark:text-white">RK</span>
+                            </div>
+                        </div>
+
+                        <div className="klik-glass p-8 rounded-[2.5rem] shadow-xl border border-white/60 dark:border-white/5 overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-gray-200 dark:bg-white/5 blur-3xl opacity-30 -mr-16 -mt-16 group-hover:opacity-50 transition-all duration-700" />
+                            <h3 className="text-lg font-black text-apple-textDark dark:text-white mb-4 tracking-tight">A bit about me</h3>
+                            <p className="text-apple-secondary dark:text-gray-300 leading-relaxed text-[15px] font-medium opacity-90">
+                                {card.bio}
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Links Grids - 2x2 Style */}
+                <div className="mt-12 px-6">
+                    <h3 className="text-lg font-black text-apple-textDark dark:text-white mb-6 px-1 tracking-tight">My Digital Space</h3>
+                    {card.socialLinks && card.socialLinks.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-4">
+                            {card.socialLinks.map((link) => (
+                                <a
+                                    key={link.id}
+                                    className="klik-glass p-5 rounded-[2rem] border border-white/50 dark:border-white/5 hover:border-spaceGray dark:hover:border-titanium shadow-sm hover:shadow-2xl transition-all duration-500 group relative overflow-hidden"
+                                    href={normalizeUrl(link.url)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <div className="flex justify-between items-start mb-6">
+                                        <div className="w-12 h-12 flex items-center justify-center shadow-inner rounded-2xl border transition-all"
+                                            style={{ backgroundColor: `${card.primaryColor || '#0666EB'}1A`, color: card.primaryColor || '#0666EB', borderColor: `${card.primaryColor || '#0666EB'}20` }}>
+                                            <span className="material-symbols-outlined text-[24px] font-light">{link.icon || 'public'}</span>
+                                        </div>
+                                        <span className="material-symbols-outlined text-gray-300 dark:text-gray-600 text-lg translate-y-1 group-hover:text-apple-textDark dark:group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all">arrow_outward</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="font-black text-apple-textDark dark:text-white text-base tracking-tight mb-1">{link.label || link.platform}</span>
+                                        <span className="text-[10px] font-bold text-apple-secondary/60 dark:text-gray-500 uppercase tracking-widest truncate">{link.url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]}</span>
+                                    </div>
+                                </a>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="klik-glass p-12 text-center rounded-[2.5rem]">
+                            <span className="material-symbols-outlined text-gray-300 dark:text-gray-700 text-5xl font-light mb-4">link_off</span>
+                            <p className="text-apple-secondary font-bold">No digital links available</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Fixed Bottom Action Area - Ultra Discrete (No Container) */}
+                <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-30 pointer-events-none">
+                    <div className="px-10 pb-8 pt-16 bg-gradient-to-t from-apple-bgLight via-apple-bgLight/80 to-transparent dark:from-black dark:via-black/80 dark:to-transparent flex flex-col items-center gap-3">
+                        <button
+                            onClick={() => setShowModal(true)}
+                            className="w-full h-14 rounded-full shadow-xl active:scale-95 flex items-center justify-center gap-3 pointer-events-auto text-white transition-all hover:brightness-110"
+                            style={{ background: card.primaryColor || '#0666EB' }}
+                        >
+                            <span className="font-extrabold tracking-tight text-base">Exchange Contact</span>
+                            <span className="material-symbols-outlined text-xl">chevron_right</span>
+                        </button>
+
+                        <button
+                            onClick={handleSaveContact}
+                            className="inline-flex items-center gap-2 text-apple-secondary dark:text-gray-400 font-bold text-[11px] tracking-widest uppercase hover:text-apple-textDark dark:hover:text-white transition-colors pointer-events-auto"
+                        >
+                            <span className="material-symbols-outlined text-lg font-light">person_add</span>
+                            Save Contact Only
+                        </button>
+                    </div>
+                </div>
+
+                {/* Exchange Modal Redesign (Apple/Clean Style) */}
+                {showModal && (
+                    <div aria-modal="true" className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6" role="dialog">
+                        <div onClick={() => setShowModal(false)} aria-hidden="true" className="fixed inset-0 bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-500"></div>
+
+                        <div className="relative w-full max-w-md animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 transform overflow-hidden rounded-[3rem] bg-[#F2F2F7] dark:bg-[#1C1C1E] p-8 text-center shadow-3xl border border-white/40 dark:border-white/10">
+                            {/* Close Button */}
+                            <button onClick={() => setShowModal(false)} className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center rounded-full bg-white/50 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition-colors">
+                                <span className="material-symbols-outlined text-[20px] text-gray-500">close</span>
+                            </button>
+
+                            {/* Header Sparkle Icon */}
+                            <div className="flex justify-center mb-6 pt-4">
+                                <div className="w-20 h-20 rounded-full bg-white dark:bg-white/10 shadow-sm flex items-center justify-center text-apple-textDark dark:text-white">
+                                    <span className="material-symbols-outlined text-[40px] font-light">auto_awesome</span>
+                                </div>
+                            </div>
+
+                            <div className="mb-10 px-4">
+                                <h3 className="text-[32px] font-black tracking-tight text-apple-textDark dark:text-white leading-tight">Let's connect!</h3>
+                                <p className="mt-4 text-[#636366] dark:text-[#8E8E93] font-medium leading-tight text-base">
+                                    Drop your details below and I'll send my digital card straight to your inbox.
+                                </p>
+                            </div>
+
+                            <form onSubmit={handleExchangeSubmit} className="space-y-4 text-left">
+                                {/* Name Input */}
+                                <div className="relative group">
+                                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-apple-textDark dark:group-focus-within:text-white transition-colors">
+                                        <span className="material-symbols-outlined text-[22px]">person</span>
+                                    </div>
+                                    <input
+                                        required
+                                        value={`${formData.firstName}${formData.lastName ? ' ' + formData.lastName : ''}`}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            const parts = val.trim().split(/\s+/);
+                                            setFormData({
+                                                ...formData,
+                                                firstName: parts[0] || '',
+                                                lastName: parts.slice(1).join(' ') || ''
+                                            });
+                                        }}
+                                        className="block w-full pl-14 pr-6 py-5 bg-white/70 dark:bg-white/5 border border-transparent focus:border-gray-200 dark:focus:border-white/10 rounded-3xl text-apple-textDark dark:text-white placeholder:text-gray-400 outline-none transition-all shadow-sm"
+                                        placeholder="Full Name" type="text"
+                                    />
+                                </div>
+
+                                {/* Email Input */}
+                                <div className="relative group">
+                                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-apple-textDark dark:group-focus-within:text-white transition-colors">
+                                        <span className="material-symbols-outlined text-[22px]">mail</span>
+                                    </div>
+                                    <input
+                                        required
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        className="block w-full pl-14 pr-6 py-5 bg-white/70 dark:bg-white/5 border border-transparent focus:border-gray-200 dark:focus:border-white/10 rounded-3xl text-apple-textDark dark:text-white placeholder:text-gray-400 outline-none transition-all shadow-sm"
+                                        placeholder="Email Address" type="email"
+                                    />
+                                </div>
+
+                                {/* Phone Input */}
+                                <div className="relative group">
+                                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-apple-textDark dark:group-focus-within:text-white transition-colors">
+                                        <span className="material-symbols-outlined text-[22px]">phone</span>
+                                    </div>
+                                    <input
+                                        value={formData.phone}
+                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                        className="block w-full pl-14 pr-6 py-5 bg-white/70 dark:bg-white/5 border border-transparent focus:border-gray-200 dark:focus:border-white/10 rounded-3xl text-apple-textDark dark:text-white placeholder:text-gray-400 outline-none transition-all shadow-sm"
+                                        placeholder="Phone Number" type="tel"
+                                    />
+                                </div>
+
+                                <div className="mt-10 pt-4 flex flex-col items-center gap-6">
+                                    <button
+                                        type="submit"
+                                        disabled={isSharing}
+                                        className="w-full h-16 rounded-full font-bold tracking-tight text-lg shadow-xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all text-white hover:brightness-110"
+                                        style={{ background: card.primaryColor || '#0666EB' }}
+                                    >
+                                        <span>{isSharing ? 'Sharing...' : 'Send My Info'}</span>
+                                        <span className="material-symbols-outlined text-xl">chevron_right</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowModal(false)}
+                                        className="text-apple-secondary dark:text-[#8E8E93] font-bold text-sm tracking-wide hover:text-apple-textDark dark:hover:text-white transition-colors"
+                                    >
+                                        Maybe later
+                                    </button>
+
+                                    {/* Privacy Badge */}
+                                    <div className="mt-4 flex items-center gap-2 px-4 py-2 bg-white/50 dark:bg-white/5 rounded-full border border-gray-100 dark:border-white/5 text-[11px] font-bold text-apple-secondary dark:text-gray-400">
+                                        <span className="material-symbols-outlined text-sm">lock</span>
+                                        Your data is safe & private
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
