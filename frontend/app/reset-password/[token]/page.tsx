@@ -42,7 +42,7 @@ function calculatePasswordStrength(password: string) {
 export default function ResetPasswordPage() {
     const router = useRouter();
     const params = useParams();
-    const token = params.token as string;
+    const token = params?.token as string;
 
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);

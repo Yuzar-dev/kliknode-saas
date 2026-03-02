@@ -15,7 +15,7 @@ export default function CompanyDetailPage() {
 
     // Mock data - à remplacer par un vrai fetch
     const company = {
-        id: params.id as string,
+        id: params?.id as string,
         name: 'Tesla Inc.',
         legalName: 'Tesla France S.A.S',
         logo: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDfKuOaH0D7jteFREnmBfeo4fM1JCvsZXMZIOFA23OHNK1Tv-TJ0I9xVve33O8wV391cCv2n7B6xxE_pJ0bCpraxPXBX9Iy57ZBh90hDYPzMnDL4vG2wDJdlRr1hmahs9G2DOH2ZAlHgEfIOQEBnbUW1vXipqyULBfj93rWI74YI_8cON8NXj5M_9UUf966UfiNuKB4X-hntvEuA0n4v4JXRPngPFWEGtKiEEYyDEMtKKuFwV-_e_S_5fFyI1u9hG1XWgodkT8pXjE',

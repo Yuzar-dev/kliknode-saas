@@ -114,7 +114,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                 {/* Navigation */}
                 <nav className="flex-1 p-4 flex flex-col gap-1 overflow-y-auto custom-scrollbar">
                     {NAV_ITEMS.map((item) => {
-                        const active = pathname === item.href || pathname.startsWith(item.href + '/');
+                        const active = pathname === item.href || pathname?.startsWith(item.href + '/');
                         return (
                             <Link key={item.href} href={item.href}
                                 className={`flex items-center ${collapsed ? 'justify-center px-0' : 'gap-3 px-4'} py-3 rounded-2xl text-sm font-semibold transition-all duration-300 ${active
@@ -278,7 +278,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
             {/* ═══ BOTTOM NAVIGATION (Mobile) ═══ */}
             <nav className="fixed bottom-6 left-4 right-4 h-16 z-50 md:hidden flex items-center justify-around klik-glass rounded-[24px] px-2 shadow-2xl border-white/60 dark:border-white/10">
                 {NAV_ITEMS.map((item) => {
-                    const active = pathname === item.href || pathname.startsWith(item.href + '/');
+                    const active = pathname === item.href || pathname?.startsWith(item.href + '/');
                     return (
                         <Link key={item.href} href={item.href}
                             className={`flex flex-col items-center justify-center flex-1 h-12 rounded-2xl transition-all duration-300 ${active

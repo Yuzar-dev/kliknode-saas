@@ -22,7 +22,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const redirectUrl = searchParams.get('redirect') || '/';
+    const redirectUrl = searchParams?.get('redirect') || '/';
 
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);

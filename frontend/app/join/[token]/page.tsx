@@ -25,7 +25,7 @@ interface InvitationData {
 export default function JoinCompanyPage() {
   const router = useRouter();
   const params = useParams();
-  const token = params.token as string;
+  const token = params?.token as string;
 
   const [invitationData, setInvitationData] = useState<InvitationData | null>(null);
   const [isLoading, setIsLoading] = useState(true);

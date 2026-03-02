@@ -1,14 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'http://localhost:4000/api/:path*',
-      },
-    ];
-  },
+  // No rewrites needed natively for /api since pages/api/[[...slug]].ts handles Express
 };
 
 export default nextConfig;

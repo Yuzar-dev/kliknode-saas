@@ -22,7 +22,7 @@ type SignupFormData = z.infer<typeof signupSchema>;
 function SignupContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const cardId = searchParams.get('card_id');
+    const cardId = searchParams?.get('card_id');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 

@@ -81,13 +81,13 @@ export default function AdminSidebar() {
                                 isActive = pathname === '/admin/companies';
                             } else if (item.href === '/admin/companies/1') {
                                 // Fiche Détail: active for /admin/companies/[numeric id]
-                                isActive = !!pathname.match(/^\/admin\/companies\/\d+$/);
+                                isActive = !!pathname?.match(/^\/admin\/companies\/\d+$/);
                             } else if (item.href === '/admin/companies/new') {
                                 // Onboarding: active for exact /admin/companies/new
                                 isActive = pathname === '/admin/companies/new';
                             } else {
                                 // Default behavior for other routes
-                                isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
+                                isActive = pathname === item.href || (item.href !== '/admin' && !!pathname?.startsWith(item.href));
                             }
 
                             return (
