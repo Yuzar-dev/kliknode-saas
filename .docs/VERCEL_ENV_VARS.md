@@ -6,10 +6,10 @@ Afin de déployer la V1 sur Vercel, voici la liste exhaustive des variables d'en
 
 ## 🖥 VERCEL PROJET 1 : FRONTEND (`app.kliknode.com` & `k.kliknode.com`)
 
-| Nom de la Variable | Valeur Attendue (Exemple) | Description |
+| Nom de la Variable | Valeur à Copier-Coller | Description |
 | :--- | :--- | :--- |
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://[VOTRE_PROJET].supabase.co` | L'URL de votre projet Supabase en production. |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJhbGciOiJIUzI1Ni...` | Clé publique anonyme Supabase. |
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://hpyclqmbzqhlbqrkxdsm.supabase.co` | L'URL de votre projet Supabase en production. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `sb_publishable_FxNhWB853OZVHUeNevU2zA_kyZUcc1l` | Clé publique anonyme Supabase. |
 | `NEXT_PUBLIC_API_URL` | `https://api.kliknode.com` | (Optionnel si vous déployez le backend sur Vercel/Render) URL de votre API Node.js. |
 
 *Note sur le Frontend : Le middleware gère automatiquement la redirection vers `/activate/[uid]` si le domaine entré par l'utilisateur est `k.kliknode.com`.*
@@ -20,19 +20,19 @@ Afin de déployer la V1 sur Vercel, voici la liste exhaustive des variables d'en
 
 Si le Backend est également déployé (sur Vercel avec des Serverless Functions ou une machine dédiée), voici ses variables :
 
-| Nom de la Variable | Valeur Attendue | Description |
+| Nom de la Variable | Valeur à Copier-Coller | Description |
 | :--- | :--- | :--- |
 | `NODE_ENV` | `production` | Active le mode production (optimisation, logs réduits). |
-| `PORT` | `4000` | Port du serveur (souvent ignoré par Vercel, utile pour Render/VPS). |
+| `PORT` | `4000` | Port du serveur (souvent ignoré par Vercel). |
 | `FRONTEND_URL` | `https://app.kliknode.com` | URL du front pour autoriser les requêtes CORS. |
-| `DATABASE_URL` | `postgresql://postgres:[PASSWORD]...` | Lien de connexion PostgreSQL de production (Supabase "Transaction pooler"). |
-| `JWT_SECRET` | `[SUPER_SECRET_COMPLEXE]` | Clé très complexe pour signer les tokens (Minimum 64 caractères). |
-| `JWT_REFRESH_SECRET`| `[SUPER_SECRET_REFRESH]` | Clé complexe pour les refresh tokens. |
-| `STRIPE_SECRET_KEY` | `sk_live_...` | Clé secrète de production Stripe. |
-| `STRIPE_WEBHOOK_SECRET` | `whsec_...` | Clé webhook Stripe (générée après configuration webhook). |
-| `SENDGRID_API_KEY` | `SG....` | Clé API de production SendGrid pour l'envoi d'emails. |
-| `AWS_ACCESS_KEY_ID` | `votre_clé` | (Si stockage S3 / R2 activé). |
-| `AWS_SECRET_ACCESS_KEY`| `votre_secret` | (Si stockage S3 / R2 activé). |
+| `DATABASE_URL` | `postgresql://postgres:yt4em4N7EY.!L*&@db.hpyclqmbzqhlbqrkxdsm.supabase.co:5432/postgres` | Lien de connexion PostgreSQL de production (Supabase). |
+| `JWT_SECRET` | `dev-secret-key-please-change-in-production-12345` | (Optionnel: à changer plus tard pour la sécurité). |
+| `JWT_REFRESH_SECRET`| `dev-refresh-secret-key-please-change-in-production-67890` | (Optionnel: à changer plus tard). |
+| `STRIPE_SECRET_KEY` | `sk_test_replace_with_your_key` | (Temporaire: à remplacer par la clé en direct Stripe). |
+| `STRIPE_WEBHOOK_SECRET` | `whsec_replace_with_your_webhook_secret` | (Temporaire: à remplacer par le webhook Live). |
+| `SENDGRID_API_KEY` | `SG.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` | Clé API de SendGrid pour l'envoi d'emails (Récupérez-la dans .env.local). |
+| `AWS_ACCESS_KEY_ID` | `votre_clé` | (Optionnel: Si stockage manuel S3). |
+| `AWS_SECRET_ACCESS_KEY`| `votre_secret` | (Optionnel: Si stockage manuel S3). |
 
 ---
 
