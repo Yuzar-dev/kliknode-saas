@@ -16,7 +16,7 @@ import { ApiResponse } from '../../types/express';
  */
 export const activateCard = async (req: Request, res: Response<ApiResponse>) => {
     try {
-        const { uid } = req.params;
+        const uid = req.params.uid as string;
 
         // Chercher la carte physique par UID
         const physicalCard = await prisma.physicalCard.findUnique({

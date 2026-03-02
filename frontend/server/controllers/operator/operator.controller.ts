@@ -230,7 +230,7 @@ export const getStats = async (_req: Request, res: Response<ApiResponse>) => {
  */
 export const updateCardStatus = async (req: Request, res: Response<ApiResponse>) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const { status } = req.body;
 
         const allowedStatuses = ['in_stock', 'reserved', 'lost'];

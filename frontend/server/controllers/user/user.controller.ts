@@ -199,7 +199,7 @@ export const addSocialLink = async (req: Request, res: Response<ApiResponse>) =>
  */
 export const updateSocialLink = async (req: Request, res: Response<ApiResponse>) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const { platform, url, label, icon, isActive } = req.body;
 
         // Vérifier ownership
@@ -242,7 +242,7 @@ export const updateSocialLink = async (req: Request, res: Response<ApiResponse>)
  */
 export const deleteSocialLink = async (req: Request, res: Response<ApiResponse>) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         const card = await prisma.card.findUnique({ where: { userId: req.user!.id } });
         if (!card) {

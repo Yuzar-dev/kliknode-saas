@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
-import { hashPassword } from '../src/utils/bcrypt.util';
-import { generateSlug } from '../src/utils/slug.util';
+import { hashPassword } from '../server/utils/bcrypt.util';
+import { generateSlug } from '../server/utils/slug.util';
 
 const prisma = new PrismaClient();
 
@@ -341,7 +341,7 @@ async function main() {
     await prisma.inventory.create({
         data: {
             sku: 'NFC-CARD-PREMIUM',
-            warehouse: 'casablanca',
+            warehouse: 'oujda',
             quantityPhysical: 50,
             quantityReserved: 5,
             quantityAvailable: 45,

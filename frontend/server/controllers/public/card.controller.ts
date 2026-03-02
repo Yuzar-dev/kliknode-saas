@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
  */
 export const getPublicCard = async (req: Request, res: Response) => {
     try {
-        const { slug } = req.params;
+        const slug = req.params.slug as string;
 
         const card = await prisma.card.findUnique({
             where: { publicSlug: slug },
@@ -74,7 +74,7 @@ export const getPublicCard = async (req: Request, res: Response) => {
  */
 export const exchangeContact = async (req: Request, res: Response) => {
     try {
-        const { slug } = req.params;
+        const slug = req.params.slug as string;
         const { firstName, lastName, email, phone, notes } = req.body;
 
         const card = await prisma.card.findUnique({
