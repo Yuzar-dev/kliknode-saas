@@ -109,6 +109,7 @@ export default function CardEditorPage() {
                 cover_url: form.coverUrl, primary_color: form.primaryColor, theme: form.theme,
                 bio_visible: form.bioVisible,
                 public_slug: card?.publicSlug || user.id, // Make sure public_slug is saved during upsert
+                updated_at: new Date().toISOString(),
             };
 
             const { error } = await supabase.from('cards').upsert(updatePayload, { onConflict: 'user_id' });
@@ -145,7 +146,7 @@ export default function CardEditorPage() {
                 .getPublicUrl(filePath);
 
             setForm(f => ({ ...f, avatarUrl: publicUrl }));
-            await supabase.from('cards').upsert({ id: card?.id || uuidv4(), user_id: user.id, avatar_url: publicUrl, public_slug: card?.publicSlug || user.id }, { onConflict: 'user_id' });
+            await supabase.from('cards').upsert({ id: card?.id || uuidv4(), user_id: user.id, avatar_url: publicUrl, public_slug: card?.publicSlug || user.id, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
             toast.success('Photo mise à jour !');
         } catch (e: any) {
             console.error(e);

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import toast from 'react-hot-toast';
+import { v4 as uuidv4 } from 'uuid';
 import CardPreview, { PLATFORM_ICONS } from '@/components/user/CardPreview';
 
 interface SocialLink {
@@ -124,9 +125,17 @@ export default function LinksPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
+            const { data: cardData } = await supabase.from('cards').select('id, public_slug').eq('user_id', user.id).single();
+
             const { error } = await supabase
                 .from('cards')
-                .upsert({ user_id: user.id, social_links: newLinks, public_slug: user.id }, { onConflict: 'user_id' });
+                .upsert({
+                    id: cardData?.id || uuidv4(),
+                    user_id: user.id,
+                    social_links: newLinks,
+                    public_slug: cardData?.public_slug || user.id,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id' });
 
             if (error) throw error;
         } catch (e) {
