@@ -9,7 +9,8 @@ type Status = 'loading' | 'not_found' | 'reserved' | 'lost' | 'activating';
 export default function ActivatePage() {
     const params = useParams();
     const router = useRouter();
-    const uid = params?.uid as string;
+    const uidRaw = params?.uid as string;
+    const uid = uidRaw ? decodeURIComponent(uidRaw) : '';
 
     const [status, setStatus] = useState<Status>('loading');
 
