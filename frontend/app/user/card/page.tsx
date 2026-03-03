@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import toast from 'react-hot-toast';
+import { v4 as uuidv4 } from 'uuid';
 import CardPreview, { COVER_PRESETS } from '@/components/user/CardPreview';
 
 interface CardData {
@@ -98,6 +99,7 @@ export default function CardEditorPage() {
             const formattedWebsite = formatUrl(form.website || '');
 
             const updatePayload = {
+                id: card?.id || uuidv4(),
                 user_id: user.id,
                 first_name: form.firstName, last_name: form.lastName,
                 job_title: form.jobTitle, company_name: form.companyName,
@@ -143,7 +145,7 @@ export default function CardEditorPage() {
                 .getPublicUrl(filePath);
 
             setForm(f => ({ ...f, avatarUrl: publicUrl }));
-            await supabase.from('cards').upsert({ user_id: user.id, avatar_url: publicUrl, public_slug: card?.publicSlug || user.id }, { onConflict: 'user_id' });
+            await supabase.from('cards').upsert({ id: card?.id || uuidv4(), user_id: user.id, avatar_url: publicUrl, public_slug: card?.publicSlug || user.id }, { onConflict: 'user_id' });
             toast.success('Photo mise à jour !');
         } catch (e: any) {
             console.error(e);
