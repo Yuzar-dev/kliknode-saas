@@ -158,7 +158,7 @@ export default function OperatorPage() {
             const { error } = await supabase.from('physical_cards').insert({
                 id: uuidv4(),
                 uid: uid.trim(),
-                warehouse: warehouse.toUpperCase(),
+                warehouse,
                 status: encodeStatus,
                 updated_at: new Date().toISOString()
             });
@@ -209,7 +209,7 @@ export default function OperatorPage() {
                 const { error } = await supabase.from('physical_cards').insert({
                     id: uuidv4(),
                     uid: u,
-                    warehouse: batchWarehouse.toUpperCase(),
+                    warehouse: batchWarehouse,
                     status: batchStatus,
                     updated_at: now
                 });
