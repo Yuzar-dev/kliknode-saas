@@ -40,7 +40,10 @@ export default function ActivatePage() {
             if (physicalCard.status === 'in_stock' || physicalCard.status === 'reserved') {
                 setStatus('activating');
                 // Redirect to global signup page with card reference
-                setTimeout(() => router.push(`/signup?card_id=${uid}`), 1000);
+                const isNfcDomain = typeof window !== 'undefined' && window.location.hostname.includes('k.kliknode.com');
+                const appUrl = isNfcDomain ? 'https://app.kliknode.com' : (typeof window !== 'undefined' ? window.location.origin : '');
+
+                setTimeout(() => window.location.href = `${appUrl}/signup?card_id=${uid}`, 1000);
                 return;
             }
 
@@ -50,7 +53,10 @@ export default function ActivatePage() {
                 const slug = virtualCard?.public_slug || virtualCard?.user_id;
 
                 if (slug) {
-                    setTimeout(() => router.push(`/p/${slug}`), 1000);
+                    const isNfcDomain = typeof window !== 'undefined' && window.location.hostname.includes('k.kliknode.com');
+                    const appUrl = isNfcDomain ? 'https://app.kliknode.com' : (typeof window !== 'undefined' ? window.location.origin : '');
+
+                    setTimeout(() => window.location.href = `${appUrl}/p/${slug}`, 1000);
                 } else {
                     setStatus('not_found');
                 }
