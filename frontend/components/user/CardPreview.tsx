@@ -158,9 +158,10 @@ export default function CardPreview({
                     <div className="relative group">
                         <div className="absolute inset-0 bg-gradient-to-tr from-gray-200 dark:from-gray-800 to-white dark:to-gray-700 rounded-[2.8rem] blur-xl opacity-20 dark:opacity-40" />
                         <div className="relative h-40 w-40 rounded-[2.5rem] bg-white dark:bg-[#1C1C1E] p-2 shadow-2xl border border-white/50 dark:border-white/10">
-                            <div
-                                className="h-full w-full rounded-[2rem] bg-cover bg-center overflow-hidden"
-                                style={{ backgroundImage: `url(${avatarUrl || 'https://via.placeholder.com/300'})` }}
+                            <img
+                                src={avatarUrl || 'https://via.placeholder.com/300'}
+                                alt="Profile Avatar"
+                                className="h-full w-full rounded-[2rem] object-cover object-center"
                             />
                         </div>
                     </div>

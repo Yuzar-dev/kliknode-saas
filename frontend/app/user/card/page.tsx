@@ -208,13 +208,14 @@ export default function CardEditorPage() {
                             <div className="flex flex-col sm:flex-row items-center gap-6 md:gap-10">
                                 <div className="relative group shrink-0">
                                     <div className="w-24 h-24 md:w-28 md:h-28 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden shadow-2xl bg-white dark:bg-black border-2 border-white dark:border-white/10 p-1 md:p-1.5 flex items-center justify-center">
-                                        <div className="w-full h-full rounded-[1.6rem] md:rounded-[2rem] bg-cover bg-center flex items-center justify-center"
-                                            style={{
-                                                backgroundImage: form.avatarUrl ? `url(${form.avatarUrl})` : 'none',
-                                                backgroundColor: form.avatarUrl ? 'transparent' : 'rgba(0,0,0,0.05)',
-                                            }}
-                                        >
-                                            {!form.avatarUrl && (
+                                        <div className="w-full h-full rounded-[1.6rem] md:rounded-[2rem] bg-gray-100/50 flex items-center justify-center overflow-hidden">
+                                            {form.avatarUrl ? (
+                                                <img
+                                                    src={form.avatarUrl}
+                                                    alt="Avatar"
+                                                    className="w-full h-full object-cover object-center"
+                                                />
+                                            ) : (
                                                 <span className="text-apple-secondary text-2xl md:text-3xl font-black">
                                                     {form.firstName?.[0] || ''}{form.lastName?.[0] || ''}
                                                 </span>
