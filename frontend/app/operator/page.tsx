@@ -72,7 +72,7 @@ export default function OperatorPage() {
 
     // Dropdown with fixed positioning
     const [openStatusMenu, setOpenStatusMenu] = useState<string | null>(null);
-    const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
+    const [dropdownPos, setDropdownPos] = useState<{ top?: number, bottom?: number, right: number }>({ top: 0, right: 0 });
     const statusMenuRef = useRef<HTMLDivElement>(null);
 
     // Batch generator state
@@ -183,7 +183,15 @@ export default function OperatorPage() {
 
     const openDropdown = (cardId: string, e: React.MouseEvent<HTMLButtonElement>) => {
         const rect = e.currentTarget.getBoundingClientRect();
-        setDropdownPos({ top: rect.bottom + 6, right: window.innerWidth - rect.right });
+        const spaceBelow = window.innerHeight - rect.bottom;
+
+        if (spaceBelow < 220) {
+            // Pas assez de place en bas, on l'ouvre vers le haut
+            setDropdownPos({ bottom: window.innerHeight - rect.top + 6, right: window.innerWidth - rect.right });
+        } else {
+            // Assez de place, on l'ouvre vers le bas
+            setDropdownPos({ top: rect.bottom + 6, right: window.innerWidth - rect.right });
+        }
         setOpenStatusMenu(openStatusMenu === cardId ? null : cardId);
     };
 
@@ -530,7 +538,7 @@ export default function OperatorPage() {
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-5">
-                                                        <span className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-current opacity-80"
+                                                        <span className="px-4 py-2 rounded-full whitespace-nowrap text-[10px] font-black uppercase tracking-widest border border-current opacity-80"
                                                             style={{ color: badge.text, backgroundColor: badge.bg }}
                                                         >
                                                             {badge.label}
@@ -584,7 +592,13 @@ export default function OperatorPage() {
             {openStatusMenu && typeof document !== 'undefined' && createPortal(
                 <div
                     className="fixed z-[9999] w-56 rounded-[1.5rem] shadow-2xl border border-white/60 dark:border-white/10 overflow-hidden animate-in fade-in zoom-in-95 duration-300"
-                    style={{ top: dropdownPos.top, right: dropdownPos.right, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(30px)' }}
+                    style={{
+                        ...(dropdownPos.top !== undefined ? { top: dropdownPos.top } : {}),
+                        ...(dropdownPos.bottom !== undefined ? { bottom: dropdownPos.bottom } : {}),
+                        right: dropdownPos.right,
+                        background: 'rgba(255,255,255,0.95)',
+                        backdropFilter: 'blur(30px)'
+                    }}
                     ref={statusMenuRef}
                 >
                     <div className="p-3 bg-gray-50/50 dark:bg-white/5 border-b border-gray-100 dark:border-white/5">
