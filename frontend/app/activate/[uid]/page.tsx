@@ -83,7 +83,7 @@ export default function ActivatePage() {
                 {/* Brand / Logo Area */}
                 <div className="mb-12 flex flex-col items-center relative z-10 transition-all duration-500 px-4">
                     <div className="mb-6 flex items-center justify-center transform hover:scale-105 transition-transform duration-500">
-                        <img src="/logo-icon-black.svg" alt="KlikNode" className="h-[48px] w-auto" />
+                        <img src="/logo-kliknode.svg" alt="KlikNode" className="h-[48px] w-auto" />
                     </div>
                     <h2 className="text-center text-5xl font-extrabold tracking-tighter text-[#1D1D1F] leading-none">
                         kliknode
