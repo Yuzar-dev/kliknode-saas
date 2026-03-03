@@ -160,6 +160,7 @@ model Card {
   jobTitle      String?       @map("job_title") @db.VarChar(150)
   companyName   String?       @map("company_name") @db.VarChar(255)
   bio           String?
+  bio_visible   Boolean       @default(true) @map("bio_visible")
   avatarUrl     String?       @map("avatar_url")
   coverUrl      String?       @map("cover_url")
   phoneMobile   String?       @map("phone_mobile") @db.VarChar(20)
