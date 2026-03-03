@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/auth-store';
 import { createClient } from '@/utils/supabase/client';
 import toast from 'react-hot-toast';
 import { QRCodeSVG } from 'qrcode.react';
+import { v4 as uuidv4 } from 'uuid';
 
 interface PhysicalCard {
     id: string;
@@ -154,7 +155,13 @@ export default function OperatorPage() {
         setEncoding(true);
         try {
             const supabase = createClient();
-            const { error } = await supabase.from('physical_cards').insert({ uid: uid.trim(), warehouse, status: encodeStatus });
+            const { error } = await supabase.from('physical_cards').insert({
+                id: uuidv4(),
+                uid: uid.trim(),
+                warehouse: warehouse.toUpperCase(),
+                status: encodeStatus,
+                updated_at: new Date().toISOString()
+            });
             if (error) {
                 if (error.code === '23505') throw new Error('Cette carte existe déjà');
                 throw error;
@@ -197,8 +204,15 @@ export default function OperatorPage() {
         try {
             const supabase = createClient();
             let success = 0; let failed = 0;
+            const now = new Date().toISOString();
             for (const u of generatedUids) {
-                const { error } = await supabase.from('physical_cards').insert({ uid: u, warehouse: batchWarehouse, status: batchStatus });
+                const { error } = await supabase.from('physical_cards').insert({
+                    id: uuidv4(),
+                    uid: u,
+                    warehouse: batchWarehouse.toUpperCase(),
+                    status: batchStatus,
+                    updated_at: now
+                });
                 if (!error) success++; else failed++;
             }
             setGeneratedUids([]); loadData();
