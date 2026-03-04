@@ -186,12 +186,6 @@ export default function CardEditorPage() {
                         <h1 className="text-3xl md:text-4xl font-black text-apple-textDark dark:text-white tracking-tight">Ma Carte</h1>
                         <p className="text-apple-secondary dark:text-gray-400 font-bold text-sm mt-2">Personnalisez votre identité numérique premium</p>
                     </div>
-                    <button onClick={handleSave} disabled={saving}
-                        className="hidden md:flex btn-obsidian btn-obsidian-primary h-12 md:h-14 items-center justify-center gap-2.5 px-8 rounded-full shadow-2xl active:scale-95 disabled:opacity-50 transition-all w-full md:w-auto"
-                    >
-                        <span className="material-symbols-outlined text-[22px] font-light">{saving ? 'hourglass_top' : 'save'}</span>
-                        <span className="text-base font-bold tracking-tight">{saving ? 'Sauvegarde...' : 'Sauvegarder'}</span>
-                    </button>
                 </div>
 
                 {/* Tabs - Titanium Style */}
@@ -394,10 +388,10 @@ export default function CardEditorPage() {
                     </div>
                 )}
 
-                {/* Mobile Save Button (Bottom) */}
-                <div className="mt-10 md:hidden">
+                {/* Save Button (Bottom) */}
+                <div className="mt-10 flex justify-end">
                     <button onClick={handleSave} disabled={saving}
-                        className="btn-obsidian btn-obsidian-primary h-14 flex items-center justify-center gap-2.5 px-8 rounded-full shadow-2xl active:scale-95 disabled:opacity-50 transition-all w-full"
+                        className="btn-obsidian btn-obsidian-primary h-14 flex items-center justify-center gap-2.5 px-8 rounded-full shadow-2xl active:scale-95 disabled:opacity-50 transition-all w-full md:w-auto"
                     >
                         <span className="material-symbols-outlined text-[22px] font-light">{saving ? 'hourglass_top' : 'save'}</span>
                         <span className="text-base font-bold tracking-tight">{saving ? 'Sauvegarde...' : 'Sauvegarder'}</span>

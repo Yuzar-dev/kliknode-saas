@@ -183,7 +183,7 @@ export default function CardPreview({
                         <div className="flex-1 flex items-center justify-center gap-2 h-14 btn-obsidian rounded-full text-white shadow-xl transition-all hover:scale-[1.02] active:scale-95 border border-white/10"
                             style={{ background: primaryColor }}>
                             <span className="material-symbols-outlined font-light text-[20px]">mail</span>
-                            <span className="font-bold text-sm tracking-wide">M'envoyer un e-mail</span>
+                            <span className="font-bold text-sm tracking-wide">Email</span>
                         </div>
                         <div className="h-14 w-14 flex items-center justify-center rounded-full bg-white dark:bg-[#1C1C1E] shadow-lg text-[#1D1D1F] dark:text-white border border-gray-100 dark:border-white/10">
                             <span className="material-symbols-outlined font-light text-[22px]">call</span>

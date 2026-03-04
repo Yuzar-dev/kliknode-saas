@@ -125,15 +125,37 @@ export default function LinksPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            const { error } = await supabase
+            const { data: existingCard } = await supabase
                 .from('cards')
-                .update({
-                    social_links: newLinks,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('user_id', user.id);
+                .select('id')
+                .eq('user_id', user.id)
+                .maybeSingle();
 
-            if (error) throw error;
+            let saveError;
+
+            if (existingCard) {
+                const { error } = await supabase
+                    .from('cards')
+                    .update({
+                        social_links: newLinks,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('user_id', user.id);
+                saveError = error;
+            } else {
+                const { error } = await supabase
+                    .from('cards')
+                    .insert({
+                        id: uuidv4(),
+                        user_id: user.id,
+                        public_slug: user.id,
+                        social_links: newLinks,
+                        updated_at: new Date().toISOString()
+                    });
+                saveError = error;
+            }
+
+            if (saveError) throw saveError;
         } catch (e) {
             console.error("Error saving links:", e);
             toast.error("Erreur lors de la sauvegarde");

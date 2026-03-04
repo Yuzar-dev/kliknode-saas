@@ -303,7 +303,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                         <a href={`mailto:${card.email}`} className="flex-1 flex items-center justify-center gap-2.5 h-16 rounded-full text-white shadow-2xl active:scale-95 transition-all hover:brightness-110"
                             style={{ background: card.primaryColor || '#0666EB' }}>
                             <span className="material-symbols-outlined font-light text-[22px]">mail</span>
-                            <span className="font-bold tracking-wide">M'envoyer un e-mail</span>
+                            <span className="font-bold tracking-wide">Email</span>
                         </a>
                         <a href={`tel:${card.phoneMobile}`} className="h-16 w-16 flex items-center justify-center rounded-full bg-white shadow-xl text-apple-textDark dark:bg-[#1C1C1E] dark:text-white border border-gray-100 dark:border-white/5 hover:scale-105 active:scale-95 transition-all">
                             <span className="material-symbols-outlined font-light">call</span>
