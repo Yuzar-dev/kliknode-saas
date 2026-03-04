@@ -158,11 +158,19 @@ export default function CardPreview({
                     <div className="relative group">
                         <div className="absolute inset-0 bg-gradient-to-tr from-gray-200 dark:from-gray-800 to-white dark:to-gray-700 rounded-[2.8rem] blur-xl opacity-20 dark:opacity-40" />
                         <div className="relative h-40 w-40 rounded-[2.5rem] bg-white dark:bg-[#1C1C1E] p-2 shadow-2xl border border-white/50 dark:border-white/10">
-                            <img
-                                src={avatarUrl || 'https://via.placeholder.com/300'}
-                                alt="Profile Avatar"
-                                className="h-full w-full rounded-[2rem] object-cover object-center"
-                            />
+                            {avatarUrl ? (
+                                <img
+                                    src={avatarUrl}
+                                    alt="Profile Avatar"
+                                    className="h-full w-full rounded-[2rem] object-cover object-center"
+                                />
+                            ) : (
+                                <div className="w-full h-full rounded-[2rem] bg-gray-100/50 dark:bg-white/5 flex items-center justify-center">
+                                    <span className="text-apple-secondary dark:text-gray-400 text-4xl font-black">
+                                        {firstName?.[0] || ''}{lastName?.[0] || ''}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     </div>
 

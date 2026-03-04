@@ -183,28 +183,14 @@ model Card {
   user          User          @relation(fields: [userId], references: [id])
   contactLeads  ContactLead[]
   physicalCard  PhysicalCard?
-  socialLinks   SocialLink[]
+  socialLinks   Json?         @default("[]") @map("social_links")
 
   @@index([userId])
   @@index([publicSlug])
   @@map("cards")
 }
 
-model SocialLink {
-  id        String   @id @default(uuid())
-  cardId    String   @map("card_id")
-  platform  String   @db.VarChar(50)
-  url       String
-  label     String?  @db.VarChar(100)
-  icon      String?  @db.VarChar(50)
-  order     Int      @default(0)
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
 
-  @@map("social_links")
-}
 
 model PhysicalCard {
   id                 String             @id @default(uuid())

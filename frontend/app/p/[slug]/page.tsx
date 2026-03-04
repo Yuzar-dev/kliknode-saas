@@ -278,11 +278,19 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                     {/* Squircle Avatar with Border */}
                     <div className="relative group">
                         <div className="absolute inset-0 bg-gradient-to-tr from-gray-200 to-white dark:from-gray-800 dark:to-gray-700 rounded-[2.8rem] blur-xl opacity-20 group-hover:opacity-40 transition-opacity" />
-                        <div className="relative h-44 w-44 rounded-[2.5rem] bg-white dark:bg-[#1C1C1E] p-2 shadow-2xl border border-white/50 dark:border-white/10">
-                            <div
-                                className="h-full w-full rounded-[2rem] bg-cover bg-center overflow-hidden"
-                                style={{ backgroundImage: `url(${card.avatarUrl || 'https://via.placeholder.com/300'})` }}
-                            />
+                        <div className="relative h-44 w-44 rounded-[2.5rem] bg-white dark:bg-[#1C1C1E] p-2 shadow-2xl border border-white/50 dark:border-white/10 overflow-hidden">
+                            {card.avatarUrl ? (
+                                <div
+                                    className="h-full w-full rounded-[2rem] bg-cover bg-center"
+                                    style={{ backgroundImage: `url(${card.avatarUrl})` }}
+                                />
+                            ) : (
+                                <div className="h-full w-full rounded-[2rem] bg-gray-100/50 dark:bg-white/5 flex items-center justify-center">
+                                    <span className="text-apple-secondary dark:text-gray-400 text-5xl font-black">
+                                        {card.firstName?.[0] || ''}{card.lastName?.[0] || ''}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
