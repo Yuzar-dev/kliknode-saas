@@ -125,17 +125,13 @@ export default function LinksPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            const { data: cardData } = await supabase.from('cards').select('id, public_slug').eq('user_id', user.id).single();
-
             const { error } = await supabase
                 .from('cards')
-                .upsert({
-                    id: cardData?.id || uuidv4(),
-                    user_id: user.id,
+                .update({
                     social_links: newLinks,
-                    public_slug: cardData?.public_slug || user.id,
                     updated_at: new Date().toISOString()
-                }, { onConflict: 'user_id' });
+                })
+                .eq('user_id', user.id);
 
             if (error) throw error;
         } catch (e) {
@@ -274,10 +270,10 @@ export default function LinksPage() {
                                     <span className="material-symbols-outlined text-apple-secondary text-[16px] font-light">expand_more</span>
                                 </button>
                                 {showIconPicker === 'new' && (
-                                    <div className="absolute top-full mt-3 right-0 z-[100] p-4 rounded-[1.5rem] shadow-2xl grid grid-cols-5 gap-2 border border-white/60 dark:border-white/10 animate-in fade-in zoom-in-95 duration-200"
-                                        style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(20px)', width: 260 }}
+                                    <div className="absolute top-full mt-3 right-0 z-[100] p-4 rounded-[1.5rem] shadow-2xl grid grid-cols-5 gap-2 border border-white/60 dark:border-white/10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200"
+                                        style={{ width: 260 }}
                                     >
-                                        <div className="absolute -top-2 right-6 w-4 h-4 bg-white/90 border-l border-t border-white/60 dark:border-white/10 rotate-45" style={{ backdropFilter: 'blur(20px)' }} />
+                                        <div className="absolute -top-2 right-6 w-4 h-4 bg-white/90 dark:bg-gray-900/90 border-l border-t border-white/60 dark:border-white/10 rotate-45 backdrop-blur-xl" />
                                         {ICON_OPTIONS.map(ic => (
                                             <button key={ic} onClick={() => { setNewForm(f => ({ ...f, icon: ic })); setShowIconPicker(null); }}
                                                 className={`w-10 h-10 rounded-[10px] flex items-center justify-center hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all z-10 ${newForm.icon === ic ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400' : 'text-apple-textDark dark:text-apple-bgLight'}`}
@@ -481,9 +477,9 @@ function EditLinkForm({ link, platforms, iconOptions, onSave, onCancel }: {
                             <span className="material-symbols-outlined text-apple-secondary text-[12px] font-light">expand_more</span>
                         </button>
                         {showPicker && (
-                            <div className="absolute top-full mt-3 right-0 z-[100] p-3 rounded-[1.2rem] shadow-2xl grid grid-cols-5 gap-1.5 border border-white/60 dark:border-white/10 animate-in fade-in zoom-in-95 duration-200"
-                                style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(20px)', width: 220 }}>
-                                <div className="absolute -top-1.5 right-5 w-3 h-3 bg-white/90 border-l border-t border-white/60 dark:border-white/10 rotate-45" style={{ backdropFilter: 'blur(20px)' }} />
+                            <div className="absolute top-full mt-3 right-0 z-[100] p-3 rounded-[1.2rem] shadow-2xl grid grid-cols-5 gap-1.5 border border-white/60 dark:border-white/10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200"
+                                style={{ width: 220 }}>
+                                <div className="absolute -top-1.5 right-5 w-3 h-3 bg-white/90 dark:bg-gray-900/90 border-l border-t border-white/60 dark:border-white/10 rotate-45 backdrop-blur-xl" />
                                 {iconOptions.map(ic => (
                                     <button key={ic} onClick={() => { setForm(f => ({ ...f, icon: ic })); setShowPicker(false); }}
                                         className={`w-9 h-9 rounded-[8px] flex items-center justify-center hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all z-10 ${form.icon === ic ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400' : 'text-apple-textDark dark:text-apple-bgLight'}`}>

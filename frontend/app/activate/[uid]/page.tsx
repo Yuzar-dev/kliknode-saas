@@ -49,7 +49,6 @@ export default function ActivatePage() {
             }
 
             if (physicalCard.status === 'paired') {
-                setStatus('activating');
                 const virtualCard = physicalCard.cards as any;
                 const slug = virtualCard?.public_slug || virtualCard?.user_id;
 
@@ -57,7 +56,8 @@ export default function ActivatePage() {
                     const isNfcDomain = typeof window !== 'undefined' && window.location.hostname.includes('k.kliknode.com');
                     const appUrl = isNfcDomain ? 'https://app.kliknode.com' : (typeof window !== 'undefined' ? window.location.origin : '');
 
-                    setTimeout(() => window.location.href = `${appUrl}/p/${slug}`, 1000);
+                    window.location.replace(`${appUrl}/p/${slug}`);
+                    return;
                 } else {
                     setStatus('not_found');
                 }
@@ -83,7 +83,7 @@ export default function ActivatePage() {
                 {/* Brand / Logo Area */}
                 <div className="mb-12 flex flex-col items-center relative z-10 transition-all duration-500 px-4">
                     <div className="mb-6 flex items-center justify-center transform hover:scale-105 transition-transform duration-500">
-                        <img src="/logo-kliknode.svg" alt="KlikNode" className="h-[48px] w-auto" />
+                        <img src="/logo-dark.svg" alt="KlikNode" className="h-[48px] w-auto" />
                     </div>
                     <h2 className="text-center text-5xl font-extrabold tracking-tighter text-[#1D1D1F] leading-none">
                         kliknode

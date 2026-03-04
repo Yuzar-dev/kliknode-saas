@@ -296,13 +296,6 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                             <span>{card.city || 'Paris'}{card.country ? `, ${card.country}` : ''}</span>
                         </div>
 
-                        {/* Status Badge */}
-                        <div className="mt-4 flex justify-center">
-                            <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-white/40 dark:bg-white/5 border border-white/50 dark:border-white/10 shadow-sm backdrop-blur-md">
-                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-[pulse_2s_infinite]"></span>
-                                <span className="text-xs font-bold text-apple-textDark dark:text-white uppercase tracking-wider">Open to Collaborations</span>
-                            </div>
-                        </div>
                     </div>
 
                     {/* Quick Action Buttons (Alex Sterling Style) */}
@@ -310,7 +303,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                         <a href={`mailto:${card.email}`} className="flex-1 flex items-center justify-center gap-2.5 h-16 rounded-full text-white shadow-2xl active:scale-95 transition-all hover:brightness-110"
                             style={{ background: card.primaryColor || '#0666EB' }}>
                             <span className="material-symbols-outlined font-light text-[22px]">mail</span>
-                            <span className="font-bold tracking-wide">Say Hello</span>
+                            <span className="font-bold tracking-wide">M'envoyer un e-mail</span>
                         </a>
                         <a href={`tel:${card.phoneMobile}`} className="h-16 w-16 flex items-center justify-center rounded-full bg-white shadow-xl text-apple-textDark dark:bg-[#1C1C1E] dark:text-white border border-gray-100 dark:border-white/5 hover:scale-105 active:scale-95 transition-all">
                             <span className="material-symbols-outlined font-light">call</span>
@@ -324,17 +317,10 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                 {/* About Section - Glassmorphism */}
                 {card.bioVisible && card.bio && (
                     <div className="mt-6 px-6 relative">
-                        {/* Floating Branding Badge */}
-                        <div className="absolute -top-4 -right-2 z-20">
-                            <div className="klik-glass h-12 px-4 flex items-center justify-center gap-2 rounded-2xl shadow-lg border border-white/60 dark:border-white/10">
-                                <img src="/logo-dark.svg" alt="Klik" className="h-5 w-5 dark:brightness-0 dark:invert" />
-                                <span className="text-[10px] font-black tracking-widest uppercase text-apple-textDark dark:text-white">RK</span>
-                            </div>
-                        </div>
 
                         <div className="klik-glass p-8 rounded-[2.5rem] shadow-xl border border-white/60 dark:border-white/5 overflow-hidden group">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-gray-200 dark:bg-white/5 blur-3xl opacity-30 -mr-16 -mt-16 group-hover:opacity-50 transition-all duration-700" />
-                            <h3 className="text-lg font-black text-apple-textDark dark:text-white mb-4 tracking-tight">A bit about me</h3>
+                            <h3 className="text-lg font-black text-apple-textDark dark:text-white mb-4 tracking-tight">À propos</h3>
                             <p className="text-apple-secondary dark:text-gray-300 leading-relaxed text-[15px] font-medium opacity-90">
                                 {card.bio}
                             </p>
@@ -344,7 +330,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
 
                 {/* Links Grids - 2x2 Style */}
                 <div className="mt-12 px-6">
-                    <h3 className="text-lg font-black text-apple-textDark dark:text-white mb-6 px-1 tracking-tight">My Digital Space</h3>
+                    <h3 className="text-lg font-black text-apple-textDark dark:text-white mb-6 px-1 tracking-tight">Mes liens</h3>
                     {card.socialLinks && card.socialLinks.length > 0 ? (
                         <div className="grid grid-cols-2 gap-4">
                             {card.socialLinks.map((link) => (
@@ -372,7 +358,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                     ) : (
                         <div className="klik-glass p-12 text-center rounded-[2.5rem]">
                             <span className="material-symbols-outlined text-gray-300 dark:text-gray-700 text-5xl font-light mb-4">link_off</span>
-                            <p className="text-apple-secondary font-bold">No digital links available</p>
+                            <p className="text-apple-secondary font-bold">Aucun lien pour l'instant</p>
                         </div>
                     )}
                 </div>
@@ -385,7 +371,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                             className="w-full h-14 rounded-full shadow-xl active:scale-95 flex items-center justify-center gap-3 pointer-events-auto text-white transition-all hover:brightness-110"
                             style={{ background: card.primaryColor || '#0666EB' }}
                         >
-                            <span className="font-extrabold tracking-tight text-base">Exchange Contact</span>
+                            <span className="font-extrabold tracking-tight text-base">Échanger le contact</span>
                             <span className="material-symbols-outlined text-xl">chevron_right</span>
                         </button>
 
@@ -394,7 +380,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                             className="inline-flex items-center gap-2 text-apple-secondary dark:text-gray-400 font-bold text-[11px] tracking-widest uppercase hover:text-apple-textDark dark:hover:text-white transition-colors pointer-events-auto"
                         >
                             <span className="material-symbols-outlined text-lg font-light">person_add</span>
-                            Save Contact Only
+                            Ajouter aux contacts
                         </button>
                     </div>
                 </div>
@@ -418,9 +404,9 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                             </div>
 
                             <div className="mb-10 px-4">
-                                <h3 className="text-[32px] font-black tracking-tight text-apple-textDark dark:text-white leading-tight">Let's connect!</h3>
+                                <h3 className="text-[32px] font-black tracking-tight text-apple-textDark dark:text-white leading-tight">Échangeons !</h3>
                                 <p className="mt-4 text-[#636366] dark:text-[#8E8E93] font-medium leading-tight text-base">
-                                    Drop your details below and I'll send my digital card straight to your inbox.
+                                    Laissez vos coordonnées ci-dessous et je vous enverrai ma carte par e-mail.
                                 </p>
                             </div>
 
@@ -443,7 +429,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                                             });
                                         }}
                                         className="block w-full pl-14 pr-6 py-5 bg-white/70 dark:bg-white/5 border border-transparent focus:border-gray-200 dark:focus:border-white/10 rounded-3xl text-apple-textDark dark:text-white placeholder:text-gray-400 outline-none transition-all shadow-sm"
-                                        placeholder="Full Name" type="text"
+                                        placeholder="Nom Complet" type="text"
                                     />
                                 </div>
 
@@ -457,7 +443,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                                         value={formData.email}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                         className="block w-full pl-14 pr-6 py-5 bg-white/70 dark:bg-white/5 border border-transparent focus:border-gray-200 dark:focus:border-white/10 rounded-3xl text-apple-textDark dark:text-white placeholder:text-gray-400 outline-none transition-all shadow-sm"
-                                        placeholder="Email Address" type="email"
+                                        placeholder="Adresse E-mail" type="email"
                                     />
                                 </div>
 
@@ -470,7 +456,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                                         value={formData.phone}
                                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                         className="block w-full pl-14 pr-6 py-5 bg-white/70 dark:bg-white/5 border border-transparent focus:border-gray-200 dark:focus:border-white/10 rounded-3xl text-apple-textDark dark:text-white placeholder:text-gray-400 outline-none transition-all shadow-sm"
-                                        placeholder="Phone Number" type="tel"
+                                        placeholder="Numéro de Téléphone" type="tel"
                                     />
                                 </div>
 
@@ -481,7 +467,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                                         className="w-full h-16 rounded-full font-bold tracking-tight text-lg shadow-xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all text-white hover:brightness-110"
                                         style={{ background: card.primaryColor || '#0666EB' }}
                                     >
-                                        <span>{isSharing ? 'Sharing...' : 'Send My Info'}</span>
+                                        <span>{isSharing ? 'Envoi en cours...' : 'Envoyer mes infos'}</span>
                                         <span className="material-symbols-outlined text-xl">chevron_right</span>
                                     </button>
 
@@ -490,13 +476,13 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                                         onClick={() => setShowModal(false)}
                                         className="text-apple-secondary dark:text-[#8E8E93] font-bold text-sm tracking-wide hover:text-apple-textDark dark:hover:text-white transition-colors"
                                     >
-                                        Maybe later
+                                        Peut-être plus tard
                                     </button>
 
                                     {/* Privacy Badge */}
                                     <div className="mt-4 flex items-center gap-2 px-4 py-2 bg-white/50 dark:bg-white/5 rounded-full border border-gray-100 dark:border-white/5 text-[11px] font-bold text-apple-secondary dark:text-gray-400">
                                         <span className="material-symbols-outlined text-sm">lock</span>
-                                        Your data is safe & private
+                                        Vos données sont privées et sécurisées
                                     </div>
                                 </div>
                             </form>

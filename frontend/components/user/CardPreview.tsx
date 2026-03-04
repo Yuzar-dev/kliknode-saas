@@ -176,13 +176,6 @@ export default function CardPreview({
                             <span>{city || 'Paris'}{country ? `, ${country}` : ''}</span>
                         </div>
 
-                        {/* Status Badge */}
-                        <div className="mt-4 flex justify-center">
-                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/40 dark:bg-black/40 border border-white/50 dark:border-white/10 shadow-sm backdrop-blur-md">
-                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                <span className="text-[10px] font-bold text-[#1D1D1F] dark:text-white uppercase tracking-wider">Open to Collaborations</span>
-                            </div>
-                        </div>
                     </div>
 
                     {/* Quick Action Buttons */}
@@ -190,7 +183,7 @@ export default function CardPreview({
                         <div className="flex-1 flex items-center justify-center gap-2 h-14 btn-obsidian rounded-full text-white shadow-xl transition-all hover:scale-[1.02] active:scale-95 border border-white/10"
                             style={{ background: primaryColor }}>
                             <span className="material-symbols-outlined font-light text-[20px]">mail</span>
-                            <span className="font-bold text-sm tracking-wide">Say Hello</span>
+                            <span className="font-bold text-sm tracking-wide">M'envoyer un e-mail</span>
                         </div>
                         <div className="h-14 w-14 flex items-center justify-center rounded-full bg-white dark:bg-[#1C1C1E] shadow-lg text-[#1D1D1F] dark:text-white border border-gray-100 dark:border-white/10">
                             <span className="material-symbols-outlined font-light text-[22px]">call</span>
@@ -204,17 +197,9 @@ export default function CardPreview({
                 {/* About Section - Glassmorphism */}
                 {bioVisible && bio && (
                     <div className="mt-4 px-6 relative">
-                        {/* Floating Branding Badge */}
-                        <div className="absolute -top-3 -right-1 z-20">
-                            <div className="bg-white/60 dark:bg-black/60 backdrop-blur-md h-10 px-3 flex items-center justify-center gap-2 rounded-xl shadow-md border border-white/60 dark:border-white/10">
-                                <img src="/logo-icon-black.svg" alt="Klik" className="h-4 w-4 dark:hidden" />
-                                <img src="/logo-icon-white.svg" alt="Klik" className="h-4 w-4 hidden dark:block" />
-                                <span className="text-[9px] font-black tracking-widest uppercase text-[#1D1D1F] dark:text-white">RK</span>
-                            </div>
-                        </div>
 
                         <div className="bg-white/60 dark:bg-black/40 backdrop-blur-md p-7 rounded-[2.5rem] shadow-lg border border-white/60 dark:border-white/10 overflow-hidden">
-                            <h3 className="text-base font-black text-[#1D1D1F] dark:text-white mb-3 tracking-tight">A bit about me</h3>
+                            <h3 className="text-base font-black text-[#1D1D1F] dark:text-white mb-3 tracking-tight">À propos</h3>
                             <p className="text-[#86868B] dark:text-gray-400 leading-relaxed text-sm font-medium opacity-90">
                                 {bio}
                             </p>
@@ -224,7 +209,7 @@ export default function CardPreview({
 
                 {/* Links Grids - 2x2 Style */}
                 <div className="mt-10 px-6">
-                    <h3 className="text-base font-black text-[#1D1D1F] dark:text-white mb-5 px-1 tracking-tight">My Digital Space</h3>
+                    <h3 className="text-base font-black text-[#1D1D1F] dark:text-white mb-5 px-1 tracking-tight">Mes liens</h3>
                     {socialLinksToDisplay.length > 0 ? (
                         <div className="grid grid-cols-2 gap-3">
                             {socialLinksToDisplay.map((link) => (
@@ -249,7 +234,7 @@ export default function CardPreview({
                     ) : (
                         <div className="bg-white/40 dark:bg-black/20 backdrop-blur-md p-10 text-center rounded-[2rem] border border-white/40 dark:border-white/10">
                             <span className="material-symbols-outlined text-gray-300 dark:text-gray-700 text-4xl font-light mb-3">link_off</span>
-                            <p className="text-[#86868B] dark:text-gray-500 text-xs font-bold">No digital links available</p>
+                            <p className="text-[#86868B] dark:text-gray-500 text-xs font-bold">Aucun lien pour l'instant</p>
                         </div>
                     )}
                 </div>
@@ -258,13 +243,13 @@ export default function CardPreview({
                 <div className="absolute bottom-0 left-0 w-full px-8 pb-8 pt-12 bg-gradient-to-t from-[#F5F5F7] dark:from-black via-[#F5F5F7]/90 dark:via-black/90 to-transparent flex flex-col items-center gap-2">
                     <div className="w-full h-12 rounded-full flex items-center justify-center gap-2 text-white shadow-lg transition-all active:scale-[0.98] border border-white/10"
                         style={{ background: primaryColor }}>
-                        <span className="font-extrabold tracking-tight text-sm">Exchange Contact</span>
+                        <span className="font-extrabold tracking-tight text-sm">Échanger le contact</span>
                         <span className="material-symbols-outlined text-lg">chevron_right</span>
                     </div>
 
                     <div className="inline-flex items-center gap-1.5 text-[#86868B] dark:text-gray-500 font-bold text-[10px] tracking-widest uppercase py-2">
                         <span className="material-symbols-outlined text-base font-light">person_add</span>
-                        Save Contact Only
+                        Ajouter aux contacts
                     </div>
                 </div>
             </div>

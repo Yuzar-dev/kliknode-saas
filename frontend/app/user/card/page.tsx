@@ -108,6 +108,7 @@ export default function CardEditorPage() {
                 website: formattedWebsite,
                 cover_url: form.coverUrl, primary_color: form.primaryColor, theme: form.theme,
                 bio_visible: form.bioVisible,
+                avatar_url: form.avatarUrl,
                 public_slug: card?.publicSlug || user.id, // Make sure public_slug is saved during upsert
                 updated_at: new Date().toISOString(),
             };
@@ -115,7 +116,19 @@ export default function CardEditorPage() {
             const { error } = await supabase.from('cards').upsert(updatePayload, { onConflict: 'user_id' });
             if (error) throw error;
 
-            toast.success('Carte sauvegardée !');
+            if (!card?.socialLinks?.length) {
+                toast((t) => (
+                    <div className="flex flex-col gap-2">
+                        <span className="font-bold">Carte sauvegardée ! 🎉</span>
+                        <span className="text-sm">N'oubliez pas d'ajouter vos réseaux sociaux.</span>
+                        <a href="/user/links" onClick={() => toast.dismiss(t.id)} className="bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg text-center font-bold mt-1 hover:bg-blue-600 transition-colors">
+                            Ajouter mes liens
+                        </a>
+                    </div>
+                ), { duration: 6000 });
+            } else {
+                toast.success('Carte sauvegardée !');
+            }
             setCard({ ...form, website: formattedWebsite } as any);
         } catch (err: any) {
             toast.error(err.message || 'Erreur');
@@ -174,7 +187,7 @@ export default function CardEditorPage() {
                         <p className="text-apple-secondary dark:text-gray-400 font-bold text-sm mt-2">Personnalisez votre identité numérique premium</p>
                     </div>
                     <button onClick={handleSave} disabled={saving}
-                        className="btn-obsidian btn-obsidian-primary h-12 md:h-14 flex items-center justify-center gap-2.5 px-8 rounded-full shadow-2xl active:scale-95 disabled:opacity-50 transition-all w-full md:w-auto"
+                        className="hidden md:flex btn-obsidian btn-obsidian-primary h-12 md:h-14 items-center justify-center gap-2.5 px-8 rounded-full shadow-2xl active:scale-95 disabled:opacity-50 transition-all w-full md:w-auto"
                     >
                         <span className="material-symbols-outlined text-[22px] font-light">{saving ? 'hourglass_top' : 'save'}</span>
                         <span className="text-base font-bold tracking-tight">{saving ? 'Sauvegarde...' : 'Sauvegarder'}</span>
@@ -380,6 +393,16 @@ export default function CardEditorPage() {
                         </div>
                     </div>
                 )}
+
+                {/* Mobile Save Button (Bottom) */}
+                <div className="mt-10 md:hidden">
+                    <button onClick={handleSave} disabled={saving}
+                        className="btn-obsidian btn-obsidian-primary h-14 flex items-center justify-center gap-2.5 px-8 rounded-full shadow-2xl active:scale-95 disabled:opacity-50 transition-all w-full"
+                    >
+                        <span className="material-symbols-outlined text-[22px] font-light">{saving ? 'hourglass_top' : 'save'}</span>
+                        <span className="text-base font-bold tracking-tight">{saving ? 'Sauvegarde...' : 'Sauvegarder'}</span>
+                    </button>
+                </div>
             </div>
 
             {/* ─── Right: Live Preview (Sticky) ─── */}
