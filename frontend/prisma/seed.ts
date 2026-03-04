@@ -16,7 +16,6 @@ async function main() {
         await prisma.companyInvitation.deleteMany();
         await prisma.contactLead.deleteMany();
         await prisma.cardScan.deleteMany();
-        await prisma.socialLink.deleteMany();
         await prisma.physicalCard.deleteMany();
         await prisma.card.deleteMany();
         await prisma.userDepartment.deleteMany();

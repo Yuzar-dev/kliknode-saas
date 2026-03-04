@@ -16,7 +16,6 @@ async function main() {
         await prisma.companyInvitation.deleteMany();
         await prisma.contactLead.deleteMany();
         await prisma.cardScan.deleteMany();
-        await prisma.socialLink.deleteMany();
         await prisma.physicalCard.deleteMany();
         await prisma.card.deleteMany();
         await prisma.userDepartment.deleteMany();
@@ -341,7 +340,7 @@ async function main() {
     await prisma.inventory.create({
         data: {
             sku: 'NFC-CARD-PREMIUM',
-            warehouse: 'casablanca',
+            warehouse: 'oujda',
             quantityPhysical: 50,
             quantityReserved: 5,
             quantityAvailable: 45,
