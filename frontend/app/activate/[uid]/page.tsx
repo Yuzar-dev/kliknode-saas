@@ -1,86 +1,68 @@
-'use client';
+import { createClient } from '@/utils/supabase/server';
+import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client';
+export default async function ActivatePage({
+    params,
+}: {
+    params: Promise<{ uid: string }>
+}) {
+    const { uid: encodedUid } = await params;
+    const uid = decodeURIComponent(encodedUid);
+    const supabase = await createClient();
 
-type Status = 'loading' | 'not_found' | 'reserved' | 'lost' | 'activating';
+    const { data: physicalCard } = await supabase
+        .from('physical_cards')
+        .select(`
+            status,
+            cards ( public_slug, user_id )
+        `)
+        .eq('uid', uid)
+        .single();
 
-export default function ActivatePage() {
-    const params = useParams();
-    const router = useRouter();
-    const uidRaw = params?.uid as string;
-    const uid = uidRaw ? decodeURIComponent(uidRaw) : '';
+    if (!physicalCard) {
+        return <NotFound />;
+    }
 
-    const [status, setStatus] = useState<Status>('loading');
+    if (physicalCard.status === 'in_stock' || physicalCard.status === 'reserved') {
+        const headersList = await headers();
+        const host = headersList.get('host') || '';
+        const isNfcDomain = host.includes('k.kliknode.com');
+        const appUrl = isNfcDomain ? 'https://app.kliknode.com' : '';
 
-    useEffect(() => {
-        checkCard();
-    }, [uid]);
+        redirect(`${appUrl}/signup?card_id=${uid}`);
+    }
 
-    const checkCard = async () => {
-        try {
-            const supabase = createClient();
+    if (physicalCard.status === 'paired') {
+        const virtualCard = physicalCard.cards as any;
+        const slug = virtualCard?.public_slug || virtualCard?.user_id;
 
-            // Fetch physical card by UID
-            const { data: physicalCard, error } = await supabase
-                .from('physical_cards')
-                .select(`
-                    status,
-                    cards ( public_slug, user_id )
-                `)
-                .eq('uid', uid)
-                .single();
+        if (slug) {
+            const headersList = await headers();
+            const host = headersList.get('host') || '';
+            const isNfcDomain = host.includes('k.kliknode.com');
+            const appUrl = isNfcDomain ? 'https://app.kliknode.com' : '';
 
-            if (error || !physicalCard) {
-                console.error("Card fetch error:", error);
-                setStatus('not_found');
-                return;
-            }
-
-            if (physicalCard.status === 'in_stock' || physicalCard.status === 'reserved') {
-                setStatus('activating');
-                // Redirect to global signup page with card reference
-                const isNfcDomain = typeof window !== 'undefined' && window.location.hostname.includes('k.kliknode.com');
-                const appUrl = isNfcDomain ? 'https://app.kliknode.com' : (typeof window !== 'undefined' ? window.location.origin : '');
-
-                setTimeout(() => window.location.href = `${appUrl}/signup?card_id=${uid}`, 1000);
-                return;
-            }
-
-            if (physicalCard.status === 'paired') {
-                const virtualCard = physicalCard.cards as any;
-                const slug = virtualCard?.public_slug || virtualCard?.user_id;
-
-                if (slug) {
-                    const isNfcDomain = typeof window !== 'undefined' && window.location.hostname.includes('k.kliknode.com');
-                    const appUrl = isNfcDomain ? 'https://app.kliknode.com' : (typeof window !== 'undefined' ? window.location.origin : '');
-
-                    window.location.replace(`${appUrl}/p/${slug}`);
-                    return;
-                } else {
-                    setStatus('not_found');
-                }
-                return;
-            }
-
-            // Other statuses
-            if (physicalCard.status === 'lost') setStatus('lost');
-            else setStatus('not_found');
-
-        } catch (e) {
-            console.error("Activate page error:", e);
-            setStatus('not_found');
+            redirect(`${appUrl}/p/${slug}`);
+        } else {
+            return <NotFound />;
         }
-    };
+    }
 
+    if (physicalCard.status === 'lost') {
+        return <Lost />;
+    }
+
+    return <NotFound />;
+}
+
+function Screen({ icon, title, message }: { icon: string, title: string, message: string }) {
     return (
         <div className="min-h-screen flex items-center justify-center p-6" style={{
             background: 'linear-gradient(135deg, #E8EDFB 0%, #F0F2F5 40%, #EDE9FB 100%)',
             fontFamily: "'Inter', -apple-system, sans-serif",
         }}>
             <div className="w-full max-w-md">
-                {/* Brand / Logo Area */}
                 <div className="mb-12 flex flex-col items-center relative z-10 transition-all duration-500 px-4">
                     <div className="mb-6 flex items-center justify-center transform hover:scale-105 transition-transform duration-500">
                         <img src="/logo-dark.svg" alt="KlikNode" className="h-[48px] w-auto" />
@@ -93,7 +75,6 @@ export default function ActivatePage() {
                     </p>
                 </div>
 
-                {/* Card */}
                 <div style={{
                     background: 'rgba(255,255,255,0.6)',
                     backdropFilter: 'blur(24px) saturate(200%)',
@@ -103,40 +84,33 @@ export default function ActivatePage() {
                     boxShadow: '0 20px 60px rgba(0,0,0,0.06)',
                     padding: 32,
                 }}>
-                    {/* Loading */}
-                    {status === 'loading' && (
-                        <div className="text-center py-8">
-                            <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-3" />
-                            <p className="text-sm text-slate-500">Vérification de votre carte…</p>
-                        </div>
-                    )}
-
-                    {/* Not Found */}
-                    {status === 'not_found' && (
-                        <div className="text-center py-6">
-                            <span className="material-symbols-outlined text-5xl text-red-400 mb-3">error</span>
-                            <h2 className="text-xl font-bold text-slate-900 mb-2">Carte inconnue</h2>
-                            <p className="text-sm text-slate-500">Cette carte NFC n'est pas enregistrée dans notre système.</p>
-                        </div>
-                    )}
-
-                    {/* Activating / Redirecting */}
-                    {status === 'activating' && (
-                        <div className="text-center py-6">
-                            <span className="material-symbols-outlined text-5xl text-blue-500 mb-3 animate-pulse">sync</span>
-                            <h2 className="text-xl font-bold text-slate-900 mb-2">Redirection en cours...</h2>
-                            <p className="text-sm text-slate-500">Veuillez patienter quelques instants.</p>
-                        </div>
-                    )}
-
-
+                    <div className="text-center py-6">
+                        <span className="material-symbols-outlined text-5xl text-red-400 mb-3">{icon}</span>
+                        <h2 className="text-xl font-bold text-slate-900 mb-2">{title}</h2>
+                        <p className="text-sm text-slate-500">{message}</p>
+                    </div>
                 </div>
 
-                {/* Footer */}
                 <p className="text-center text-xs text-slate-400 mt-6">
                     Powered by <span className="font-semibold">KlikNode</span>
                 </p>
             </div>
         </div>
     );
+}
+
+function NotFound() {
+    return <Screen
+        icon="error"
+        title="Carte inconnue"
+        message="Cette carte NFC n'est pas enregistrée dans notre système."
+    />;
+}
+
+function Lost() {
+    return <Screen
+        icon="warning"
+        title="Carte bloquée"
+        message="Cette carte est marquée comme inutilisable."
+    />;
 }
