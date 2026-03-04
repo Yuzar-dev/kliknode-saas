@@ -16,10 +16,6 @@ export const getMyCard = async (req: Request, res: Response<ApiResponse>) => {
         const card = await prisma.card.findUnique({
             where: { userId: req.user!.id },
             include: {
-                socialLinks: {
-                    where: { isActive: true },
-                    orderBy: { order: 'asc' },
-                },
                 physicalCard: {
                     select: {
                         uid: true,
@@ -120,7 +116,7 @@ export const uploadAvatar = async (req: Request, res: Response<ApiResponse>) => 
 };
 
 // ═══════════════════════════════════════
-//  SOCIAL LINKS CRUD
+//  SOCIAL LINKS CRUD (USING JSON FIELD)
 // ═══════════════════════════════════════
 
 /**
@@ -136,11 +132,7 @@ export const getSocialLinks = async (req: Request, res: Response<ApiResponse>) =
             });
         }
 
-        const links = await prisma.socialLink.findMany({
-            where: { cardId: card.id },
-            orderBy: { order: 'asc' },
-        });
-
+        const links = Array.isArray(card.socialLinks) ? card.socialLinks : [];
         return res.status(200).json({ success: true, data: links });
     } catch (error: any) {
         logger.error('Get social links error:', error);
@@ -166,25 +158,30 @@ export const addSocialLink = async (req: Request, res: Response<ApiResponse>) =>
             });
         }
 
-        // Déterminer l'ordre max actuel
-        const maxOrder = await prisma.socialLink.findFirst({
-            where: { cardId: card.id },
-            orderBy: { order: 'desc' },
-            select: { order: true },
+        const currentLinks: any[] = Array.isArray(card.socialLinks) ? card.socialLinks : [];
+        const maxOrder = currentLinks.length > 0 ? Math.max(...currentLinks.map(l => l.order || 0)) : -1;
+
+        const crypto = await import('crypto');
+        const newLink = {
+            id: crypto.randomUUID(),
+            platform,
+            url,
+            label: label || platform,
+            icon: icon || platform.toLowerCase(),
+            order: maxOrder + 1,
+            isActive: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        const updatedLinks = [...currentLinks, newLink];
+
+        await prisma.card.update({
+            where: { id: card.id },
+            data: { socialLinks: updatedLinks }
         });
 
-        const link = await prisma.socialLink.create({
-            data: {
-                cardId: card.id,
-                platform,
-                url,
-                label: label || platform,
-                icon: icon || platform.toLowerCase(),
-                order: (maxOrder?.order ?? -1) + 1,
-            },
-        });
-
-        return res.status(201).json({ success: true, data: link });
+        return res.status(201).json({ success: true, data: newLink });
     } catch (error: any) {
         logger.error('Add social link error:', error);
         return res.status(500).json({
@@ -202,7 +199,6 @@ export const updateSocialLink = async (req: Request, res: Response<ApiResponse>)
         const id = req.params.id as string;
         const { platform, url, label, icon, isActive } = req.body;
 
-        // Vérifier ownership
         const card = await prisma.card.findUnique({ where: { userId: req.user!.id } });
         if (!card) {
             return res.status(404).json({
@@ -211,23 +207,32 @@ export const updateSocialLink = async (req: Request, res: Response<ApiResponse>)
             });
         }
 
-        const link = await prisma.socialLink.findFirst({
-            where: { id, cardId: card.id },
-        });
+        const currentLinks: any[] = Array.isArray(card.socialLinks) ? card.socialLinks : [];
+        const linkIndex = currentLinks.findIndex(l => l.id === id);
 
-        if (!link) {
+        if (linkIndex === -1) {
             return res.status(404).json({
                 success: false,
                 error: { code: 'LINK_NOT_FOUND', message: 'Lien introuvable' },
             });
         }
 
-        const updated = await prisma.socialLink.update({
-            where: { id },
-            data: { platform, url, label, icon, isActive },
+        currentLinks[linkIndex] = {
+            ...currentLinks[linkIndex],
+            platform: platform !== undefined ? platform : currentLinks[linkIndex].platform,
+            url: url !== undefined ? url : currentLinks[linkIndex].url,
+            label: label !== undefined ? label : currentLinks[linkIndex].label,
+            icon: icon !== undefined ? icon : currentLinks[linkIndex].icon,
+            isActive: isActive !== undefined ? isActive : currentLinks[linkIndex].isActive,
+            updatedAt: new Date().toISOString()
+        };
+
+        await prisma.card.update({
+            where: { id: card.id },
+            data: { socialLinks: currentLinks }
         });
 
-        return res.status(200).json({ success: true, data: updated });
+        return res.status(200).json({ success: true, data: currentLinks[linkIndex] });
     } catch (error: any) {
         logger.error('Update social link error:', error);
         return res.status(500).json({
@@ -252,18 +257,22 @@ export const deleteSocialLink = async (req: Request, res: Response<ApiResponse>)
             });
         }
 
-        const link = await prisma.socialLink.findFirst({
-            where: { id, cardId: card.id },
-        });
+        const currentLinks: any[] = Array.isArray(card.socialLinks) ? card.socialLinks : [];
+        const linkExists = currentLinks.some(l => l.id === id);
 
-        if (!link) {
+        if (!linkExists) {
             return res.status(404).json({
                 success: false,
                 error: { code: 'LINK_NOT_FOUND', message: 'Lien introuvable' },
             });
         }
 
-        await prisma.socialLink.delete({ where: { id } });
+        const updatedLinks = currentLinks.filter(l => l.id !== id);
+
+        await prisma.card.update({
+            where: { id: card.id },
+            data: { socialLinks: updatedLinks }
+        });
 
         return res.status(200).json({ success: true, data: { deleted: true } });
     } catch (error: any) {
@@ -297,15 +306,21 @@ export const reorderSocialLinks = async (req: Request, res: Response<ApiResponse
             });
         }
 
-        // Mettre à jour l'ordre en batch
-        await Promise.all(
-            orderedIds.map((id: string, index: number) =>
-                prisma.socialLink.updateMany({
-                    where: { id, cardId: card.id },
-                    data: { order: index },
-                })
-            )
-        );
+        const currentLinks: any[] = Array.isArray(card.socialLinks) ? card.socialLinks : [];
+
+        // Mettre à jour l'ordre selon le tableau
+        const updatedLinks = currentLinks.map(link => {
+            const index = orderedIds.indexOf(link.id);
+            if (index !== -1) {
+                return { ...link, order: index, updatedAt: new Date().toISOString() };
+            }
+            return link;
+        });
+
+        await prisma.card.update({
+            where: { id: card.id },
+            data: { socialLinks: updatedLinks }
+        });
 
         return res.status(200).json({ success: true, data: { reordered: true } });
     } catch (error: any) {

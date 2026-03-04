@@ -13,10 +13,6 @@ export const getPublicCard = async (req: Request, res: Response) => {
         const card = await prisma.card.findUnique({
             where: { publicSlug: slug },
             include: {
-                socialLinks: {
-                    where: { isActive: true },
-                    orderBy: { order: 'asc' }
-                },
                 user: {
                     select: {
                         firstName: true,
