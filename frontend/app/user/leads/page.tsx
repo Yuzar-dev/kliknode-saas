@@ -31,9 +31,9 @@ export default function LeadsPage() {
             if (!user) return;
 
             const { data, error, count } = await supabase
-                .from('contacts')
+                .from('contacts_leads')
                 .select('*', { count: 'exact' })
-                .eq('profile_id', user.id)
+                .eq('user_id', user.id)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;

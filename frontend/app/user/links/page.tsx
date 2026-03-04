@@ -54,9 +54,12 @@ const ICON_OPTIONS = [
     'public', 'star', 'favorite', 'shopping_bag', 'storefront', 'rocket_launch',
 ];
 
-const formatUrl = (url: string) => {
+const formatUrl = (url: string, platform?: string) => {
     if (!url) return '';
     let trimmed = url.trim();
+    if (platform === 'email' && !trimmed.startsWith('mailto:')) {
+        return `mailto:${trimmed}`;
+    }
     if (trimmed.match(/^[a-z0-9]+:\/\//i) || trimmed.startsWith('mailto:') || trimmed.startsWith('tel:')) {
         return trimmed;
     }
@@ -120,45 +123,29 @@ export default function LinksPage() {
     };
 
     const saveLinksToDB = async (newLinks: SocialLink[]) => {
-        try {
-            const supabase = createClient();
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Non authentifié");
 
-            const { data: existingCard } = await supabase
-                .from('cards')
-                .select('id')
-                .eq('user_id', user.id)
-                .maybeSingle();
+        const { data: existingCard } = await supabase
+            .from('cards')
+            .select('id, public_slug')
+            .eq('user_id', user.id)
+            .maybeSingle();
 
-            let saveError;
+        const { error } = await supabase
+            .from('cards')
+            .upsert({
+                id: existingCard?.id || undefined,
+                user_id: user.id,
+                public_slug: existingCard?.public_slug || user.id,
+                social_links: newLinks,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id' });
 
-            if (existingCard) {
-                const { error } = await supabase
-                    .from('cards')
-                    .update({
-                        social_links: newLinks,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('user_id', user.id);
-                saveError = error;
-            } else {
-                const { error } = await supabase
-                    .from('cards')
-                    .insert({
-                        id: uuidv4(),
-                        user_id: user.id,
-                        public_slug: user.id,
-                        social_links: newLinks,
-                        updated_at: new Date().toISOString()
-                    });
-                saveError = error;
-            }
-
-            if (saveError) throw saveError;
-        } catch (e) {
-            console.error("Error saving links:", e);
-            toast.error("Erreur lors de la sauvegarde");
+        if (error) {
+            console.error("Supabase upsert error:", error);
+            throw error;
         }
     };
 
@@ -166,7 +153,7 @@ export default function LinksPage() {
         if (!newForm.url.trim()) return toast.error('URL requise');
         setAdding(true);
         try {
-            const formattedUrl = formatUrl(newForm.url);
+            const formattedUrl = formatUrl(newForm.url, newForm.platform);
             const newLink: SocialLink = {
                 id: Math.random().toString(36).substring(2, 9),
                 ...newForm,
@@ -271,10 +258,10 @@ export default function LinksPage() {
                             <div className="relative">
                                 <span className="absolute left-5 top-1/2 -translate-y-1/2 material-symbols-outlined text-apple-secondary text-[20px] font-light">link</span>
                                 <input
-                                    type="url"
+                                    type={newForm.platform === 'email' ? 'email' : 'url'}
                                     value={newForm.url}
                                     onChange={e => setNewForm(f => ({ ...f, url: e.target.value }))}
-                                    placeholder="https://"
+                                    placeholder={newForm.platform === 'email' ? 'votre@email.com' : 'https://'}
                                     className="w-full pl-12 rounded-[1.2rem] border border-gray-100 dark:border-white/5 bg-white/50 dark:bg-black/20 px-5 py-3.5 text-base text-apple-textDark dark:text-white focus:outline-none focus:ring-1 focus:ring-apple-bgLight dark:focus:ring-white/10 focus:bg-white dark:focus:bg-black/40 transition-all font-medium placeholder:text-gray-300 dark:placeholder:text-gray-600"
                                     onKeyDown={e => e.key === 'Enter' && handleAdd()}
                                 />

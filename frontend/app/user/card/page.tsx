@@ -245,7 +245,18 @@ export default function CardEditorPage() {
                                     </button>
                                     {form.avatarUrl && (
                                         <button
-                                            onClick={() => set('avatarUrl', '')}
+                                            onClick={async () => {
+                                                set('avatarUrl', '');
+                                                if (card?.id) {
+                                                    try {
+                                                        const supabase = createClient();
+                                                        await supabase.from('cards').update({ avatar_url: null }).eq('id', card.id);
+                                                        toast.success('Photo supprimée');
+                                                    } catch (e) {
+                                                        console.error(e);
+                                                    }
+                                                }
+                                            }}
                                             className="flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all border border-red-50 dark:border-red-900/10 active:scale-95"
                                         >
                                             <span className="material-symbols-outlined text-[20px] font-light">delete</span>
@@ -480,14 +491,14 @@ export default function CardEditorPage() {
                         />
                     </div>
 
-                    <div className="mt-10 mb-20">
+                    <div className="relative z-[120] -mt-24 mb-10 flex flex-col items-center w-full px-6">
                         <button
                             onClick={() => handleSave().then(() => setShowMobilePreview(false))}
                             disabled={saving}
-                            className="btn-obsidian btn-obsidian-primary h-14 flex items-center gap-3 px-10 rounded-full shadow-2xl font-bold"
+                            className="btn-obsidian btn-obsidian-primary h-14 flex items-center justify-center gap-3 w-full rounded-2xl shadow-2xl font-bold max-w-[280px]"
                         >
                             <span className="material-symbols-outlined">{saving ? 'hourglass_top' : 'save'}</span>
-                            {saving ? 'Sauvegarde...' : 'Appliquer & Fermer'}
+                            {saving ? 'Sauvegarde...' : 'Appliquer'}
                         </button>
                     </div>
                 </div>

@@ -254,9 +254,11 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                 {/* Fixed Top Navigation - Integrated Flow Style */}
                 <div className={`fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 transition-all duration-700 h-24 pointer-events-none ${isScrolled ? 'backdrop-blur-2xl bg-white/10 dark:bg-black/20 shadow-[0_1px_30px_rgba(0,0,0,0.03)]' : ''}`}>
                     <div className="flex items-center justify-between p-4 px-6 h-20 pointer-events-auto">
-                        <button className="flex items-center justify-center w-12 h-12 rounded-full bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/50 dark:border-white/10 shadow-sm text-apple-textDark dark:text-white hover:bg-white/60 dark:hover:bg-white/10 transition-all active:scale-95">
-                            <span className="material-symbols-outlined font-light">arrow_back</span>
-                        </button>
+                        <div className="w-12 h-12" /> {/* spacer for flex balance */}
+                        <div className="flex justify-center flex-1">
+                            <img src="/logo-icon-black.svg" className="w-8 h-8 object-contain dark:hidden opacity-80" alt="KlikNode" />
+                            <img src="/logo-icon-white.svg" className="w-8 h-8 object-contain hidden dark:block opacity-80" alt="KlikNode" />
+                        </div>
                         <button onClick={() => {
                             if (navigator.share) {
                                 navigator.share({
@@ -267,8 +269,8 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                                 navigator.clipboard.writeText(window.location.href);
                                 toast.success('Lien copié !');
                             }
-                        }} className="flex items-center justify-center w-12 h-12 rounded-full bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/50 dark:border-white/10 shadow-sm text-apple-textDark dark:text-white hover:bg-white/60 dark:hover:bg-white/10 transition-all active:scale-95">
-                            <span className="material-symbols-outlined font-light">ios_share</span>
+                        }} className="flex items-center justify-center w-12 h-12 text-apple-textDark dark:text-white opacity-60 hover:opacity-100 transition-opacity active:scale-95">
+                            <span className="material-symbols-outlined font-light text-2xl">ios_share</span>
                         </button>
                     </div>
                 </div>
@@ -320,6 +322,17 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                             <span className="material-symbols-outlined font-light">chat_bubble</span>
                         </a>
                     </div>
+
+                    {/* Website Button */}
+                    {card.website && (
+                        <div className="w-full max-w-sm mt-4">
+                            <a href={card.website.startsWith('http') ? card.website : `https://${card.website}`} target="_blank" rel="noopener noreferrer"
+                                className="flex items-center justify-center gap-2.5 h-14 w-full rounded-full bg-white/60 dark:bg-white/5 backdrop-blur-md border border-white/50 dark:border-white/10 shadow-sm text-apple-textDark dark:text-white hover:bg-white/80 dark:hover:bg-white/10 transition-all font-bold active:scale-95">
+                                <span className="material-symbols-outlined font-light text-[20px]">language</span>
+                                Visiter notre site
+                            </a>
+                        </div>
+                    )}
                 </div>
 
                 {/* About Section - Glassmorphism */}
@@ -336,39 +349,89 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                     </div>
                 )}
 
-                {/* Links Grids - 2x2 Style */}
+                {/* Links Grids */}
                 <div className="mt-12 px-6">
-                    <h3 className="text-lg font-black text-apple-textDark dark:text-white mb-6 px-1 tracking-tight">Mes liens</h3>
-                    {card.socialLinks && card.socialLinks.length > 0 ? (
-                        <div className="grid grid-cols-2 gap-4">
-                            {card.socialLinks.map((link) => (
-                                <a
-                                    key={link.id}
-                                    className="klik-glass p-5 rounded-[2rem] border border-white/50 dark:border-white/5 hover:border-spaceGray dark:hover:border-titanium shadow-sm hover:shadow-2xl transition-all duration-500 group relative overflow-hidden"
-                                    href={normalizeUrl(link.url)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    <div className="flex justify-between items-start mb-6">
-                                        <div className="w-12 h-12 flex items-center justify-center shadow-inner rounded-2xl border transition-all"
-                                            style={{ backgroundColor: `${card.primaryColor || '#0666EB'}1A`, color: card.primaryColor || '#0666EB', borderColor: `${card.primaryColor || '#0666EB'}20` }}>
-                                            <span className="material-symbols-outlined text-[24px] font-light">{link.icon || 'public'}</span>
+                    {(() => {
+                        const SOCIAL_NETWORKS = ['linkedin', 'facebook', 'instagram', 'youtube', 'discord', 'twitter', 'x', 'tiktok', 'whatsapp', 'snapchat', 'pinterest', 'github', 'twitch'];
+                        const links = card.socialLinks || [];
+                        const socialNetworks = links.filter((l: any) => SOCIAL_NETWORKS.includes(l.platform?.toLowerCase()));
+                        const otherLinks = links.filter((l: any) => !SOCIAL_NETWORKS.includes(l.platform?.toLowerCase()));
+
+                        if (links.length === 0) {
+                            return (
+                                <div className="klik-glass p-12 text-center rounded-[2.5rem]">
+                                    <span className="material-symbols-outlined text-gray-300 dark:text-gray-700 text-5xl font-light mb-4">link_off</span>
+                                    <p className="text-apple-secondary font-bold">Aucun lien pour l'instant</p>
+                                </div>
+                            );
+                        }
+
+                        const getIconSrc = (slug: string) => {
+                            if (slug === 'linkedin') {
+                                return "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230A66C2'%3E%3Cpath d='M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z'/%3E%3C/svg%3E";
+                            }
+                            return `https://cdn.simpleicons.org/${slug}`;
+                        };
+
+                        return (
+                            <div className="space-y-8">
+                                {/* Social Networks (Horizontal Scroll) */}
+                                {socialNetworks.length > 0 && (
+                                    <div>
+                                        <div className="flex gap-4 overflow-x-auto pt-2 pb-4 custom-scrollbar snap-x px-1">
+                                            {socialNetworks.map((link: any) => {
+                                                const rawPlatform = (link.platform || '').trim().toLowerCase();
+                                                const iconSlug = rawPlatform === 'twitter' ? 'x' : rawPlatform;
+                                                return (
+                                                    <a
+                                                        key={link.id}
+                                                        href={normalizeUrl(link.url)}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="w-[60px] h-[60px] shrink-0 bg-white/90 dark:bg-[#1C1C1E] shadow-sm border border-gray-100 dark:border-white/10 hover:shadow-lg rounded-[1.25rem] flex items-center justify-center transition-all duration-300 hover:-translate-y-1 hover:scale-105 snap-center"
+                                                    >
+                                                        <img
+                                                            src={getIconSrc(iconSlug)}
+                                                            alt={link.platform}
+                                                            className={`w-7 h-7 object-contain drop-shadow-sm ${['x', 'github', 'tiktok'].includes(iconSlug) ? 'dark:invert' : ''}`}
+                                                            onError={(e) => {
+                                                                // Fallback to text if icon fails
+                                                                e.currentTarget.style.display = 'none';
+                                                                e.currentTarget.parentElement!.innerHTML = `<span class="material-symbols-outlined text-gray-400">link</span>`;
+                                                            }}
+                                                        />
+                                                    </a>
+                                                );
+                                            })}
                                         </div>
-                                        <span className="material-symbols-outlined text-gray-300 dark:text-gray-600 text-lg translate-y-1 group-hover:text-apple-textDark dark:group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all">arrow_outward</span>
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className="font-black text-apple-textDark dark:text-white text-base tracking-tight mb-1">{link.label || link.platform}</span>
-                                        <span className="text-[10px] font-bold text-apple-secondary/60 dark:text-gray-500 uppercase tracking-widest truncate">{link.url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]}</span>
+                                )}
+
+                                {/* Other Links (1 Column List) */}
+                                {otherLinks.length > 0 && (
+                                    <div>
+                                        <h3 className="text-lg font-black text-apple-textDark dark:text-white mb-6 px-1 tracking-tight">Mes liens</h3>
+                                        <div className="flex flex-col gap-3">
+                                            {otherLinks.map((link: any) => (
+                                                <a
+                                                    key={link.id}
+                                                    href={normalizeUrl(link.url)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="group relative flex items-center justify-start gap-4 w-full px-5 py-3.5 rounded-full bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
+                                                >
+                                                    <span className="material-symbols-outlined text-[20px] text-apple-secondary dark:text-gray-300 font-light">{link.icon || 'link'}</span>
+                                                    <span className="text-[15px] font-bold text-apple-textDark dark:text-white tracking-tight">
+                                                        {link.label || link.platform || 'Lien externe'}
+                                                    </span>
+                                                </a>
+                                            ))}
+                                        </div>
                                     </div>
-                                </a>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="klik-glass p-12 text-center rounded-[2.5rem]">
-                            <span className="material-symbols-outlined text-gray-300 dark:text-gray-700 text-5xl font-light mb-4">link_off</span>
-                            <p className="text-apple-secondary font-bold">Aucun lien pour l'instant</p>
-                        </div>
-                    )}
+                                )}
+                            </div>
+                        );
+                    })()}
                 </div>
 
                 {/* Fixed Bottom Action Area - Ultra Discrete (No Container) */}

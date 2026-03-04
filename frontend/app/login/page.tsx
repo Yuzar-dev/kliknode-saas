@@ -7,8 +7,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/auth-store';
-import { createClient } from '@/utils/supabase/client';
 import toast from 'react-hot-toast';
+import { createBrowserClient } from '@supabase/ssr';
 
 // Validation schema
 const loginSchema = z.object({
@@ -39,7 +39,19 @@ function LoginForm() {
         setIsLoading(true);
 
         try {
-            const supabase = createClient();
+            // Re-create the client with restricted cookie options if "Remember Me" is not checked.
+            // Using a maxAge of `undefined` usually bypasses explicit expiration, creating a session cookie.
+            // However, to ensure it overrides any `@supabase/ssr` default, we cast to any.
+            // If the user wants to be remembered, we use the default (1 year).
+            const supabase = createBrowserClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                data.rememberMe ? {} : {
+                    cookieOptions: {
+                        maxAge: undefined as any
+                    }
+                }
+            );
 
             // 1. Authenticate with Supabase
             const { data: authData, error: authError } = await supabase.auth.signInWithPassword({

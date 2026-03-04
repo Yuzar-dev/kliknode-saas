@@ -13,10 +13,7 @@ export default async function ActivatePage({
 
     const { data: physicalCard } = await supabase
         .from('physical_cards')
-        .select(`
-            status,
-            cards ( public_slug, user_id )
-        `)
+        .select(`status, paired_card_id`)
         .eq('uid', uid)
         .single();
 
@@ -34,7 +31,12 @@ export default async function ActivatePage({
     }
 
     if (physicalCard.status === 'paired') {
-        const virtualCard = physicalCard.cards as any;
+        const { data: virtualCard } = await supabase
+            .from('cards')
+            .select('public_slug, user_id')
+            .eq('id', physicalCard.paired_card_id)
+            .maybeSingle();
+
         const slug = virtualCard?.public_slug || virtualCard?.user_id;
 
         if (slug) {
@@ -65,7 +67,7 @@ function Screen({ icon, title, message }: { icon: string, title: string, message
             <div className="w-full max-w-md">
                 <div className="mb-12 flex flex-col items-center relative z-10 transition-all duration-500 px-4">
                     <div className="mb-6 flex items-center justify-center transform hover:scale-105 transition-transform duration-500">
-                        <img src="/logo-dark.svg" alt="KlikNode" className="h-[48px] w-auto" />
+                        <img src="/logo-icon-black.svg" alt="KlikNode" className="h-[48px] w-auto" />
                     </div>
                     <h2 className="text-center text-5xl font-extrabold tracking-tighter text-[#1D1D1F] leading-none">
                         kliknode
