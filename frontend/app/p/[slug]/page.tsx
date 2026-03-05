@@ -262,7 +262,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                         <button onClick={() => {
                             if (navigator.share) {
                                 navigator.share({
-                                    title: `${card.firstName} ${card.lastName} - VCard`,
+                                    title: `${card.firstName} ${card.lastName}`,
                                     url: window.location.href
                                 });
                             } else {
@@ -301,10 +301,12 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                         <h1 className="text-4xl font-extrabold tracking-tight text-apple-textDark dark:text-white">{card.firstName} {card.lastName}</h1>
                         <p className="text-apple-secondary dark:text-gray-400 font-bold text-lg">{card.jobTitle || 'Digital Artisan'}</p>
 
-                        <div className="flex items-center justify-center gap-1.5 text-apple-secondary/60 dark:text-gray-500 text-sm py-1 font-bold">
-                            <span className="material-symbols-outlined text-[18px]">location_on</span>
-                            <span>{card.city || 'Paris'}{card.country ? `, ${card.country}` : ''}</span>
-                        </div>
+                        {(card.city || card.country) && (
+                            <div className="flex items-center justify-center gap-1.5 text-apple-secondary/60 dark:text-gray-500 text-sm py-1 font-bold">
+                                <span className="material-symbols-outlined text-[18px]">location_on</span>
+                                <span>{card.city}{card.city && card.country ? ', ' : ''}{card.country}</span>
+                            </div>
+                        )}
 
                     </div>
 
@@ -418,10 +420,10 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                                                     href={normalizeUrl(link.url)}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="group relative flex items-center justify-start gap-4 w-full px-5 py-3.5 rounded-full bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
+                                                    className="group relative flex items-center justify-start gap-4 w-full px-5 py-3.5 rounded-full bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:scale-95 overflow-hidden"
                                                 >
-                                                    <span className="material-symbols-outlined text-[20px] text-apple-secondary dark:text-gray-300 font-light">{link.icon || 'link'}</span>
-                                                    <span className="text-[15px] font-bold text-apple-textDark dark:text-white tracking-tight">
+                                                    <span className="material-symbols-outlined shrink-0 text-[20px] text-apple-secondary dark:text-gray-300 font-light">{link.icon || 'link'}</span>
+                                                    <span className="text-[15px] font-bold text-apple-textDark dark:text-white tracking-tight truncate flex-1 min-w-0">
                                                         {link.label || link.platform || 'Lien externe'}
                                                     </span>
                                                 </a>

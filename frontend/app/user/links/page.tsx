@@ -315,7 +315,7 @@ export default function LinksPage() {
                     <div className="space-y-4">
                         {links.sort((a, b) => a.order - b.order).map(link => {
                             const platform = PLATFORMS.find(p => p.value === link.platform);
-                            const iconName = PLATFORM_ICONS[link.platform] || link.icon || 'link';
+                            const iconName = link.platform === 'custom' && link.icon ? link.icon : (PLATFORM_ICONS[link.platform] || link.icon || 'link');
                             const brandColor = BRAND_COLORS[link.platform] || '#0666EB';
                             const isEditing = editingId === link.id;
 
@@ -335,11 +335,11 @@ export default function LinksPage() {
                                                 style={{ backgroundColor: `${brandColor}15` }}>
                                                 <span className="material-symbols-outlined text-[20px] md:text-[24px]" style={{ color: brandColor }}>{iconName}</span>
                                             </div>
-                                            <div className="flex-1 min-w-0">
+                                            <div className="flex-1 min-w-0 overflow-hidden pr-2">
                                                 <p className="font-black text-apple-textDark dark:text-white text-sm md:text-base tracking-tight truncate">{link.label || platform?.label || link.platform}</p>
-                                                <p className="text-apple-secondary dark:text-gray-500 text-[10px] md:text-xs font-bold truncate tracking-tight">{link.url}</p>
+                                                <p className="text-apple-secondary dark:text-gray-500 text-[10px] md:text-xs font-bold truncate tracking-tight block w-full">{link.url}</p>
                                             </div>
-                                            <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
+                                            <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 ml-auto">
                                                 {/* Toggle */}
                                                 <button
                                                     onClick={() => handleToggle(link)}
@@ -478,8 +478,10 @@ function EditLinkForm({ link, platforms, iconOptions, onSave, onCancel }: {
                     <input type="url" value={form.url} onChange={e => setForm(f => ({ ...f, url: e.target.value }))}
                         className="w-full rounded-[1rem] border border-gray-100 dark:border-white/5 bg-white/60 dark:bg-black/40 px-4 py-2.5 text-sm text-apple-textDark dark:text-white focus:outline-none" />
                 </div>
+                {/* Icon picker for edit mode */}
                 <div className="flex gap-4 items-end">
                     <div className="relative flex-1 sm:flex-none">
+                        <label className="block text-[10px] font-black text-apple-secondary dark:text-gray-500 uppercase tracking-widest ml-1 mb-2">Icône</label>
                         <button onClick={() => setShowPicker(p => !p)}
                             className="flex items-center justify-center gap-2 h-11 w-full sm:w-auto px-4 rounded-[1rem] border border-gray-100 dark:border-white/5 bg-white/60 dark:bg-white/5 text-sm text-apple-textDark dark:text-white shadow-sm">
                             <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-[20px] font-light">{form.icon}</span>

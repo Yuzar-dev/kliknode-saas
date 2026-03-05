@@ -181,10 +181,12 @@ export default function CardPreview({
                         <h1 className="text-3xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-white">{firstName} {lastName}</h1>
                         <p className="text-[#86868B] dark:text-gray-400 font-bold text-base">{jobTitle || 'Digital Artisan'}</p>
 
-                        <div className="flex items-center justify-center gap-1.5 text-[#86868B]/60 dark:text-gray-500 text-xs py-1 font-bold">
-                            <span className="material-symbols-outlined text-[16px]">location_on</span>
-                            <span>{city || 'Paris'}{country ? `, ${country}` : ''}</span>
-                        </div>
+                        {(city || country) && (
+                            <div className="flex items-center justify-center gap-1.5 text-[#86868B]/60 dark:text-gray-500 text-xs py-1 font-bold">
+                                <span className="material-symbols-outlined text-[16px]">location_on</span>
+                                <span>{city}{city && country ? ', ' : ''}{country}</span>
+                            </div>
+                        )}
 
                     </div>
 
@@ -288,8 +290,8 @@ export default function CardPreview({
                                                     key={link.id}
                                                     className="flex items-center justify-start gap-3 w-full px-4 py-2.5 rounded-full bg-white/60 dark:bg-black/40 backdrop-blur-md border border-white/50 dark:border-white/10 shadow-sm relative overflow-hidden transition-all"
                                                 >
-                                                    <span className="material-symbols-outlined text-[18px] text-[#1D1D1F]/60 dark:text-gray-400 font-light">{PLATFORM_ICONS[link.platform?.toLowerCase() || ''] || link.icon || 'public'}</span>
-                                                    <span className="text-[13px] font-bold text-[#1D1D1F] dark:text-white tracking-tight">
+                                                    <span className="material-symbols-outlined shrink-0 text-[18px] text-[#1D1D1F]/60 dark:text-gray-400 font-light">{PLATFORM_ICONS[link.platform?.toLowerCase() || ''] || link.icon || 'public'}</span>
+                                                    <span className="text-[13px] font-bold text-[#1D1D1F] dark:text-white tracking-tight flex-1 truncate min-w-0">
                                                         {link.label || link.platform || 'Lien externe'}
                                                     </span>
                                                 </div>
