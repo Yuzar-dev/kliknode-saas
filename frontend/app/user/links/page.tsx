@@ -335,9 +335,9 @@ export default function LinksPage() {
                                                 style={{ backgroundColor: `${brandColor}15` }}>
                                                 <span className="material-symbols-outlined text-[20px] md:text-[24px]" style={{ color: brandColor }}>{iconName}</span>
                                             </div>
-                                            <div className="flex-1 min-w-0 overflow-hidden pr-2">
+                                            <div className="flex-1 w-0 min-w-0 pr-2">
                                                 <p className="font-black text-apple-textDark dark:text-white text-sm md:text-base tracking-tight truncate">{link.label || platform?.label || link.platform}</p>
-                                                <p className="text-apple-secondary dark:text-gray-500 text-[10px] md:text-xs font-bold truncate tracking-tight block w-full">{link.url}</p>
+                                                <p className="text-apple-secondary dark:text-gray-500 text-[10px] md:text-xs font-bold truncate tracking-tight">{link.url}</p>
                                             </div>
                                             <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 ml-auto">
                                                 {/* Toggle */}
