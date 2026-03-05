@@ -411,7 +411,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
 
                                 {/* Other Links (1 Column List) */}
                                 {otherLinks.length > 0 && (
-                                    <div>
+                                    <div className="mb-8">
                                         <h3 className="text-lg font-black text-apple-textDark dark:text-white mb-6 px-1 tracking-tight">Mes liens</h3>
                                         <div className="flex flex-col gap-3">
                                             {otherLinks.map((link: any) => (
@@ -426,6 +426,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                                                     <span className="text-[15px] font-bold text-apple-textDark dark:text-white tracking-tight truncate flex-1 min-w-0">
                                                         {link.label || link.platform || 'Lien externe'}
                                                     </span>
+                                                    <span className="material-symbols-outlined text-[18px] text-apple-secondary/50 dark:text-gray-500 font-light ml-auto">chevron_right</span>
                                                 </a>
                                             ))}
                                         </div>

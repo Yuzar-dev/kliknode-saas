@@ -282,7 +282,7 @@ export default function CardPreview({
 
                                 {/* Other Links (1 Column List) */}
                                 {otherLinks.length > 0 && (
-                                    <div>
+                                    <div className="mb-6">
                                         <h3 className="text-base font-black text-[#1D1D1F] dark:text-white mb-4 px-1 tracking-tight">Mes liens</h3>
                                         <div className="flex flex-col gap-2.5">
                                             {otherLinks.map(link => (
@@ -294,6 +294,7 @@ export default function CardPreview({
                                                     <span className="text-[13px] font-bold text-[#1D1D1F] dark:text-white tracking-tight flex-1 truncate min-w-0">
                                                         {link.label || link.platform || 'Lien externe'}
                                                     </span>
+                                                    <span className="material-symbols-outlined text-[16px] text-[#86868B]/50 dark:text-gray-600 font-light ml-auto">chevron_right</span>
                                                 </div>
                                             ))}
                                         </div>

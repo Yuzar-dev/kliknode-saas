@@ -178,7 +178,7 @@ export default function CardEditorPage() {
     );
 
     return (
-        <div className="flex flex-col lg:flex-row gap-10 items-start min-h-screen selection:bg-slate-200 px-4 md:px-0 relative">
+        <div className="flex flex-col xl:flex-row gap-10 items-start min-h-screen selection:bg-slate-200 px-4 md:px-0 relative">
             {/* ─── Left: Editor ─── */}
             <div className="flex-1 min-w-0 pb-20 w-full">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
@@ -411,7 +411,7 @@ export default function CardEditorPage() {
             </div>
 
             {/* ─── Right: Live Preview (Sticky) ─── */}
-            <div className="hidden lg:flex flex-col items-center gap-8 sticky top-28 w-[380px] xl:w-[400px] shrink-0">
+            <div className="hidden xl:flex flex-col items-center gap-8 sticky top-28 w-[380px] xl:w-[400px] shrink-0">
                 <div className="flex items-center gap-2.5 px-6 py-2 klik-glass rounded-full border border-white/60 dark:border-white/5 shadow-sm">
                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="text-[11px] font-black text-apple-secondary dark:text-gray-400 uppercase tracking-widest">Aperçu en temps réel</span>
@@ -454,14 +454,14 @@ export default function CardEditorPage() {
             {/* ─── Mobile Floating Preview Button ─── */}
             <button
                 onClick={() => setShowMobilePreview(true)}
-                className="lg:hidden fixed bottom-24 right-6 w-16 h-16 rounded-full bg-spaceGray dark:bg-titanium text-white dark:text-black shadow-2xl z-50 flex items-center justify-center active:scale-90 transition-all border-4 border-white/20 dark:border-black/20"
+                className="xl:hidden fixed bottom-24 right-6 w-16 h-16 rounded-full bg-spaceGray dark:bg-titanium text-white dark:text-black shadow-2xl z-50 flex items-center justify-center active:scale-90 transition-all border-4 border-white/20 dark:border-black/20"
             >
                 <span className="material-symbols-outlined text-[32px]">visibility</span>
             </button>
 
             {/* ─── Mobile Preview Modal ─── */}
             {showMobilePreview && (
-                <div className="lg:hidden fixed inset-0 z-[100] bg-black/80 backdrop-blur-xl flex flex-col items-center justify-start overflow-y-auto pt-10 pb-20 no-scrollbar animate-in fade-in duration-300">
+                <div className="xl:hidden fixed inset-0 z-[100] bg-black/80 backdrop-blur-xl flex flex-col items-center justify-start overflow-y-auto pt-10 pb-20 no-scrollbar animate-in fade-in duration-300">
                     <div className="absolute top-6 right-6 z-[110]">
                         <button
                             onClick={() => setShowMobilePreview(false)}

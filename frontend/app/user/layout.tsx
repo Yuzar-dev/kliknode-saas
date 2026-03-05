@@ -270,7 +270,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                 </header>
 
                 {/* Content Area */}
-                <div className="py-6 md:py-8 px-4 md:px-12 lg:px-24 flex-1 w-full max-w-[1600px] mx-auto">
+                <div className="py-6 md:py-8 px-4 md:px-12 lg:px-12 xl:px-24 flex-1 w-full max-w-[1600px] mx-auto min-w-0">
                     {children}
                 </div>
             </main>
