@@ -419,7 +419,7 @@ export default function CardEditorPage() {
 
                 <div className="relative group transition-transform duration-1000 hover:scale-[1.01]">
                     <div className="absolute -inset-8 bg-gradient-to-tr from-gray-200/20 to-gray-100/10 dark:from-white/5 dark:to-transparent rounded-[64px] blur-3xl opacity-50 z-0" />
-                    <div style={{ height: 'calc(100vh - 200px)', minHeight: 600, maxHeight: 750, overflowY: 'auto', position: 'relative' }} className="rounded-[4rem] z-10 transition-all duration-700 no-scrollbar">
+                    <div style={{ height: 'calc(100vh - 200px)', maxHeight: 750, overflowY: 'auto', position: 'relative' }} className="rounded-[4rem] z-10 transition-all duration-700 no-scrollbar pb-12">
                         <CardPreview
                             firstName={form.firstName}
                             lastName={form.lastName}
@@ -440,7 +440,7 @@ export default function CardEditorPage() {
                     </div>
                 </div>
 
-                <div className="flex flex-col items-center gap-4 -mt-4">
+                <div className="relative z-20 flex flex-col items-center gap-4 -mt-16">
                     <a href={card?.id ? `/p/${(card as any).publicSlug}` : '#'}
                         target="_blank"
                         className="btn-obsidian btn-obsidian-secondary h-12 flex items-center justify-center gap-2.5 px-8 rounded-full shadow-lg border border-gray-200 dark:border-white/10 transition-all font-bold text-xs"

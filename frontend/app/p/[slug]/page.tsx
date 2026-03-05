@@ -249,7 +249,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                 </div>
             )}
 
-            <div className="w-full max-w-md relative z-10 flex flex-col min-h-screen pb-32">
+            <div className="w-full max-w-md relative z-10 flex flex-col min-h-screen pb-12">
 
                 {/* Fixed Top Navigation - Integrated Flow Style */}
                 <div className={`fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 transition-all duration-700 h-24 pointer-events-none ${isScrolled ? 'backdrop-blur-2xl bg-white/10 dark:bg-black/20 shadow-[0_1px_30px_rgba(0,0,0,0.03)]' : ''}`}>
@@ -437,26 +437,24 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                     })()}
                 </div>
 
-                {/* Fixed Bottom Action Area - Ultra Discrete (No Container) */}
-                <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-30 pointer-events-none">
-                    <div className="px-10 pb-8 pt-16 bg-gradient-to-t from-apple-bgLight via-apple-bgLight/80 to-transparent dark:from-black dark:via-black/80 dark:to-transparent flex flex-col items-center gap-3">
-                        <button
-                            onClick={() => setShowModal(true)}
-                            className="w-full h-14 rounded-full shadow-xl active:scale-95 flex items-center justify-center gap-3 pointer-events-auto text-white transition-all hover:brightness-110"
-                            style={{ background: card.primaryColor || '#0666EB' }}
-                        >
-                            <span className="font-extrabold tracking-tight text-base">Échanger le contact</span>
-                            <span className="material-symbols-outlined text-xl">chevron_right</span>
-                        </button>
+                {/* Bottom Action Area (Regular Flow) */}
+                <div className="w-full px-8 mt-4 flex flex-col items-center gap-3">
+                    <button
+                        onClick={() => setShowModal(true)}
+                        className="w-full h-14 rounded-full shadow-xl active:scale-95 flex items-center justify-center gap-3 text-white transition-all hover:brightness-110"
+                        style={{ background: card.primaryColor || '#0666EB' }}
+                    >
+                        <span className="font-extrabold tracking-tight text-base">Échanger le contact</span>
+                        <span className="material-symbols-outlined text-xl">chevron_right</span>
+                    </button>
 
-                        <button
-                            onClick={handleSaveContact}
-                            className="inline-flex items-center gap-2 text-apple-secondary dark:text-gray-400 font-bold text-[11px] tracking-widest uppercase hover:text-apple-textDark dark:hover:text-white transition-colors pointer-events-auto"
-                        >
-                            <span className="material-symbols-outlined text-lg font-light">person_add</span>
-                            Ajouter aux contacts
-                        </button>
-                    </div>
+                    <button
+                        onClick={handleSaveContact}
+                        className="inline-flex items-center gap-2 text-apple-secondary dark:text-gray-400 font-bold text-[11px] tracking-widest uppercase hover:text-apple-textDark dark:hover:text-white transition-colors"
+                    >
+                        <span className="material-symbols-outlined text-lg font-light">person_add</span>
+                        Ajouter aux contacts
+                    </button>
                 </div>
 
                 {/* Exchange Modal Redesign (Apple/Clean Style) */}
@@ -470,10 +468,10 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                                 <span className="material-symbols-outlined text-[20px] text-gray-500">close</span>
                             </button>
 
-                            {/* Header Sparkle Icon */}
                             <div className="flex justify-center mb-6 pt-4">
-                                <div className="w-20 h-20 rounded-full bg-white dark:bg-white/10 shadow-sm flex items-center justify-center text-apple-textDark dark:text-white">
-                                    <span className="material-symbols-outlined text-[40px] font-light">auto_awesome</span>
+                                <div className="w-20 h-20 rounded-full bg-white dark:bg-white/10 shadow-sm flex items-center justify-center">
+                                    <img src="/logo-icon-black.svg" alt="KlikNode" className="w-8 h-8 object-contain dark:hidden" />
+                                    <img src="/logo-icon-white.svg" alt="KlikNode" className="w-8 h-8 object-contain hidden dark:block" />
                                 </div>
                             </div>
 

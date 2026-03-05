@@ -151,7 +151,7 @@ export default function CardPreview({
 
             {/* Ambient Background Glows - Ultra light */}
             <div className="absolute top-[-5%] left-[-10%] w-[300px] h-[300px] bg-white opacity-20 blur-[100px] rounded-full pointer-events-none" />
-            <div className="absolute bottom-[-5%] right-[-10%] w-[300px] h-[300px] bg-white opacity-20 blur-[100px] rounded-full pointer-events-none" />
+            <div className="absolute bottom-[-5%] right-[-10%] w-[300px] h-[300px] bg-white opacity-20 dark:opacity-5 blur-[100px] rounded-full pointer-events-none" />
 
             <div className="relative z-10 flex flex-col min-h-full pb-32">
                 {/* Profile Header (Centralized Content) */}
@@ -305,15 +305,15 @@ export default function CardPreview({
                     })()}
                 </div>
 
-                {/* Fixed Bottom Action Area (Visual Mockup) */}
-                <div className="absolute bottom-0 left-0 w-full px-8 pb-8 pt-12 bg-gradient-to-t from-[#F5F5F7] dark:from-black via-[#F5F5F7]/90 dark:via-black/90 to-transparent flex flex-col items-center gap-2">
+                {/* Bottom Action Area (Regular Flow Mockup) */}
+                <div className="w-full px-6 mt-2 mb-6 flex flex-col items-center gap-2">
                     <div className="w-full h-12 rounded-full flex items-center justify-center gap-2 text-white shadow-lg transition-all active:scale-[0.98] border border-white/10"
                         style={{ background: primaryColor }}>
                         <span className="font-extrabold tracking-tight text-sm">Échanger le contact</span>
                         <span className="material-symbols-outlined text-lg">chevron_right</span>
                     </div>
 
-                    <div className="inline-flex items-center gap-1.5 text-[#86868B] dark:text-gray-500 font-bold text-[10px] tracking-widest uppercase py-2">
+                    <div className="inline-flex items-center gap-1.5 text-[#86868B] dark:text-gray-500 font-bold text-[10px] tracking-widest uppercase py-2 hover:text-[#1D1D1F] dark:hover:text-white transition-colors cursor-pointer">
                         <span className="material-symbols-outlined text-base font-light">person_add</span>
                         Ajouter aux contacts
                     </div>
