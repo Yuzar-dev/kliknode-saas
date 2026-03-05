@@ -440,7 +440,7 @@ export default function CardEditorPage() {
                     </div>
                 </div>
 
-                <div className="flex flex-col items-center gap-4">
+                <div className="flex flex-col items-center gap-4 -mt-4">
                     <a href={card?.id ? `/p/${(card as any).publicSlug}` : '#'}
                         target="_blank"
                         className="btn-obsidian btn-obsidian-secondary h-12 flex items-center justify-center gap-2.5 px-8 rounded-full shadow-lg border border-gray-200 dark:border-white/10 transition-all font-bold text-xs"

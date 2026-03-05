@@ -439,7 +439,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
 
                 {/* Fixed Bottom Action Area - Ultra Discrete (No Container) */}
                 <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-30 pointer-events-none">
-                    <div className="px-10 pb-8 pt-16 bg-gradient-to-t from-apple-bgLight via-apple-bgLight/80 to-transparent dark:from-[#0A0A0B] dark:via-[#0A0A0B]/90 dark:to-transparent flex flex-col items-center gap-3">
+                    <div className="px-10 pb-8 pt-16 bg-gradient-to-t from-apple-bgLight via-apple-bgLight/80 to-transparent dark:from-black dark:via-black/80 dark:to-transparent flex flex-col items-center gap-3">
                         <button
                             onClick={() => setShowModal(true)}
                             className="w-full h-14 rounded-full shadow-xl active:scale-95 flex items-center justify-center gap-3 pointer-events-auto text-white transition-all hover:brightness-110"
