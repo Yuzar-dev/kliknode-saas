@@ -306,7 +306,7 @@ export default function CardPreview({
                 </div>
 
                 {/* Fixed Bottom Action Area (Visual Mockup) */}
-                <div className="absolute bottom-0 left-0 w-full px-8 pb-8 pt-12 bg-gradient-to-t from-[#F5F5F7] dark:from-black via-[#F5F5F7]/90 dark:via-black/90 to-transparent flex flex-col items-center gap-2">
+                <div className="absolute bottom-0 left-0 w-full px-8 pb-8 pt-12 bg-gradient-to-t from-[#F5F5F7] dark:from-[#0A0A0B] via-[#F5F5F7]/90 dark:via-[#0A0A0B]/90 to-transparent flex flex-col items-center gap-2">
                     <div className="w-full h-12 rounded-full flex items-center justify-center gap-2 text-white shadow-lg transition-all active:scale-[0.98] border border-white/10"
                         style={{ background: primaryColor }}>
                         <span className="font-extrabold tracking-tight text-sm">Échanger le contact</span>
