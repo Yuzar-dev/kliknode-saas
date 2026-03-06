@@ -29,12 +29,13 @@ const BRAND_COLORS: Record<string, string> = {
     facebook: '#1877F2', youtube: '#FF0000', tiktok: '#000000',
     github: '#24292e', website: '#059669', whatsapp: '#25D366',
     telegram: '#2AABEE', email: '#EA4335', phone: '#34A853',
-    calendly: '#006BFF', custom: '#6366F1',
+    calendly: '#006BFF', custom: '#6366F1', snapchat: '#FFFC00',
 };
 
 const PLATFORMS = [
     { value: 'linkedin', label: 'LinkedIn', icon: 'work' },
     { value: 'instagram', label: 'Instagram', icon: 'photo_camera' },
+    { value: 'snapchat', label: 'Snapchat', icon: 'camera_alt' },
     { value: 'twitter', label: 'Twitter/X', icon: 'tag' },
     { value: 'facebook', label: 'Facebook', icon: 'thumb_up' },
     { value: 'youtube', label: 'YouTube', icon: 'play_arrow' },
@@ -49,7 +50,7 @@ const PLATFORMS = [
 ];
 
 const ICON_OPTIONS = [
-    'link', 'work', 'photo_camera', 'language', 'send', 'chat', 'mail', 'call',
+    'link', 'work', 'photo_camera', 'camera_alt', 'language', 'send', 'chat', 'mail', 'call',
     'tag', 'code', 'play_arrow', 'thumb_up', 'music_note', 'calendar_month',
     'public', 'star', 'favorite', 'shopping_bag', 'storefront', 'rocket_launch',
 ];

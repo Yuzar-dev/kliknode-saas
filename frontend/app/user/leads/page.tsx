@@ -69,7 +69,7 @@ export default function LeadsPage() {
             (l.notes || '').replace(/,/g, ' '),
             new Date(l.createdAt).toLocaleDateString('fr-FR'),
         ]);
-        const csv = [header, ...rows].map(r => r.join(',')).join('\n');
+        const csv = [header, ...rows].map(r => r.join(',')).join('\\n');
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -78,6 +78,28 @@ export default function LeadsPage() {
         a.click();
         URL.revokeObjectURL(url);
     };
+
+    const exportVCard = (lead: Lead) => {
+        const vcard = `BEGIN:VCARD
+VERSION:3.0
+FN:${lead.firstName || ''} ${lead.lastName || ''}
+N:${lead.lastName || ''};${lead.firstName || ''};;;
+EMAIL;TYPE=INTERNET:${lead.email || ''}
+TEL;TYPE=CELL:${lead.phone || ''}
+NOTE:${(lead.notes || '').replace(/\\n/g, '\\\\n')}
+END:VCARD`;
+
+        const blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `contact_${lead.firstName || 'Sans'}_${lead.lastName || 'Nom'}.vcf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
 
     const thisMonth = leads.filter(l => {
         const d = new Date(l.createdAt);
@@ -181,6 +203,10 @@ export default function LeadsPage() {
                                                 </div>
                                             )}
                                         </div>
+                                        <button onClick={() => exportVCard(lead)} className="mt-4 w-full h-11 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all">
+                                            <span className="material-symbols-outlined text-[18px]">person_add</span>
+                                            Ajouter au répertoire
+                                        </button>
                                     </div>
                                 ))}
                             </div>
@@ -195,6 +221,7 @@ export default function LeadsPage() {
                                             <th className="px-10 py-5 text-[11px] font-black text-apple-secondary dark:text-gray-500 uppercase tracking-widest">Téléphone</th>
                                             <th className="px-10 py-5 text-[11px] font-black text-apple-secondary dark:text-gray-500 uppercase tracking-widest">Note</th>
                                             <th className="px-10 py-5 text-[11px] font-black text-apple-secondary dark:text-gray-500 uppercase tracking-widest text-right">Date</th>
+                                            <th className="px-4 py-5 w-16"></th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50 dark:divide-white/5">
@@ -218,6 +245,11 @@ export default function LeadsPage() {
                                                 </td>
                                                 <td className="px-10 py-6 text-[11px] font-black text-apple-secondary dark:text-gray-500 uppercase tracking-widest text-right">
                                                     {new Date(lead.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                                                </td>
+                                                <td className="px-4 py-6 text-right">
+                                                    <button onClick={() => exportVCard(lead)} className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all active:scale-95" title="Ajouter au répertoire">
+                                                        <span className="material-symbols-outlined text-[20px]">person_add</span>
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))}

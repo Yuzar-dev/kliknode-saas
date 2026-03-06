@@ -48,6 +48,7 @@ export const PLATFORM_ICONS: Record<string, string> = {
     email: 'mail',
     phone: 'call',
     calendly: 'calendar_month',
+    snapchat: 'camera_alt',
     custom: 'link',
 };
 
@@ -66,6 +67,7 @@ const BRAND_COLORS: Record<string, string> = {
     email: '#EA4335',
     phone: '#34A853',
     calendly: '#006BFF',
+    snapchat: '#FFFC00',
     custom: '#6366F1',
 };
 
