@@ -43,7 +43,7 @@ export default function CompanyDetailPage() {
                 {/* Breadcrumb */}
                 <div className="flex items-center text-sm text-slate-500 mb-6">
                     <Link href="/admin/companies" className="hover:text-slate-700">Gestion Commerciale</Link>
-                    <span className="material-symbols-outlined text-[16px] mx-2">chevron_right</span>
+                    <span className="material-symbols-outlined text-[16px] mx-2" translate="no">chevron_right</span>
                     <span className="font-medium text-slate-900 dark:text-white">Fiche Détail Entreprise</span>
                 </div>
 
@@ -65,7 +65,7 @@ export default function CompanyDetailPage() {
                                     className="absolute -bottom-2 -right-2 h-6 w-6 rounded-full bg-green-500 border-2 border-white dark:border-slate-800 flex items-center justify-center"
                                     title="Statut Actif"
                                 >
-                                    <span className="material-symbols-outlined text-white text-[14px]">check</span>
+                                    <span className="material-symbols-outlined text-white text-[14px]" translate="no">check</span>
                                 </div>
                             </div>
 
@@ -79,15 +79,15 @@ export default function CompanyDetailPage() {
                                 </div>
                                 <div className="flex items-center gap-4 mt-2 text-slate-500 dark:text-slate-400 text-sm">
                                     <span className="flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-[18px]">location_on</span>
+                                        <span className="material-symbols-outlined text-[18px]" translate="no">location_on</span>
                                         {company.city}, {company.country}
                                     </span>
                                     <span className="flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-[18px]">globe</span>
+                                        <span className="material-symbols-outlined text-[18px]" translate="no">globe</span>
                                         {company.website}
                                     </span>
                                     <span className="flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-[18px]">calendar_month</span>
+                                        <span className="material-symbols-outlined text-[18px]" translate="no">calendar_month</span>
                                         Client depuis {company.memberSince}
                                     </span>
                                 </div>
@@ -97,15 +97,15 @@ export default function CompanyDetailPage() {
                         {/* Action Buttons */}
                         <div className="flex flex-wrap items-center gap-3">
                             <AdminButton variant="secondary" className="gap-2">
-                                <span className="material-symbols-outlined text-[20px]">tune</span>
+                                <span className="material-symbols-outlined text-[20px]" translate="no">tune</span>
                                 Modifier Quota
                             </AdminButton>
                             <AdminButton variant="secondary" className="gap-2">
-                                <span className="material-symbols-outlined text-[20px] text-pink-500">redeem</span>
+                                <span className="material-symbols-outlined text-[20px] text-pink-500" translate="no">redeem</span>
                                 Offrir 1 Mois
                             </AdminButton>
                             <AdminButton variant="primary" className="gap-2">
-                                <span className="material-symbols-outlined text-[20px]">payments</span>
+                                <span className="material-symbols-outlined text-[20px]" translate="no">payments</span>
                                 Forcer Paiement
                             </AdminButton>
                         </div>
@@ -156,7 +156,7 @@ export default function CompanyDetailPage() {
                             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">Entité Légale</h3>
-                                    <span className="material-symbols-outlined text-slate-400">gavel</span>
+                                    <span className="material-symbols-outlined text-slate-400" translate="no">gavel</span>
                                 </div>
                                 <div className="space-y-4">
                                     <div>
@@ -183,7 +183,7 @@ export default function CompanyDetailPage() {
                                             href="#"
                                         >
                                             Voir Documents Légaux{' '}
-                                            <span className="material-symbols-outlined text-[16px]">arrow_outward</span>
+                                            <span className="material-symbols-outlined text-[16px]" translate="no">arrow_outward</span>
                                         </a>
                                     </div>
                                 </div>
@@ -193,7 +193,7 @@ export default function CompanyDetailPage() {
                             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">Contacts Clés</h3>
-                                    <span className="material-symbols-outlined text-slate-400">group</span>
+                                    <span className="material-symbols-outlined text-slate-400" translate="no">group</span>
                                 </div>
                                 <div className="space-y-4">
                                     <div className="flex items-start gap-3">
@@ -208,7 +208,7 @@ export default function CompanyDetailPage() {
                                             </a>
                                         </div>
                                         <button className="text-slate-400 hover:text-slate-600">
-                                            <span className="material-symbols-outlined text-[20px]">more_vert</span>
+                                            <span className="material-symbols-outlined text-[20px]" translate="no">more_vert</span>
                                         </button>
                                     </div>
                                     <hr className="border-slate-100 dark:border-slate-700" />
@@ -224,7 +224,7 @@ export default function CompanyDetailPage() {
                                             </a>
                                         </div>
                                         <button className="text-slate-400 hover:text-slate-600">
-                                            <span className="material-symbols-outlined text-[20px]">more_vert</span>
+                                            <span className="material-symbols-outlined text-[20px]" translate="no">more_vert</span>
                                         </button>
                                     </div>
                                 </div>
@@ -234,11 +234,11 @@ export default function CompanyDetailPage() {
                             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 flex flex-col h-full">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">Siège Social</h3>
-                                    <span className="material-symbols-outlined text-slate-400">map</span>
+                                    <span className="material-symbols-outlined text-slate-400" translate="no">map</span>
                                 </div>
                                 <div className="relative w-full h-32 bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden mb-4 group">
                                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                        <span className="material-symbols-outlined text-primary text-4xl drop-shadow-lg">
+                                        <span className="material-symbols-outlined text-primary text-4xl drop-shadow-lg" translate="no">
                                             location_on
                                         </span>
                                     </div>
@@ -289,7 +289,7 @@ export default function CompanyDetailPage() {
                             <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-4">
                                 <div className="relative w-full sm:w-96">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <span className="material-symbols-outlined text-slate-400 text-[20px]">search</span>
+                                        <span className="material-symbols-outlined text-slate-400 text-[20px]" translate="no">search</span>
                                     </div>
                                     <input
                                         className="block w-full pl-10 pr-6 py-2 border border-slate-300 dark:border-slate-600 rounded-full leading-5 bg-white dark:bg-slate-900 placeholder-slate-500 focus:outline-none focus:ring-0 focus:border-blue-500 focus:shadow-[0_0_10px_rgba(59,130,246,0.5)] sm:text-sm transition-shadow duration-150 ease-in-out"
@@ -299,11 +299,11 @@ export default function CompanyDetailPage() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <AdminButton variant="secondary" className="gap-2">
-                                        <span className="material-symbols-outlined text-[18px]">filter_list</span>
+                                        <span className="material-symbols-outlined text-[18px]" translate="no">filter_list</span>
                                         Filtrer
                                     </AdminButton>
                                     <AdminButton variant="primary" className="gap-2">
-                                        <span className="material-symbols-outlined text-[18px]">add</span>
+                                        <span className="material-symbols-outlined text-[18px]" translate="no">add</span>
                                         Ajouter Utilisateur
                                     </AdminButton>
                                 </div>
@@ -441,7 +441,7 @@ export default function CompanyDetailPage() {
                                                 className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700"
                                                 href="#"
                                             >
-                                                <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                                                <span className="material-symbols-outlined text-[20px]" translate="no">chevron_left</span>
                                             </a>
                                             <a
                                                 aria-current="page"
@@ -466,7 +466,7 @@ export default function CompanyDetailPage() {
                                                 className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700"
                                                 href="#"
                                             >
-                                                <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                                                <span className="material-symbols-outlined text-[20px]" translate="no">chevron_right</span>
                                             </a>
                                         </nav>
                                     </div>
@@ -488,7 +488,7 @@ export default function CompanyDetailPage() {
                                     <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-5 text-white shadow-lg relative overflow-hidden mb-4">
                                         <div className="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 rounded-full bg-white/10 blur-xl"></div>
                                         <div className="flex justify-between items-start mb-8">
-                                            <span className="material-symbols-outlined text-3xl">contactless</span>
+                                            <span className="material-symbols-outlined text-3xl" translate="no">contactless</span>
                                             <span className="font-mono text-lg italic font-bold tracking-widest">VISA</span>
                                         </div>
                                         <div className="mb-4">
@@ -507,11 +507,11 @@ export default function CompanyDetailPage() {
                                     </div>
                                     <div className="space-y-3">
                                         <AdminButton variant="secondary" className="w-full gap-2 justify-center">
-                                            <span className="material-symbols-outlined text-[18px]">credit_card</span>
+                                            <span className="material-symbols-outlined text-[18px]" translate="no">credit_card</span>
                                             Modifier Moyen de Paiement
                                         </AdminButton>
                                         <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg flex gap-3">
-                                            <span className="material-symbols-outlined text-blue-600 dark:text-blue-400">info</span>
+                                            <span className="material-symbols-outlined text-blue-600 dark:text-blue-400" translate="no">info</span>
                                             <p className="text-xs text-blue-700 dark:text-blue-300 leading-tight">
                                                 Votre prochain prélèvement automatique de <strong>€24,500</strong> aura lieu le{' '}
                                                 <strong>1 Oct 2023</strong>.
@@ -596,7 +596,7 @@ export default function CompanyDetailPage() {
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                             <a className="text-slate-400 hover:text-primary" href="#">
-                                                                <span className="material-symbols-outlined">download</span>
+                                                                <span className="material-symbols-outlined" translate="no">download</span>
                                                             </a>
                                                         </td>
                                                     </tr>

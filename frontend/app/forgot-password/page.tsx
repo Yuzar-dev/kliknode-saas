@@ -73,7 +73,7 @@ export default function ForgotPasswordPage() {
                         <>
                             <div className="text-center mb-10">
                                 <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-[#1C1C1E] rounded-2xl flex items-center justify-center mb-6 text-apple-textDark dark:text-white shadow-xl border border-gray-200 dark:border-white/10">
-                                    <span className="material-symbols-outlined text-[32px] font-light">lock_reset</span>
+                                    <span className="material-symbols-outlined text-[32px] font-light" translate="no">lock_reset</span>
                                 </div>
                                 <h1 className="text-2xl font-bold text-apple-textDark dark:text-white tracking-tight">Accès Oublié ?</h1>
                                 <p className="text-apple-secondary text-sm mt-3 font-medium leading-relaxed">
@@ -89,7 +89,7 @@ export default function ForgotPasswordPage() {
                                     </label>
                                     <div className="relative group">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                            <span className="material-symbols-outlined text-apple-secondary group-focus-within:text-spaceGray dark:group-focus-within:text-titanium transition-colors text-[20px] font-light">mail</span>
+                                            <span className="material-symbols-outlined text-apple-secondary group-focus-within:text-spaceGray dark:group-focus-within:text-titanium transition-colors text-[20px] font-light" translate="no">mail</span>
                                         </div>
                                         <input
                                             {...register('email')}
@@ -103,7 +103,7 @@ export default function ForgotPasswordPage() {
                                     </div>
                                     {errors.email && (
                                         <p className="mt-1.5 text-[11px] font-semibold text-red-500 ml-1 flex items-center gap-1.5 animate-in fade-in slide-in-from-left-1">
-                                            <span className="material-symbols-outlined text-[14px]">error_outline</span>
+                                            <span className="material-symbols-outlined text-[14px]" translate="no">error_outline</span>
                                             {errors.email.message}
                                         </p>
                                     )}
@@ -123,7 +123,7 @@ export default function ForgotPasswordPage() {
                                     ) : (
                                         <div className="flex items-center gap-2 tracking-wide font-bold">
                                             <span>Envoyer la clé</span>
-                                            <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1.5 transition-transform font-light">send</span>
+                                            <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1.5 transition-transform font-light" translate="no">send</span>
                                         </div>
                                     )}
                                 </button>
@@ -132,7 +132,7 @@ export default function ForgotPasswordPage() {
                     ) : (
                         <div className="text-center py-4 animate-in fade-in zoom-in duration-500">
                             <div className="mx-auto w-20 h-20 bg-green-50 dark:bg-green-900/20 rounded-full flex items-center justify-center mb-8 text-green-500 dark:text-green-400 shadow-2xl border border-green-200 dark:border-green-500/20">
-                                <span className="material-symbols-outlined text-[48px] font-light">check_circle</span>
+                                <span className="material-symbols-outlined text-[48px] font-light" translate="no">check_circle</span>
                             </div>
                             <h2 className="text-2xl font-bold text-apple-textDark dark:text-white mb-4">Transmission Réussie</h2>
                             <p className="text-apple-secondary text-sm leading-relaxed mb-10 px-4 font-medium">
@@ -153,7 +153,7 @@ export default function ForgotPasswordPage() {
                     {/* Back to Login */}
                     <div className="mt-12 pt-8 border-t border-gray-200 dark:border-white/5 flex justify-center">
                         <Link href="/login" className="inline-flex items-center gap-3 group text-xs font-bold text-apple-secondary hover:text-apple-textDark dark:hover:text-white transition-colors uppercase tracking-[0.1em]">
-                            <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-1.5 transition-transform font-light">arrow_back</span>
+                            <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-1.5 transition-transform font-light" translate="no">arrow_back</span>
                             Retour à l'espace membre
                         </Link>
                     </div>

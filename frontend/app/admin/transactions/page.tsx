@@ -186,7 +186,7 @@ export default function TransactionsPage() {
                                 <span className="text-sm font-medium text-slate-500 truncate">
                                     {stat.label}
                                 </span>
-                                <span className={`material-symbols-outlined ${stat.iconColor}`}>
+                                <span className={`material-symbols-outlined ${stat.iconColor}`} translate="no">
                                     {stat.icon}
                                 </span>
                             </div>

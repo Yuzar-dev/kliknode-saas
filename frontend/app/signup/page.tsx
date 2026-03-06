@@ -114,7 +114,7 @@ function SignupContent() {
                                 <label className="block text-[11px] font-bold uppercase tracking-[0.15em] text-apple-secondary ml-1">Prénom</label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <span className="material-symbols-outlined text-apple-secondary group-focus-within:text-spaceGray dark:group-focus-within:text-titanium transition-colors text-[18px] font-light">person</span>
+                                        <span className="material-symbols-outlined text-apple-secondary group-focus-within:text-spaceGray dark:group-focus-within:text-titanium transition-colors text-[18px] font-light" translate="no">person</span>
                                     </div>
                                     <input {...register('firstName')} placeholder="Jean" className="block w-full pl-11 pr-4 py-3.5 bg-white/40 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-2xl text-apple-textDark dark:text-apple-bgLight outline-none transition-all duration-300 sm:text-sm" />
                                 </div>
@@ -124,7 +124,7 @@ function SignupContent() {
                                 <label className="block text-[11px] font-bold uppercase tracking-[0.15em] text-apple-secondary ml-1">Nom</label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <span className="material-symbols-outlined text-apple-secondary group-focus-within:text-spaceGray dark:group-focus-within:text-titanium transition-colors text-[18px] font-light">person</span>
+                                        <span className="material-symbols-outlined text-apple-secondary group-focus-within:text-spaceGray dark:group-focus-within:text-titanium transition-colors text-[18px] font-light" translate="no">person</span>
                                     </div>
                                     <input {...register('lastName')} placeholder="Dupont" className="block w-full pl-11 pr-4 py-3.5 bg-white/40 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-2xl text-apple-textDark dark:text-apple-bgLight outline-none transition-all duration-300 sm:text-sm" />
                                 </div>
@@ -136,7 +136,7 @@ function SignupContent() {
                             <label className="block text-[11px] font-bold uppercase tracking-[0.15em] text-apple-secondary ml-1">Identité Numérique (Email)</label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <span className="material-symbols-outlined text-apple-secondary group-focus-within:text-spaceGray dark:group-focus-within:text-titanium transition-colors text-[18px] font-light">mail</span>
+                                    <span className="material-symbols-outlined text-apple-secondary group-focus-within:text-spaceGray dark:group-focus-within:text-titanium transition-colors text-[18px] font-light" translate="no">mail</span>
                                 </div>
                                 <input {...register('email')} placeholder="nom@heritage.com" className="block w-full pl-11 pr-4 py-3.5 bg-white/40 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-2xl text-apple-textDark dark:text-apple-bgLight outline-none transition-all duration-300 sm:text-sm" />
                             </div>
@@ -147,11 +147,11 @@ function SignupContent() {
                             <label className="block text-[11px] font-bold uppercase tracking-[0.15em] text-apple-secondary ml-1">Code Secret (Mot de passe)</label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <span className="material-symbols-outlined text-apple-secondary group-focus-within:text-spaceGray dark:group-focus-within:text-titanium transition-colors text-[18px] font-light">lock</span>
+                                    <span className="material-symbols-outlined text-apple-secondary group-focus-within:text-spaceGray dark:group-focus-within:text-titanium transition-colors text-[18px] font-light" translate="no">lock</span>
                                 </div>
                                 <input {...register('password')} type={showPassword ? 'text' : 'password'} placeholder="••••••••••••" className="block w-full pl-11 pr-12 py-3.5 bg-white/40 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-2xl text-apple-textDark dark:text-apple-bgLight outline-none transition-all duration-300 sm:text-sm" />
                                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-4 flex items-center text-apple-secondary hover:text-apple-textDark dark:hover:text-white transition-colors">
-                                    <span className="material-symbols-outlined text-[20px] font-light">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                                    <span className="material-symbols-outlined text-[20px] font-light" translate="no">{showPassword ? 'visibility_off' : 'visibility'}</span>
                                 </button>
                             </div>
                             {errors.password && <p className="mt-1.5 text-[11px] font-semibold text-red-500 ml-1">{errors.password.message}</p>}

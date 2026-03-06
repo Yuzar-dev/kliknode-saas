@@ -29,12 +29,12 @@ export function ThemeToggle() {
             <div className="relative w-[20px] h-[20px] md:w-[22px] md:h-[22px]">
                 {/* Sun Icon */}
                 <span className={`material-symbols-outlined absolute inset-0 transition-all duration-500 transform ${isDark ? 'rotate-90 opacity-0 scale-50' : 'rotate-0 opacity-100 scale-100'}`}
-                    style={{ fontVariationSettings: "'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24" }}>
+                    style={{ fontVariationSettings: "'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24" }} translate="no">
                     light_mode
                 </span>
                 {/* Moon Icon */}
                 <span className={`material-symbols-outlined absolute inset-0 transition-all duration-500 transform ${isDark ? 'rotate-0 opacity-100 scale-100' : '-rotate-90 opacity-0 scale-50'}`}
-                    style={{ fontVariationSettings: "'FILL' 1, 'wght' 300, 'GRAD' 0, 'opsz' 24" }}>
+                    style={{ fontVariationSettings: "'FILL' 1, 'wght' 300, 'GRAD' 0, 'opsz' 24" }} translate="no">
                     dark_mode
                 </span>
             </div>

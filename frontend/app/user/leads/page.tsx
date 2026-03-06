@@ -131,7 +131,7 @@ END:VCARD`;
                         <button onClick={exportCSV}
                             className="btn-obsidian btn-obsidian-secondary h-12 md:h-14 flex items-center justify-center gap-2.5 px-6 md:px-8 rounded-full shadow-lg border border-gray-200 dark:border-white/10 active:scale-95 transition-all font-bold text-sm"
                         >
-                            <span className="material-symbols-outlined text-[20px] font-light">download</span>
+                            <span className="material-symbols-outlined text-[20px] font-light" translate="no">download</span>
                             Exporter CSV
                         </button>
                     )}
@@ -144,7 +144,7 @@ END:VCARD`;
                             <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${s.color} blur-3xl opacity-30 -mr-12 -mt-12 group-hover:opacity-50 transition-all duration-700`} />
                             <div className="flex flex-col gap-4 md:gap-6">
                                 <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center bg-white dark:bg-white/5 shadow-sm border border-gray-100 dark:border-white/10">
-                                    <span className={`material-symbols-outlined text-[24px] md:text-[28px] font-light ${s.textColor}`}>{s.icon}</span>
+                                    <span className={`material-symbols-outlined text-[24px] md:text-[28px] font-light ${s.textColor}`} translate="no">{s.icon}</span>
                                 </div>
                                 <div className="flex flex-col">
                                     <p className="text-3xl md:text-4xl font-black tracking-tighter text-apple-textDark dark:text-white">{s.value}</p>
@@ -163,7 +163,7 @@ END:VCARD`;
 
                     {leads.length === 0 ? (
                         <div className="m-6 md:m-0 text-center py-16 md:py-20 bg-white/40 dark:bg-white/5 rounded-[2rem] border border-dashed border-gray-200 dark:border-white/10">
-                            <span className="material-symbols-outlined text-5xl md:text-6xl text-apple-secondary dark:text-gray-700 mb-6 font-light">person_search</span>
+                            <span className="material-symbols-outlined text-5xl md:text-6xl text-apple-secondary dark:text-gray-700 mb-6 font-light" translate="no">person_search</span>
                             <p className="text-apple-textDark dark:text-white font-black text-lg md:text-xl">Aucun contact pour l'instant</p>
                             <p className="text-apple-secondary dark:text-gray-500 font-bold text-xs md:text-sm mt-2 px-6 md:px-10">Vos contacts apparaîtront ici lorsque quelqu'un échangera ses informations avec vous.</p>
                         </div>
@@ -188,11 +188,11 @@ END:VCARD`;
 
                                         <div className="space-y-3">
                                             <div className="flex items-center gap-3">
-                                                <span className="material-symbols-outlined text-[18px] text-apple-secondary dark:text-gray-500">mail</span>
+                                                <span className="material-symbols-outlined text-[18px] text-apple-secondary dark:text-gray-500" translate="no">mail</span>
                                                 <span className="text-xs font-black text-apple-secondary dark:text-gray-400 break-all">{lead.email || '—'}</span>
                                             </div>
                                             <div className="flex items-center gap-3">
-                                                <span className="material-symbols-outlined text-[18px] text-apple-secondary dark:text-gray-500">call</span>
+                                                <span className="material-symbols-outlined text-[18px] text-apple-secondary dark:text-gray-500" translate="no">call</span>
                                                 <span className="text-xs font-black text-apple-secondary dark:text-gray-400 font-mono italic">{lead.phone || '—'}</span>
                                             </div>
                                             {lead.notes && (
@@ -204,7 +204,7 @@ END:VCARD`;
                                             )}
                                         </div>
                                         <button onClick={() => exportVCard(lead)} className="mt-4 w-full h-11 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all">
-                                            <span className="material-symbols-outlined text-[18px]">person_add</span>
+                                            <span className="material-symbols-outlined text-[18px]" translate="no">person_add</span>
                                             Ajouter au répertoire
                                         </button>
                                     </div>
@@ -248,7 +248,7 @@ END:VCARD`;
                                                 </td>
                                                 <td className="px-4 py-6 text-right">
                                                     <button onClick={() => exportVCard(lead)} className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all active:scale-95" title="Ajouter au répertoire">
-                                                        <span className="material-symbols-outlined text-[20px]">person_add</span>
+                                                        <span className="material-symbols-outlined text-[20px]" translate="no">person_add</span>
                                                     </button>
                                                 </td>
                                             </tr>

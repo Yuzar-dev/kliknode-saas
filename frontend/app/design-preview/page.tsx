@@ -140,7 +140,7 @@ export default function DesignPreviewPage() {
                                         boxShadow: active ? `0 0 0 1px ${PALETTE.primaryGlow}` : 'none',
                                     }}
                                 >
-                                    <span className="material-symbols-outlined" style={{ fontSize: 20, ...(active ? { background: `linear-gradient(135deg, ${PALETTE.primary}, ${PALETTE.accent})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : {}) }}>{item.icon}</span>
+                                    <span className="material-symbols-outlined" style={{ fontSize: 20, ...(active ? { background: `linear-gradient(135deg, ${PALETTE.primary}, ${PALETTE.accent})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' } : {}) }} translate="no">{item.icon}</span>
                                     {!sidebarCollapsed && item.label}
                                 </button>
                             );
@@ -164,7 +164,7 @@ export default function DesignPreviewPage() {
                                 justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
                                 width: '100%', textAlign: 'left', fontFamily: 'inherit',
                             }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>{item.icon}</span>
+                                <span className="material-symbols-outlined" style={{ fontSize: 20 }} translate="no">{item.icon}</span>
                                 {!sidebarCollapsed && item.label}
                             </button>
                         ))}
@@ -215,7 +215,7 @@ export default function DesignPreviewPage() {
                                 background: 'none', border: 'none', cursor: 'pointer',
                                 color: PALETTE.textSecondary, padding: 6, borderRadius: 10, display: 'flex',
                             }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: 22 }}>menu</span>
+                                <span className="material-symbols-outlined" style={{ fontSize: 22 }} translate="no">menu</span>
                             </button>
 
                             {/* Search */}
@@ -224,7 +224,7 @@ export default function DesignPreviewPage() {
                                 ...GLASS.subtle, borderRadius: 12,
                                 padding: '8px 14px', width: 320,
                             }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: 18, color: PALETTE.textMuted, marginRight: 8 }}>search</span>
+                                <span className="material-symbols-outlined" style={{ fontSize: 18, color: PALETTE.textMuted, marginRight: 8 }} translate="no">search</span>
                                 <input type="text" placeholder="Rechercher..." style={{
                                     border: 'none', background: 'transparent', outline: 'none',
                                     fontSize: 14, color: PALETTE.text, width: '100%', fontFamily: 'inherit',
@@ -244,7 +244,7 @@ export default function DesignPreviewPage() {
                                 color: PALETTE.textSecondary, padding: 8, borderRadius: 10,
                                 display: 'flex', position: 'relative',
                             }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: 22 }}>notifications</span>
+                                <span className="material-symbols-outlined" style={{ fontSize: 22 }} translate="no">notifications</span>
                                 <span style={{
                                     position: 'absolute', top: 6, right: 6, width: 8, height: 8,
                                     borderRadius: '50%', background: PALETTE.danger, border: '2px solid white',
@@ -325,7 +325,7 @@ export default function DesignPreviewPage() {
                                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                     boxShadow: `0 4px 12px ${s.lightBg}`,
                                                 }}>
-                                                    <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#fff' }}>{s.icon}</span>
+                                                    <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#fff' }} translate="no">{s.icon}</span>
                                                 </div>
                                                 <span style={{
                                                     fontSize: 12, fontWeight: 600, borderRadius: 20, padding: '3px 10px',
@@ -490,7 +490,7 @@ export default function DesignPreviewPage() {
                                             <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.3px' }}>Youssef Alami</h2>
                                             <p style={{ fontSize: 14, color: PALETTE.textSecondary, marginTop: 3 }}>Entrepreneur · KlikNode</p>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6 }}>
-                                                <span className="material-symbols-outlined" style={{ fontSize: 16, color: PALETTE.textMuted }}>location_on</span>
+                                                <span className="material-symbols-outlined" style={{ fontSize: 16, color: PALETTE.textMuted }} translate="no">location_on</span>
                                                 <span style={{ fontSize: 13, color: PALETTE.textMuted }}>Casablanca, Maroc</span>
                                             </div>
 
@@ -504,7 +504,7 @@ export default function DesignPreviewPage() {
                                                     fontFamily: 'inherit', transition: 'all 0.2s ease',
                                                     boxShadow: `0 4px 16px ${PALETTE.primaryGlow}`,
                                                 }}>
-                                                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>person_add</span>
+                                                    <span className="material-symbols-outlined" style={{ fontSize: 18 }} translate="no">person_add</span>
                                                     Enregistrer
                                                 </button>
                                                 <button style={{
@@ -515,7 +515,7 @@ export default function DesignPreviewPage() {
                                                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                                                     fontFamily: 'inherit', transition: 'all 0.2s ease',
                                                 }}>
-                                                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>swap_horiz</span>
+                                                    <span className="material-symbols-outlined" style={{ fontSize: 18 }} translate="no">swap_horiz</span>
                                                     Échanger
                                                 </button>
                                             </div>
@@ -555,7 +555,7 @@ export default function DesignPreviewPage() {
                                                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                                 marginBottom: 10,
                                                             }}>
-                                                                <span className="material-symbols-outlined" style={{ fontSize: 18, color: link.color }}>{link.icon}</span>
+                                                                <span className="material-symbols-outlined" style={{ fontSize: 18, color: link.color }} translate="no">{link.icon}</span>
                                                             </div>
                                                             <p style={{ fontSize: 13, fontWeight: 600, color: PALETTE.text }}>{link.label}</p>
                                                             <p style={{ fontSize: 11, color: PALETTE.textMuted, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{link.url}</p>

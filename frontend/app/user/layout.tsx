@@ -122,7 +122,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                                     : 'text-apple-secondary hover:text-apple-textDark dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5'
                                     }`}
                             >
-                                <span className={`material-symbols-outlined text-[20px] ${collapsed ? 'scale-110' : ''}`}>{item.icon}</span>
+                                <span className={`material-symbols-outlined text-[20px] ${collapsed ? 'scale-110' : ''}`} translate="no">{item.icon}</span>
                                 {!collapsed && <span className="tracking-tight">{item.label}</span>}
                             </Link>
                         );
@@ -139,7 +139,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                                     : 'text-apple-secondary hover:text-apple-textDark dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5'
                                     }`}
                             >
-                                <span className={`material-symbols-outlined text-[20px] ${collapsed ? 'scale-110' : ''}`}>{item.icon}</span>
+                                <span className={`material-symbols-outlined text-[20px] ${collapsed ? 'scale-110' : ''}`} translate="no">{item.icon}</span>
                                 {!collapsed && <span className="tracking-tight">{item.label}</span>}
                             </Link>
                         );
@@ -185,7 +185,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                         <button onClick={() => setCollapsed(!collapsed)}
                             className="hidden md:block text-apple-secondary hover:text-apple-textDark dark:hover:text-white p-2 rounded-xl transition-all hover:bg-white/40 dark:hover:bg-white/5"
                         >
-                            <span className="material-symbols-outlined text-[22px] font-light">
+                            <span className="material-symbols-outlined text-[22px] font-light" translate="no">
                                 {collapsed ? 'side_navigation' : 'menu_open'}
                             </span>
                         </button>
@@ -203,7 +203,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                                 onClick={() => setShowNotifications(!showNotifications)}
                                 className={`text-apple-secondary hover:text-apple-textDark dark:hover:text-white w-full h-full flex items-center justify-center rounded-xl relative transition-all hover:bg-white/40 dark:hover:bg-white/5 ${showNotifications ? 'bg-white/50 dark:bg-white/10' : ''}`}
                             >
-                                <span className="material-symbols-outlined text-[20px] md:text-[22px] font-light">notifications</span>
+                                <span className="material-symbols-outlined text-[20px] md:text-[22px] font-light" translate="no">notifications</span>
                                 {unreadCount > 0 && (
                                     <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500" />
                                 )}
@@ -263,7 +263,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                                 className="text-apple-secondary hover:text-red-500 w-full h-full flex items-center justify-center rounded-xl transition-all hover:bg-red-50 dark:hover:bg-red-950/20"
                                 title="Se déconnecter"
                             >
-                                <span className="material-symbols-outlined text-[20px] md:text-[22px] font-light">logout</span>
+                                <span className="material-symbols-outlined text-[20px] md:text-[22px] font-light" translate="no">logout</span>
                             </button>
                         </div>
                     </div>
@@ -286,7 +286,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                                 : 'text-apple-secondary'
                                 }`}
                         >
-                            <span className={`material-symbols-outlined text-[24px] ${active ? 'fill-[1] font-bold' : 'font-light'}`}>
+                            <span className={`material-symbols-outlined text-[24px] ${active ? 'fill-[1] font-bold' : 'font-light'}`} translate="no">
                                 {item.icon}
                             </span>
                             <span className={`text-[9px] font-black uppercase tracking-widest mt-0.5 ${active ? 'opacity-100' : 'opacity-60'}`}>
@@ -304,7 +304,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                         : 'text-apple-secondary'
                         }`}
                 >
-                    <span className={`material-symbols-outlined text-[24px] ${pathname === '/user/settings' ? 'fill-[1] font-bold' : 'font-light'}`}>
+                    <span className={`material-symbols-outlined text-[24px] ${pathname === '/user/settings' ? 'fill-[1] font-bold' : 'font-light'}`} translate="no">
                         settings
                     </span>
                     <span className={`text-[9px] font-black uppercase tracking-widest mt-0.5 ${pathname === '/user/settings' ? 'opacity-100' : 'opacity-60'}`}>

@@ -217,7 +217,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
     if (!card) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-background-light dark:bg-background-dark p-6 text-center">
-                <span className="material-symbols-outlined text-6xl text-slate-300 mb-4">error</span>
+                <span className="material-symbols-outlined text-6xl text-slate-300 mb-4" translate="no">error</span>
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Profil introuvable</h1>
                 <p className="text-slate-500 mt-2">Ce lien semble être invalide ou la carte a été désactivée.</p>
                 <button onClick={() => window.location.href = '/'} className="mt-6 text-primary font-medium hover:underline">Retour site</button>
@@ -288,7 +288,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                                 toast.success('Lien copié !');
                             }
                         }} className="flex items-center justify-center w-12 h-12 text-apple-textDark dark:text-white opacity-60 hover:opacity-100 transition-opacity active:scale-95">
-                            <span className="material-symbols-outlined font-light text-2xl">ios_share</span>
+                            <span className="material-symbols-outlined font-light text-2xl" translate="no">ios_share</span>
                         </button>
                     </div>
                 </div>
@@ -321,7 +321,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
 
                         {(card.city || card.country) && (
                             <div className="flex items-center justify-center gap-1.5 text-apple-secondary/60 dark:text-gray-500 text-sm py-1 font-bold">
-                                <span className="material-symbols-outlined text-[18px]">location_on</span>
+                                <span className="material-symbols-outlined text-[18px]" translate="no">location_on</span>
                                 <span>{card.city}{card.city && card.country ? ', ' : ''}{card.country}</span>
                             </div>
                         )}
@@ -332,14 +332,14 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                     <div className="flex items-center gap-6 mt-10 w-full max-w-sm">
                         <a href={`mailto:${card.email}`} className="flex-1 flex items-center justify-center gap-2.5 h-16 rounded-full text-white shadow-2xl active:scale-95 transition-all hover:brightness-110"
                             style={{ background: card.primaryColor || '#0666EB' }}>
-                            <span className="material-symbols-outlined font-light text-[22px]">mail</span>
+                            <span className="material-symbols-outlined font-light text-[22px]" translate="no">mail</span>
                             <span className="font-bold tracking-wide">Email</span>
                         </a>
                         <a href={`tel:${card.phoneMobile}`} className="h-16 w-16 flex items-center justify-center rounded-full bg-white shadow-xl text-apple-textDark dark:bg-[#1C1C1E] dark:text-white border border-gray-100 dark:border-white/5 hover:scale-105 active:scale-95 transition-all">
-                            <span className="material-symbols-outlined font-light">call</span>
+                            <span className="material-symbols-outlined font-light" translate="no">call</span>
                         </a>
                         <a href={`sms:${card.phoneMobile}`} className="h-16 w-16 flex items-center justify-center rounded-full bg-white shadow-xl text-apple-textDark dark:bg-[#1C1C1E] dark:text-white border border-gray-100 dark:border-white/5 hover:scale-105 active:scale-95 transition-all">
-                            <span className="material-symbols-outlined font-light">chat_bubble</span>
+                            <span className="material-symbols-outlined font-light" translate="no">chat_bubble</span>
                         </a>
                     </div>
 
@@ -348,7 +348,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                         <div className="w-full max-w-sm mt-4">
                             <a href={card.website.startsWith('http') ? card.website : `https://${card.website}`} target="_blank" rel="noopener noreferrer"
                                 className="flex items-center justify-center gap-2.5 h-14 w-full rounded-full bg-white/60 dark:bg-white/5 backdrop-blur-md border border-white/50 dark:border-white/10 shadow-sm text-apple-textDark dark:text-white hover:bg-white/80 dark:hover:bg-white/10 transition-all font-bold active:scale-95">
-                                <span className="material-symbols-outlined font-light text-[20px]">language</span>
+                                <span className="material-symbols-outlined font-light text-[20px]" translate="no">language</span>
                                 Visiter notre site
                             </a>
                         </div>
@@ -380,7 +380,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                         if (links.length === 0) {
                             return (
                                 <div className="klik-glass p-12 text-center rounded-[2.5rem]">
-                                    <span className="material-symbols-outlined text-gray-300 dark:text-gray-700 text-5xl font-light mb-4">link_off</span>
+                                    <span className="material-symbols-outlined text-gray-300 dark:text-gray-700 text-5xl font-light mb-4" translate="no">link_off</span>
                                     <p className="text-apple-secondary font-bold">Aucun lien pour l'instant</p>
                                 </div>
                             );
@@ -417,7 +417,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                                                             onError={(e) => {
                                                                 // Fallback to text if icon fails
                                                                 e.currentTarget.style.display = 'none';
-                                                                e.currentTarget.parentElement!.innerHTML = `<span class="material-symbols-outlined text-gray-400">link</span>`;
+                                                                e.currentTarget.parentElement!.innerHTML = `<span class="material-symbols-outlined text-gray-400" translate="no">link</span>`;
                                                             }}
                                                         />
                                                     </a>
@@ -440,11 +440,11 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                                                     rel="noopener noreferrer"
                                                     className="group relative flex items-center justify-start gap-4 w-full px-5 py-3.5 rounded-full bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:scale-95 overflow-hidden"
                                                 >
-                                                    <span className="material-symbols-outlined shrink-0 text-[20px] text-apple-secondary dark:text-gray-300 font-light">{link.icon || 'link'}</span>
+                                                    <span className="material-symbols-outlined shrink-0 text-[20px] text-apple-secondary dark:text-gray-300 font-light" translate="no">{link.icon || 'link'}</span>
                                                     <span className="text-[15px] font-bold text-apple-textDark dark:text-white tracking-tight truncate flex-1 min-w-0">
                                                         {link.label || link.platform || 'Lien externe'}
                                                     </span>
-                                                    <span className="material-symbols-outlined text-[18px] text-apple-secondary/50 dark:text-gray-500 font-light ml-auto">chevron_right</span>
+                                                    <span className="material-symbols-outlined text-[18px] text-apple-secondary/50 dark:text-gray-500 font-light ml-auto" translate="no">chevron_right</span>
                                                 </a>
                                             ))}
                                         </div>
@@ -463,14 +463,14 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                         style={{ background: card.primaryColor || '#0666EB' }}
                     >
                         <span className="font-extrabold tracking-tight text-base">Échanger le contact</span>
-                        <span className="material-symbols-outlined text-xl">chevron_right</span>
+                        <span className="material-symbols-outlined text-xl" translate="no">chevron_right</span>
                     </button>
 
                     <button
                         onClick={handleSaveContact}
                         className="inline-flex items-center gap-2 text-apple-secondary dark:text-gray-400 font-bold text-[11px] tracking-widest uppercase hover:text-apple-textDark dark:hover:text-white transition-colors"
                     >
-                        <span className="material-symbols-outlined text-lg font-light">person_add</span>
+                        <span className="material-symbols-outlined text-lg font-light" translate="no">person_add</span>
                         Ajouter aux contacts
                     </button>
                 </div>
@@ -483,7 +483,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                         <div className="relative w-full max-w-md animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 transform overflow-hidden rounded-[3rem] bg-[#F2F2F7] dark:bg-[#1C1C1E] p-8 text-center shadow-3xl border border-white/40 dark:border-white/10">
                             {/* Close Button */}
                             <button onClick={() => setShowModal(false)} className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center rounded-full bg-white/50 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition-colors">
-                                <span className="material-symbols-outlined text-[20px] text-gray-500">close</span>
+                                <span className="material-symbols-outlined text-[20px] text-gray-500" translate="no">close</span>
                             </button>
 
                             <div className="flex justify-center mb-6 pt-4">
@@ -504,7 +504,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                                 {/* Name Input */}
                                 <div className="relative group">
                                     <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-apple-textDark dark:group-focus-within:text-white transition-colors">
-                                        <span className="material-symbols-outlined text-[22px]">person</span>
+                                        <span className="material-symbols-outlined text-[22px]" translate="no">person</span>
                                     </div>
                                     <input
                                         required
@@ -518,7 +518,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                                 {/* Email Input */}
                                 <div className="relative group">
                                     <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-apple-textDark dark:group-focus-within:text-white transition-colors">
-                                        <span className="material-symbols-outlined text-[22px]">mail</span>
+                                        <span className="material-symbols-outlined text-[22px]" translate="no">mail</span>
                                     </div>
                                     <input
                                         required
@@ -532,7 +532,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                                 {/* Phone Input */}
                                 <div className="relative group">
                                     <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-apple-textDark dark:group-focus-within:text-white transition-colors">
-                                        <span className="material-symbols-outlined text-[22px]">phone</span>
+                                        <span className="material-symbols-outlined text-[22px]" translate="no">phone</span>
                                     </div>
                                     <input
                                         value={formData.phone}
@@ -550,7 +550,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                                         style={{ background: card.primaryColor || '#0666EB' }}
                                     >
                                         <span>{isSharing ? 'Envoi en cours...' : 'Envoyer mes infos'}</span>
-                                        <span className="material-symbols-outlined text-xl">chevron_right</span>
+                                        <span className="material-symbols-outlined text-xl" translate="no">chevron_right</span>
                                     </button>
 
                                     <button
@@ -563,7 +563,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
 
                                     {/* Privacy Badge */}
                                     <div className="mt-4 flex items-center gap-2 px-4 py-2 bg-white/50 dark:bg-white/5 rounded-full border border-gray-100 dark:border-white/5 text-[11px] font-bold text-apple-secondary dark:text-gray-400">
-                                        <span className="material-symbols-outlined text-sm">lock</span>
+                                        <span className="material-symbols-outlined text-sm" translate="no">lock</span>
                                         Vos données sont privées et sécurisées
                                     </div>
                                 </div>

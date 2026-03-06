@@ -200,7 +200,7 @@ export default function CardEditorPage() {
                                 : 'text-apple-secondary dark:text-gray-400 hover:text-apple-textDark dark:hover:text-white'
                                 }`}
                         >
-                            <span className="material-symbols-outlined text-[20px] font-light">{tab.icon}</span>
+                            <span className="material-symbols-outlined text-[20px] font-light" translate="no">{tab.icon}</span>
                             <span className="tracking-tight">{tab.label}</span>
                         </button>
                     ))}
@@ -240,7 +240,7 @@ export default function CardEditorPage() {
                                         onClick={() => avatarInputRef.current?.click()}
                                         className="flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl text-sm font-bold bg-white dark:bg-white/5 hover:bg-gray-50 dark:hover:bg-white/10 transition-all border border-gray-100 dark:border-white/10 text-apple-textDark dark:text-white shadow-sm active:scale-95"
                                     >
-                                        <span className="material-symbols-outlined text-[20px] font-light">photo_camera</span>
+                                        <span className="material-symbols-outlined text-[20px] font-light" translate="no">photo_camera</span>
                                         Charger une image
                                     </button>
                                     {form.avatarUrl && (
@@ -259,7 +259,7 @@ export default function CardEditorPage() {
                                             }}
                                             className="flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all border border-red-50 dark:border-red-900/10 active:scale-95"
                                         >
-                                            <span className="material-symbols-outlined text-[20px] font-light">delete</span>
+                                            <span className="material-symbols-outlined text-[20px] font-light" translate="no">delete</span>
                                             Supprimer
                                         </button>
                                     )}
@@ -404,7 +404,7 @@ export default function CardEditorPage() {
                     <button onClick={handleSave} disabled={saving}
                         className="btn-obsidian btn-obsidian-primary h-14 flex items-center justify-center gap-2.5 px-8 rounded-full shadow-2xl active:scale-95 disabled:opacity-50 transition-all w-full md:w-auto"
                     >
-                        <span className="material-symbols-outlined text-[22px] font-light">{saving ? 'hourglass_top' : 'save'}</span>
+                        <span className="material-symbols-outlined text-[22px] font-light" translate="no">{saving ? 'hourglass_top' : 'save'}</span>
                         <span className="text-base font-bold tracking-tight">{saving ? 'Sauvegarde...' : 'Sauvegarder'}</span>
                     </button>
                 </div>
@@ -445,7 +445,7 @@ export default function CardEditorPage() {
                         target="_blank"
                         className="btn-obsidian btn-obsidian-secondary h-12 flex items-center justify-center gap-2.5 px-8 rounded-full shadow-lg border border-gray-200 dark:border-white/10 transition-all font-bold text-xs"
                     >
-                        <span className="material-symbols-outlined text-[20px] font-light">visibility</span>
+                        <span className="material-symbols-outlined text-[20px] font-light" translate="no">visibility</span>
                         Voir le profil public
                     </a>
                 </div>
@@ -456,7 +456,7 @@ export default function CardEditorPage() {
                 onClick={() => setShowMobilePreview(true)}
                 className="xl:hidden fixed bottom-24 right-6 w-16 h-16 rounded-full bg-spaceGray dark:bg-titanium text-white dark:text-black shadow-2xl z-50 flex items-center justify-center active:scale-90 transition-all border-4 border-white/20 dark:border-black/20"
             >
-                <span className="material-symbols-outlined text-[32px]">visibility</span>
+                <span className="material-symbols-outlined text-[32px]" translate="no">visibility</span>
             </button>
 
             {/* ─── Mobile Preview Modal ─── */}
@@ -467,7 +467,7 @@ export default function CardEditorPage() {
                             onClick={() => setShowMobilePreview(false)}
                             className="w-12 h-12 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md"
                         >
-                            <span className="material-symbols-outlined">close</span>
+                            <span className="material-symbols-outlined" translate="no">close</span>
                         </button>
                     </div>
 
@@ -497,7 +497,7 @@ export default function CardEditorPage() {
                             disabled={saving}
                             className="btn-obsidian btn-obsidian-primary h-14 flex items-center justify-center gap-3 w-full rounded-2xl shadow-2xl font-bold max-w-[280px]"
                         >
-                            <span className="material-symbols-outlined">{saving ? 'hourglass_top' : 'save'}</span>
+                            <span className="material-symbols-outlined" translate="no">{saving ? 'hourglass_top' : 'save'}</span>
                             {saving ? 'Sauvegarde...' : 'Appliquer'}
                         </button>
                     </div>

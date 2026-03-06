@@ -25,25 +25,45 @@ export default function AnalyticsPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            // 1. Fetch card stats (views)
+            // 1. Fetch card ID
             const { data: cardData, error: cardError } = await supabase
                 .from('cards')
-                .select('id, view_count')
+                .select('id')
                 .eq('user_id', user.id)
                 .single();
 
-            if (cardError) console.error('Error fetching card stats:', cardError);
+            if (cardError && cardError.code !== 'PGRST116') {
+                console.error('Error fetching card stats:', cardError);
+            }
 
             // 1b. Fetch scan stats from card_scans table
             let totalScans = 0;
+            let recentScans = 0;
+            const dailyScans: Record<string, number> = {};
+
             if (cardData && cardData.id) {
-                const { count: scanCount, error: scanError } = await supabase
+                const { data: scansData, error: scanError } = await supabase
                     .from('card_scans')
-                    .select('*', { count: 'exact', head: true })
+                    .select('scanned_at')
                     .eq('card_id', cardData.id);
 
                 if (scanError) console.error('Error fetching scan stats:', scanError);
-                totalScans = scanCount || 0;
+
+                if (scansData) {
+                    totalScans = scansData.length;
+
+                    const thirtyDaysAgo = new Date();
+                    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+                    scansData.forEach(scan => {
+                        const scanDate = new Date(scan.scanned_at);
+                        if (scanDate >= thirtyDaysAgo) {
+                            recentScans++;
+                            const dateStr = scan.scanned_at.split('T')[0];
+                            dailyScans[dateStr] = (dailyScans[dateStr] || 0) + 1;
+                        }
+                    });
+                }
             }
 
             // 2. Fetch contact count
@@ -53,11 +73,11 @@ export default function AnalyticsPage() {
                 .eq('user_id', user.id);
 
             setStats({
-                totalViews: cardData?.view_count || 0,
+                totalViews: 0,
                 totalScans: totalScans,
-                recentScans: totalScans, // Simplified for now
+                recentScans: recentScans,
                 totalContacts: contactCount || 0,
-                dailyScans: {} // Mock for now until we have scan_logs table
+                dailyScans: dailyScans
             });
         } catch (e) {
             console.error(e);
@@ -75,10 +95,6 @@ export default function AnalyticsPage() {
     }
 
     const statCards = [
-        {
-            label: 'Vues totales', value: stats?.totalViews || 0, icon: 'visibility',
-            color: 'from-blue-500/20 to-cyan-500/20', textColor: 'text-blue-600 dark:text-blue-400'
-        },
         {
             label: 'Scans (30j)', value: stats?.recentScans || 0, icon: 'nfc',
             color: 'from-purple-500/20 to-indigo-500/20', textColor: 'text-purple-600 dark:text-purple-400'
@@ -112,14 +128,14 @@ export default function AnalyticsPage() {
                 </div>
 
                 {/* Stat Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-10">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-10">
                     {statCards.map((s) => (
                         <div key={s.label} className="klik-glass p-6 md:p-8 rounded-[2rem] border border-white/60 dark:border-white/5 shadow-sm group hover:shadow-xl transition-all duration-500 overflow-hidden relative">
                             <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${s.color} blur-3xl opacity-30 -mr-12 -mt-12 group-hover:opacity-50 transition-all duration-700`} />
 
                             <div className="flex flex-col gap-4 md:gap-6">
                                 <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center bg-white dark:bg-white/5 shadow-sm border border-gray-100 dark:border-white/10">
-                                    <span className={`material-symbols-outlined text-[24px] md:text-[28px] font-light ${s.textColor}`}>{s.icon}</span>
+                                    <span className={`material-symbols-outlined text-[24px] md:text-[28px] font-light ${s.textColor}`} translate="no">{s.icon}</span>
                                 </div>
                                 <div className="flex flex-col">
                                     <p className="text-3xl md:text-4xl font-black tracking-tighter text-apple-textDark dark:text-white">{s.value.toLocaleString()}</p>

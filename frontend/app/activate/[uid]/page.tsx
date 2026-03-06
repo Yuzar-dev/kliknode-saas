@@ -88,7 +88,7 @@ function Screen({ icon, title, message }: { icon: string, title: string, message
                     padding: 32,
                 }}>
                     <div className="text-center py-6">
-                        <span className="material-symbols-outlined text-5xl text-red-400 mb-3">{icon}</span>
+                        <span className="material-symbols-outlined text-5xl text-red-400 mb-3" translate="no">{icon}</span>
                         <h2 className="text-xl font-bold text-slate-900 mb-2">{title}</h2>
                         <p className="text-sm text-slate-500">{message}</p>
                     </div>

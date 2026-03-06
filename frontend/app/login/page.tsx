@@ -130,7 +130,7 @@ function LoginForm() {
                             </label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <span className="material-symbols-outlined text-apple-secondary group-focus-within:text-spaceGray dark:group-focus-within:text-titanium transition-colors text-[20px] font-light">mail</span>
+                                    <span className="material-symbols-outlined text-apple-secondary group-focus-within:text-spaceGray dark:group-focus-within:text-titanium transition-colors text-[20px] font-light" translate="no">mail</span>
                                 </div>
                                 <input
                                     {...register('email')}
@@ -144,7 +144,7 @@ function LoginForm() {
                             </div>
                             {errors.email && (
                                 <p className="mt-1.5 text-[11px] font-semibold text-red-500 ml-1 flex items-center gap-1.5 animate-in fade-in slide-in-from-left-1">
-                                    <span className="material-symbols-outlined text-[14px]">error_outline</span>
+                                    <span className="material-symbols-outlined text-[14px]" translate="no">error_outline</span>
                                     {errors.email.message}
                                 </p>
                             )}
@@ -162,7 +162,7 @@ function LoginForm() {
                             </div>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <span className="material-symbols-outlined text-apple-secondary group-focus-within:text-spaceGray dark:group-focus-within:text-titanium transition-colors text-[20px] font-light">lock</span>
+                                    <span className="material-symbols-outlined text-apple-secondary group-focus-within:text-spaceGray dark:group-focus-within:text-titanium transition-colors text-[20px] font-light" translate="no">lock</span>
                                 </div>
                                 <input
                                     {...register('password')}
@@ -178,14 +178,14 @@ function LoginForm() {
                                     className="absolute inset-y-0 right-0 pr-4 flex items-center text-apple-secondary hover:text-apple-textDark dark:hover:text-white transition-colors"
                                     onClick={() => setShowPassword(!showPassword)}
                                 >
-                                    <span className="material-symbols-outlined text-[20px] font-light">
+                                    <span className="material-symbols-outlined text-[20px] font-light" translate="no">
                                         {showPassword ? 'visibility_off' : 'visibility'}
                                     </span>
                                 </button>
                             </div>
                             {errors.password && (
                                 <p className="mt-1.5 text-[11px] font-semibold text-red-500 ml-1 flex items-center gap-1.5 animate-in fade-in slide-in-from-left-1">
-                                    <span className="material-symbols-outlined text-[14px]">error_outline</span>
+                                    <span className="material-symbols-outlined text-[14px]" translate="no">error_outline</span>
                                     {errors.password.message}
                                 </p>
                             )}
@@ -220,7 +220,7 @@ function LoginForm() {
                             ) : (
                                 <div className="flex items-center gap-2 tracking-wide font-bold">
                                     <span>Entrer dans l'espace</span>
-                                    <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1.5 transition-transform font-light">arrow_forward</span>
+                                    <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1.5 transition-transform font-light" translate="no">arrow_forward</span>
                                 </div>
                             )}
                         </button>

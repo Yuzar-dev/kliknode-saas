@@ -185,7 +185,7 @@ export default function CardPreview({
 
                         {(city || country) && (
                             <div className="flex items-center justify-center gap-1.5 text-[#86868B]/60 dark:text-gray-500 text-xs py-1 font-bold">
-                                <span className="material-symbols-outlined text-[16px]">location_on</span>
+                                <span className="material-symbols-outlined text-[16px]" translate="no">location_on</span>
                                 <span>{city}{city && country ? ', ' : ''}{country}</span>
                             </div>
                         )}
@@ -196,14 +196,14 @@ export default function CardPreview({
                     <div className="flex items-center gap-4 mt-8 w-full px-2">
                         <div className="flex-1 flex items-center justify-center gap-2 h-14 btn-obsidian rounded-full text-white shadow-xl transition-all hover:scale-[1.02] active:scale-95 border border-white/10"
                             style={{ background: primaryColor }}>
-                            <span className="material-symbols-outlined font-light text-[20px]">mail</span>
+                            <span className="material-symbols-outlined font-light text-[20px]" translate="no">mail</span>
                             <span className="font-bold text-sm tracking-wide">Email</span>
                         </div>
                         <div className="h-14 w-14 flex items-center justify-center rounded-full bg-white dark:bg-[#1C1C1E] shadow-lg text-[#1D1D1F] dark:text-white border border-gray-100 dark:border-white/10">
-                            <span className="material-symbols-outlined font-light text-[22px]">call</span>
+                            <span className="material-symbols-outlined font-light text-[22px]" translate="no">call</span>
                         </div>
                         <div className="h-14 w-14 flex items-center justify-center rounded-full bg-white dark:bg-[#1C1C1E] shadow-lg text-[#1D1D1F] dark:text-white border border-gray-100 dark:border-white/10">
-                            <span className="material-symbols-outlined font-light text-[22px]">chat_bubble</span>
+                            <span className="material-symbols-outlined font-light text-[22px]" translate="no">chat_bubble</span>
                         </div>
                     </div>
 
@@ -211,7 +211,7 @@ export default function CardPreview({
                     {website && (
                         <div className="w-full mt-4 px-2">
                             <div className="flex items-center justify-center gap-2.5 h-12 w-full rounded-full bg-white/60 dark:bg-white/5 backdrop-blur-md border border-white/50 dark:border-white/10 shadow-sm text-[#1D1D1F] dark:text-white font-bold opacity-90">
-                                <span className="material-symbols-outlined font-light text-[18px]">language</span>
+                                <span className="material-symbols-outlined font-light text-[18px]" translate="no">language</span>
                                 Visiter notre site
                             </div>
                         </div>
@@ -241,7 +241,7 @@ export default function CardPreview({
                         if (socialLinksToDisplay.length === 0) {
                             return (
                                 <div className="bg-white/40 dark:bg-black/20 backdrop-blur-md p-10 text-center rounded-[2rem] border border-white/40 dark:border-white/10">
-                                    <span className="material-symbols-outlined text-gray-300 dark:text-gray-700 text-4xl font-light mb-3">link_off</span>
+                                    <span className="material-symbols-outlined text-gray-300 dark:text-gray-700 text-4xl font-light mb-3" translate="no">link_off</span>
                                     <p className="text-[#86868B] dark:text-gray-500 text-xs font-bold">Aucun lien pour l'instant</p>
                                 </div>
                             );
@@ -273,7 +273,7 @@ export default function CardPreview({
                                                         className={`w-6 h-6 object-contain ${['x', 'github', 'tiktok'].includes(iconSlug) ? 'dark:invert' : ''}`}
                                                         onError={(e) => {
                                                             e.currentTarget.style.display = 'none';
-                                                            e.currentTarget.parentElement!.innerHTML = `<span class="material-symbols-outlined text-gray-400 text-sm">link</span>`;
+                                                            e.currentTarget.parentElement!.innerHTML = `<span class="material-symbols-outlined text-gray-400 text-sm" translate="no">link</span>`;
                                                         }}
                                                     />
                                                 </div>
@@ -292,11 +292,11 @@ export default function CardPreview({
                                                     key={link.id}
                                                     className="flex items-center justify-start gap-3 w-full px-4 py-2.5 rounded-full bg-white/60 dark:bg-black/40 backdrop-blur-md border border-white/50 dark:border-white/10 shadow-sm relative overflow-hidden transition-all"
                                                 >
-                                                    <span className="material-symbols-outlined shrink-0 text-[18px] text-[#1D1D1F]/60 dark:text-gray-400 font-light">{PLATFORM_ICONS[link.platform?.toLowerCase() || ''] || link.icon || 'public'}</span>
+                                                    <span className="material-symbols-outlined shrink-0 text-[18px] text-[#1D1D1F]/60 dark:text-gray-400 font-light" translate="no">{PLATFORM_ICONS[link.platform?.toLowerCase() || ''] || link.icon || 'public'}</span>
                                                     <span className="text-[13px] font-bold text-[#1D1D1F] dark:text-white tracking-tight flex-1 truncate min-w-0">
                                                         {link.label || link.platform || 'Lien externe'}
                                                     </span>
-                                                    <span className="material-symbols-outlined text-[16px] text-[#86868B]/50 dark:text-gray-600 font-light ml-auto">chevron_right</span>
+                                                    <span className="material-symbols-outlined text-[16px] text-[#86868B]/50 dark:text-gray-600 font-light ml-auto" translate="no">chevron_right</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -312,11 +312,11 @@ export default function CardPreview({
                     <div className="w-full h-12 rounded-full flex items-center justify-center gap-2 text-white shadow-lg transition-all active:scale-[0.98] border border-white/10"
                         style={{ background: primaryColor }}>
                         <span className="font-extrabold tracking-tight text-sm">Échanger le contact</span>
-                        <span className="material-symbols-outlined text-lg">chevron_right</span>
+                        <span className="material-symbols-outlined text-lg" translate="no">chevron_right</span>
                     </div>
 
                     <div className="inline-flex items-center gap-1.5 text-[#86868B] dark:text-gray-500 font-bold text-[10px] tracking-widest uppercase py-2 hover:text-[#1D1D1F] dark:hover:text-white transition-colors cursor-pointer">
-                        <span className="material-symbols-outlined text-base font-light">person_add</span>
+                        <span className="material-symbols-outlined text-base font-light" translate="no">person_add</span>
                         Ajouter aux contacts
                     </div>
                 </div>

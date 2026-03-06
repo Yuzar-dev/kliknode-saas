@@ -136,7 +136,7 @@ export default function ResetPasswordPage() {
                             </label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <span className="material-symbols-outlined text-apple-secondary group-focus-within:text-spaceGray dark:group-focus-within:text-titanium transition-colors text-[20px] font-light">lock_open</span>
+                                    <span className="material-symbols-outlined text-apple-secondary group-focus-within:text-spaceGray dark:group-focus-within:text-titanium transition-colors text-[20px] font-light" translate="no">lock_open</span>
                                 </div>
                                 <input
                                     {...register('password')}
@@ -151,7 +151,7 @@ export default function ResetPasswordPage() {
                                     className="absolute inset-y-0 right-0 pr-4 flex items-center text-apple-secondary hover:text-apple-textDark dark:hover:text-white transition-colors focus:outline-none"
                                     onClick={() => setShowPassword(!showPassword)}
                                 >
-                                    <span className="material-symbols-outlined text-[20px] font-light">
+                                    <span className="material-symbols-outlined text-[20px] font-light" translate="no">
                                         {showPassword ? 'visibility_off' : 'visibility'}
                                     </span>
                                 </button>
@@ -188,7 +188,7 @@ export default function ResetPasswordPage() {
                             </label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <span className="material-symbols-outlined text-apple-secondary group-focus-within:text-spaceGray dark:group-focus-within:text-titanium transition-colors text-[20px] font-light">verified_user</span>
+                                    <span className="material-symbols-outlined text-apple-secondary group-focus-within:text-spaceGray dark:group-focus-within:text-titanium transition-colors text-[20px] font-light" translate="no">verified_user</span>
                                 </div>
                                 <input
                                     {...register('confirmPassword')}
@@ -203,7 +203,7 @@ export default function ResetPasswordPage() {
                                     className="absolute inset-y-0 right-0 pr-4 flex items-center text-apple-secondary hover:text-apple-textDark dark:hover:text-white transition-colors focus:outline-none"
                                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                 >
-                                    <span className="material-symbols-outlined text-[20px] font-light">
+                                    <span className="material-symbols-outlined text-[20px] font-light" translate="no">
                                         {showConfirmPassword ? 'visibility_off' : 'visibility'}
                                     </span>
                                 </button>
@@ -227,7 +227,7 @@ export default function ResetPasswordPage() {
                             ) : (
                                 <div className="flex items-center gap-2 tracking-wide font-bold">
                                     <span>Valider le nouveau code</span>
-                                    <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1.5 transition-transform font-light">lock_reset</span>
+                                    <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1.5 transition-transform font-light" translate="no">lock_reset</span>
                                 </div>
                             )}
                         </button>
@@ -236,7 +236,7 @@ export default function ResetPasswordPage() {
                     {/* Footer */}
                     <div className="mt-12 pt-8 border-t border-gray-200 dark:border-white/5 flex justify-center">
                         <Link href="/login" className="inline-flex items-center gap-3 group text-xs font-bold text-apple-secondary hover:text-apple-textDark dark:hover:text-white transition-colors uppercase tracking-[0.1em]">
-                            <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-1.5 transition-transform font-light">arrow_back</span>
+                            <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-1.5 transition-transform font-light" translate="no">arrow_back</span>
                             Annuler et revenir
                         </Link>
                     </div>

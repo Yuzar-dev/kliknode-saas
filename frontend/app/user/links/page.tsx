@@ -224,7 +224,7 @@ export default function LinksPage() {
                     <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 dark:bg-blue-400/5 blur-3xl opacity-30 -mr-16 -mt-16 group-hover:opacity-50 transition-all duration-700" />
 
                     <h3 className="text-[10px] md:text-xs font-black uppercase tracking-[0.25em] text-apple-secondary dark:text-gray-500 mb-6 md:mb-8 px-1 flex items-center gap-2">
-                        <span className="material-symbols-outlined text-blue-600 text-[18px]">add_link</span>
+                        <span className="material-symbols-outlined text-blue-600 text-[18px]" translate="no">add_link</span>
                         Ajouter un lien
                     </h3>
 
@@ -257,7 +257,7 @@ export default function LinksPage() {
                         <div className="flex-1 space-y-3 group/input">
                             <label className="block text-[10px] md:text-[11px] font-black text-apple-secondary dark:text-gray-500 uppercase tracking-widest ml-1 group-focus-within/input:text-apple-textDark dark:group-focus-within/input:text-white transition-colors">URL *</label>
                             <div className="relative">
-                                <span className="absolute left-5 top-1/2 -translate-y-1/2 material-symbols-outlined text-apple-secondary text-[20px] font-light">link</span>
+                                <span className="absolute left-5 top-1/2 -translate-y-1/2 material-symbols-outlined text-apple-secondary text-[20px] font-light" translate="no">link</span>
                                 <input
                                     type={newForm.platform === 'email' ? 'email' : 'url'}
                                     value={newForm.url}
@@ -276,8 +276,8 @@ export default function LinksPage() {
                                     onClick={() => setShowIconPicker(showIconPicker === 'new' ? null : 'new')}
                                     className="flex items-center justify-center gap-3 h-12 md:h-14 w-full md:w-auto px-6 rounded-[1.2rem] border border-gray-100 dark:border-white/5 bg-white/50 dark:bg-white/5 text-apple-textDark dark:text-white hover:bg-white dark:hover:bg-white/10 transition-all shadow-sm active:scale-95"
                                 >
-                                    <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-[22px] font-light">{newForm.icon}</span>
-                                    <span className="material-symbols-outlined text-apple-secondary text-[16px] font-light">expand_more</span>
+                                    <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-[22px] font-light" translate="no">{newForm.icon}</span>
+                                    <span className="material-symbols-outlined text-apple-secondary text-[16px] font-light" translate="no">expand_more</span>
                                 </button>
                                 {showIconPicker === 'new' && (
                                     <div className="absolute top-full mt-3 right-0 z-[100] p-4 rounded-[1.5rem] shadow-2xl grid grid-cols-5 gap-2 border border-white/60 dark:border-white/10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200"
@@ -289,7 +289,7 @@ export default function LinksPage() {
                                                 className={`w-10 h-10 rounded-[10px] flex items-center justify-center hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all z-10 ${newForm.icon === ic ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400' : 'text-apple-textDark dark:text-apple-bgLight'}`}
                                                 title={ic}
                                             >
-                                                <span className="material-symbols-outlined text-[20px] font-light">{ic}</span>
+                                                <span className="material-symbols-outlined text-[20px] font-light" translate="no">{ic}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -298,7 +298,7 @@ export default function LinksPage() {
                             <button onClick={handleAdd} disabled={adding}
                                 className="btn-obsidian btn-obsidian-primary h-12 md:h-14 flex-1 md:flex-none px-8 rounded-[1.2rem] shadow-xl active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-2.5 font-bold"
                             >
-                                <span className="material-symbols-outlined text-[20px] font-light">add</span>
+                                <span className="material-symbols-outlined text-[20px] font-light" translate="no">add</span>
                                 <span>{adding ? '...' : 'Ajouter'}</span>
                             </button>
                         </div>
@@ -308,7 +308,7 @@ export default function LinksPage() {
                 {/* Links list */}
                 {links.length === 0 ? (
                     <div className="klik-glass p-12 md:p-20 text-center rounded-[2.5rem] border border-white/60 dark:border-white/5">
-                        <span className="material-symbols-outlined text-5xl md:text-6xl text-apple-secondary dark:text-gray-700 mb-6 font-light">link_off</span>
+                        <span className="material-symbols-outlined text-5xl md:text-6xl text-apple-secondary dark:text-gray-700 mb-6 font-light" translate="no">link_off</span>
                         <p className="text-apple-textDark dark:text-white font-black text-lg md:text-xl">Aucun lien pour l'instant</p>
                         <p className="text-apple-secondary dark:text-gray-500 font-bold text-xs md:text-sm mt-2">Ajoutez votre premier lien ci-dessus pour commencer.</p>
                     </div>
@@ -334,7 +334,7 @@ export default function LinksPage() {
                                         <div className="flex items-center gap-4 md:gap-6">
                                             <div className="w-10 h-10 md:w-12 md:h-12 rounded-[0.8rem] md:rounded-[1rem] flex items-center justify-center flex-shrink-0 shadow-sm border border-white/40 dark:border-white/5"
                                                 style={{ backgroundColor: `${brandColor}15` }}>
-                                                <span className="material-symbols-outlined text-[20px] md:text-[24px]" style={{ color: brandColor }}>{iconName}</span>
+                                                <span className="material-symbols-outlined text-[20px] md:text-[24px]" style={{ color: brandColor }} translate="no">{iconName}</span>
                                             </div>
                                             <div className="flex-1 w-0 min-w-0 pr-2">
                                                 <p className="font-black text-apple-textDark dark:text-white text-sm md:text-base tracking-tight truncate">{link.label || platform?.label || link.platform}</p>
@@ -351,11 +351,11 @@ export default function LinksPage() {
                                                 <div className="hidden sm:block w-px h-8 bg-gray-100 dark:bg-white/5" />
                                                 <button onClick={() => setEditingId(link.id)}
                                                     className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-apple-secondary hover:text-blue-500 bg-white/40 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition-all active:scale-95">
-                                                    <span className="material-symbols-outlined text-[18px] md:text-[20px] font-light">edit</span>
+                                                    <span className="material-symbols-outlined text-[18px] md:text-[20px] font-light" translate="no">edit</span>
                                                 </button>
                                                 <button onClick={() => handleDelete(link.id)}
                                                     className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-apple-secondary hover:text-red-500 bg-white/40 dark:bg-white/5 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all active:scale-95">
-                                                    <span className="material-symbols-outlined text-[18px] md:text-[20px] font-light">delete</span>
+                                                    <span className="material-symbols-outlined text-[18px] md:text-[20px] font-light" translate="no">delete</span>
                                                 </button>
                                             </div>
                                         </div>
@@ -402,7 +402,7 @@ export default function LinksPage() {
                 onClick={() => setShowMobilePreview(true)}
                 className="xl:hidden fixed bottom-24 right-6 w-16 h-16 rounded-full bg-spaceGray dark:bg-titanium text-white dark:text-black shadow-2xl z-50 flex items-center justify-center active:scale-90 transition-all border-4 border-white/20 dark:border-black/20"
             >
-                <span className="material-symbols-outlined text-[32px]">visibility</span>
+                <span className="material-symbols-outlined text-[32px]" translate="no">visibility</span>
             </button>
 
             {/* ─── Mobile Preview Modal ─── */}
@@ -413,7 +413,7 @@ export default function LinksPage() {
                             onClick={() => setShowMobilePreview(false)}
                             className="w-12 h-12 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md"
                         >
-                            <span className="material-symbols-outlined">close</span>
+                            <span className="material-symbols-outlined" translate="no">close</span>
                         </button>
                     </div>
 
@@ -485,8 +485,8 @@ function EditLinkForm({ link, platforms, iconOptions, onSave, onCancel }: {
                         <label className="block text-[10px] font-black text-apple-secondary dark:text-gray-500 uppercase tracking-widest ml-1 mb-2">Icône</label>
                         <button onClick={() => setShowPicker(p => !p)}
                             className="flex items-center justify-center gap-2 h-11 w-full sm:w-auto px-4 rounded-[1rem] border border-gray-100 dark:border-white/5 bg-white/60 dark:bg-white/5 text-sm text-apple-textDark dark:text-white shadow-sm">
-                            <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-[20px] font-light">{form.icon}</span>
-                            <span className="material-symbols-outlined text-apple-secondary text-[12px] font-light">expand_more</span>
+                            <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-[20px] font-light" translate="no">{form.icon}</span>
+                            <span className="material-symbols-outlined text-apple-secondary text-[12px] font-light" translate="no">expand_more</span>
                         </button>
                         {showPicker && (
                             <div className="absolute top-full mt-3 right-0 z-[100] p-3 rounded-[1.2rem] shadow-2xl grid grid-cols-5 gap-1.5 border border-white/60 dark:border-white/10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200"
@@ -495,7 +495,7 @@ function EditLinkForm({ link, platforms, iconOptions, onSave, onCancel }: {
                                 {iconOptions.map(ic => (
                                     <button key={ic} onClick={() => { setForm(f => ({ ...f, icon: ic })); setShowPicker(false); }}
                                         className={`w-9 h-9 rounded-[8px] flex items-center justify-center hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all z-10 ${form.icon === ic ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400' : 'text-apple-textDark dark:text-apple-bgLight'}`}>
-                                        <span className="material-symbols-outlined text-[18px] font-light">{ic}</span>
+                                        <span className="material-symbols-outlined text-[18px] font-light" translate="no">{ic}</span>
                                     </button>
                                 ))}
                             </div>

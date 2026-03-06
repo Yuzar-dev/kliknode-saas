@@ -299,10 +299,10 @@ export default function OperatorPage() {
                         <div className="h-8 w-px bg-gray-200 dark:bg-white/10" />
                         <div className="flex items-center gap-3">
                             <button onClick={loadData} title="Rafraîchir" className="w-10 h-10 rounded-full flex items-center justify-center text-apple-secondary hover:text-apple-textDark dark:hover:text-white bg-white/40 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition-all active:scale-95">
-                                <span className="material-symbols-outlined text-[20px] font-light">refresh</span>
+                                <span className="material-symbols-outlined text-[20px] font-light" translate="no">refresh</span>
                             </button>
                             <button onClick={handleLogout} className="w-10 h-10 rounded-full flex items-center justify-center text-apple-secondary hover:text-red-500 bg-white/40 dark:bg-white/5 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all active:scale-95">
-                                <span className="material-symbols-outlined text-[20px] font-light">logout</span>
+                                <span className="material-symbols-outlined text-[20px] font-light" translate="no">logout</span>
                             </button>
                         </div>
                     </div>
@@ -321,7 +321,7 @@ export default function OperatorPage() {
                                 <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${s.color} blur-3xl opacity-20 -mr-10 -mt-10`} />
                                 <div className="flex flex-col gap-4">
                                     <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white dark:bg-white/5 shadow-sm border border-gray-100 dark:border-white/10">
-                                        <span className={`material-symbols-outlined text-[24px] font-light ${s.textColor}`}>{s.icon}</span>
+                                        <span className={`material-symbols-outlined text-[24px] font-light ${s.textColor}`} translate="no">{s.icon}</span>
                                     </div>
                                     <div className="flex flex-col">
                                         <p className="text-3xl font-black tracking-tight">{s.value}</p>
@@ -338,7 +338,7 @@ export default function OperatorPage() {
                         <div className="klik-glass p-10 rounded-[2.5rem] border border-white/60 dark:border-white/5 shadow-lg relative overflow-hidden group">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100 dark:bg-blue-900/10 blur-3xl opacity-30 -mr-16 -mt-16 group-hover:opacity-50 transition-all duration-700" />
                             <div className="flex items-center gap-3 mb-8">
-                                <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 font-light text-2xl">nfc</span>
+                                <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 font-light text-2xl" translate="no">nfc</span>
                                 <h2 className="text-xl font-black tracking-tight">Encoder une carte</h2>
                             </div>
                             <div className="flex flex-col gap-6">
@@ -378,7 +378,7 @@ export default function OperatorPage() {
                                     <button onClick={handleEncode} disabled={encoding}
                                         className="w-full h-14 btn-obsidian btn-obsidian-primary flex items-center justify-center gap-2 rounded-[1.2rem] shadow-xl disabled:opacity-50 transition-all active:scale-95"
                                     >
-                                        <span className="material-symbols-outlined text-[20px] font-light">bolt</span>
+                                        <span className="material-symbols-outlined text-[20px] font-light" translate="no">bolt</span>
                                         <span className="font-bold tracking-tight">{encoding ? 'Patience...' : 'Encoder'}</span>
                                     </button>
                                 </div>
@@ -390,7 +390,7 @@ export default function OperatorPage() {
                             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-100 dark:bg-emerald-900/10 blur-3xl opacity-30 -mr-16 -mt-16 group-hover:opacity-50 transition-all duration-700" />
                             <div className="flex items-center justify-between mb-8">
                                 <div className="flex items-center gap-3">
-                                    <span className="material-symbols-outlined text-emerald-600 dark:text-emerald-400 font-light text-2xl">dynamic_feed</span>
+                                    <span className="material-symbols-outlined text-emerald-600 dark:text-emerald-400 font-light text-2xl" translate="no">dynamic_feed</span>
                                     <h2 className="text-xl font-black tracking-tight">Générateur Batch</h2>
                                 </div>
                                 <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Alpha</span>
@@ -438,14 +438,14 @@ export default function OperatorPage() {
                                 <button onClick={generateUids}
                                     className="flex-1 h-14 rounded-[1.2rem] text-sm font-bold text-apple-textDark dark:text-white bg-white/50 dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-white dark:hover:bg-white/10 transition-all active:scale-95"
                                 >
-                                    <span className="material-symbols-outlined text-[20px] font-light align-middle mr-2">shuffle</span>
+                                    <span className="material-symbols-outlined text-[20px] font-light align-middle mr-2" translate="no">shuffle</span>
                                     Simuler UIDs
                                 </button>
                                 {generatedUids.length > 0 && (
                                     <button onClick={handleBatchEncode} disabled={batchEncoding}
                                         className="flex-1 h-14 btn-obsidian bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-[1.2rem] shadow-xl disabled:opacity-50 transition-all active:scale-95 flex items-center justify-center gap-2"
                                     >
-                                        <span className="material-symbols-outlined text-[20px] font-light">cloud_done</span>
+                                        <span className="material-symbols-outlined text-[20px] font-light" translate="no">cloud_done</span>
                                         <span className="font-bold tracking-tight">{batchEncoding ? 'Batch...' : `Lancer ${generatedUids.length}`}</span>
                                     </button>
                                 )}
@@ -481,7 +481,7 @@ export default function OperatorPage() {
                             </div>
                         ) : cards.length === 0 ? (
                             <div className="text-center py-24 bg-white/20 dark:bg-black/20 rounded-[2rem] border border-dashed border-gray-200 dark:border-white/10">
-                                <span className="material-symbols-outlined text-7xl text-gray-200 dark:text-gray-800 font-light mb-4">inventory_2</span>
+                                <span className="material-symbols-outlined text-7xl text-gray-200 dark:text-gray-800 font-light mb-4" translate="no">inventory_2</span>
                                 <p className="text-base font-bold text-apple-secondary">Aucun enregistrement disponible.</p>
                             </div>
                         ) : (
@@ -526,14 +526,14 @@ export default function OperatorPage() {
                                                                 onClick={() => downloadQRCode(card.uid)}
                                                                 className="flex items-center gap-1 text-[9px] font-black uppercase tracking-tighter text-blue-600 dark:text-blue-400 opacity-0 group-hover/qr:opacity-100 transition-opacity hover:underline"
                                                             >
-                                                                <span className="material-symbols-outlined text-[12px]">download</span>
+                                                                <span className="material-symbols-outlined text-[12px]" translate="no">download</span>
                                                                 PNG
                                                             </button>
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-5">
                                                         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-white/10 text-[10px] font-black uppercase tracking-widest text-apple-secondary dark:text-gray-400">
-                                                            <span className="material-symbols-outlined text-[14px]">inventory</span>
+                                                            <span className="material-symbols-outlined text-[14px]" translate="no">inventory</span>
                                                             {WAREHOUSES.find(w => w.value === card.warehouse)?.label || card.warehouse}
                                                         </div>
                                                     </td>
@@ -565,14 +565,14 @@ export default function OperatorPage() {
                                                                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-apple-secondary dark:text-gray-400 bg-white/60 dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-white dark:hover:bg-white/20 hover:text-apple-textDark dark:hover:text-white transition-all shadow-sm active:scale-95"
                                                             >
                                                                 Options
-                                                                <span className="material-symbols-outlined text-[16px] font-light">expand_more</span>
+                                                                <span className="material-symbols-outlined text-[16px] font-light" translate="no">expand_more</span>
                                                             </button>
                                                         ) : (
                                                             <button
                                                                 onClick={() => handleChangeStatus(card.id, 'lost')}
                                                                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-red-500 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all active:scale-95"
                                                             >
-                                                                <span className="material-symbols-outlined text-[16px] font-light">warning</span>
+                                                                <span className="material-symbols-outlined text-[16px] font-light" translate="no">warning</span>
                                                                 Perdue
                                                             </button>
                                                         )}
@@ -619,7 +619,7 @@ export default function OperatorPage() {
                                         <div className="w-2.5 h-2.5 rounded-full shadow-inner" style={{ backgroundColor: v.text }} />
                                         {v.label}
                                     </div>
-                                    <span className="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all">chevron_right</span>
+                                    <span className="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" translate="no">chevron_right</span>
                                 </button>
                             ))
                         }

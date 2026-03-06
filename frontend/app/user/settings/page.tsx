@@ -90,14 +90,14 @@ export default function SettingsPage() {
                                 <p className="text-[10px] font-black uppercase tracking-widest text-apple-secondary dark:text-gray-500 mb-1">Nom complet</p>
                                 <p className="text-base font-black text-apple-textDark dark:text-white tracking-tight">{profile?.firstName} {profile?.lastName}</p>
                             </div>
-                            <span className="material-symbols-outlined text-apple-secondary opacity-30">person</span>
+                            <span className="material-symbols-outlined text-apple-secondary opacity-30" translate="no">person</span>
                         </div>
                         <div className="flex justify-between items-center py-5 border-b border-gray-100 dark:border-white/5 px-4 rounded-2xl hover:bg-white/40 dark:hover:bg-white/5 transition-all">
                             <div>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-apple-secondary dark:text-gray-500 mb-1">Email</p>
                                 <p className="text-base font-black text-apple-textDark dark:text-white tracking-tight italic">{profile?.email}</p>
                             </div>
-                            <span className="material-symbols-outlined text-apple-secondary opacity-30">mail</span>
+                            <span className="material-symbols-outlined text-apple-secondary opacity-30" translate="no">mail</span>
                         </div>
                         <div className="flex justify-between items-center py-5 px-4 rounded-2xl hover:bg-white/40 dark:hover:bg-white/5 transition-all">
                             <div>
