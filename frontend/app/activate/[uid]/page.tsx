@@ -33,21 +33,22 @@ export default async function ActivatePage({
     if (physicalCard.status === 'paired') {
         const { data: virtualCard } = await supabase
             .from('cards')
-            .select('public_slug, user_id')
+            .select('id, public_slug, user_id')
             .eq('id', physicalCard.paired_card_id)
             .maybeSingle();
 
         const slug = virtualCard?.public_slug || virtualCard?.user_id;
 
-        if (slug) {
+        if (slug && virtualCard) {
             const headersList = await headers();
             const host = headersList.get('host') || '';
             const isNfcDomain = host.includes('k.kliknode.com');
             const appUrl = isNfcDomain ? 'https://app.kliknode.com' : '';
 
+            // Increment scan count
+            await supabase.rpc('increment_scan_count', { card_id_param: virtualCard.id });
+
             redirect(`${appUrl}/p/${slug}`);
-        } else {
-            return <NotFound />;
         }
     }
 

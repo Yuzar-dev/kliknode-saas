@@ -3,9 +3,9 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-    console.log('Replacing Supabase Auth Trigger...');
+  console.log('Replacing Supabase Auth Trigger...');
 
-    const sql = `
+  const sql = `
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -32,7 +32,7 @@ BEGIN
     '', 
     new.raw_user_meta_data->>'first_name', 
     new.raw_user_meta_data->>'last_name', 
-    coalesce((new.raw_user_meta_data->>'role')::public."UserRole", 'operator'::public."UserRole"), 
+    'employee'::public."UserRole", 
     now(), 
     now()
   );
@@ -74,14 +74,14 @@ END;
 $$;
   `;
 
-    try {
-        await prisma.$executeRawUnsafe(sql);
-        console.log('Trigger successfully replaced!');
-    } catch (err) {
-        console.error('Error replacing trigger:', err);
-    } finally {
-        await prisma.$disconnect();
-    }
+  try {
+    await prisma.$executeRawUnsafe(sql);
+    console.log('Trigger successfully replaced!');
+  } catch (err) {
+    console.error('Error replacing trigger:', err);
+  } finally {
+    await prisma.$disconnect();
+  }
 }
 
 main();

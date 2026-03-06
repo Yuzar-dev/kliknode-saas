@@ -34,9 +34,9 @@ export default function AnalyticsPage() {
 
             // 2. Fetch contact count
             const { count: contactCount, error: contactError } = await supabase
-                .from('contacts')
+                .from('contacts_leads')
                 .select('*', { count: 'exact', head: true })
-                .eq('profile_id', user.id);
+                .eq('user_id', user.id);
 
             setStats({
                 totalViews: cardData?.view_count || 0,

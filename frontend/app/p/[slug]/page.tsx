@@ -113,6 +113,14 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                 };
 
                 setCard(mappedData);
+
+                // Increment view count (Async, don't block UI)
+                supabase.rpc('increment_view_count', { card_id_param: data.id }).then(({ error }) => {
+                    if (error) {
+                        // If RPC fails, try direct update
+                        supabase.from('cards').update({ view_count: (data.view_count || 0) + 1 }).eq('id', data.id).then();
+                    }
+                });
             } catch (error: any) {
                 console.error('Error fetching card:', error);
                 toast.error(error.message || 'Carte introuvable');
@@ -167,7 +175,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
             const { error } = await supabase.from('contacts_leads').insert({
                 card_id: card!.id,
                 user_id: card!.userId,
-                company_id: card!.companyId,
+                company_id: card!.companyId || null,
                 first_name: formData.firstName,
                 last_name: formData.lastName,
                 email: formData.email,
@@ -493,7 +501,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                                         value={`${formData.firstName}${formData.lastName ? ' ' + formData.lastName : ''}`}
                                         onChange={(e) => {
                                             const val = e.target.value;
-                                            const parts = val.trim().split(/\s+/);
+                                            const parts = val.split(' ');
                                             setFormData({
                                                 ...formData,
                                                 firstName: parts[0] || '',
