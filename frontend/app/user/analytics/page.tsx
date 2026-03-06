@@ -29,8 +29,10 @@ export default function AnalyticsPage() {
             const { data: cardData, error: cardError } = await supabase
                 .from('cards')
                 .select('view_count, scan_count')
-                .eq('assigned_user_id', user.id)
+                .eq('user_id', user.id)
                 .single();
+
+            if (cardError) console.error('Error fetching card stats:', cardError);
 
             // 2. Fetch contact count
             const { count: contactCount, error: contactError } = await supabase
