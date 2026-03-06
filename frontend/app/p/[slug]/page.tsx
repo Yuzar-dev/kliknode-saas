@@ -113,17 +113,17 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
 
                 setCard(mappedData);
 
-                // Increment view and scan count (Async, don't block UI)
+                // Increment view count via RPC
                 supabase.rpc('increment_view_count', { card_id_param: data.id }).then(({ error }) => {
                     if (error) {
                         // If RPC fails, try direct update
                         supabase.from('cards').update({ view_count: (data.view_count || 0) + 1 }).eq('id', data.id).then();
                     }
                 });
-                supabase.rpc('increment_scan_count', { card_id_param: data.id }).then(({ error }) => {
-                    if (error) {
-                        supabase.from('cards').update({ scan_count: (data.scan_count || 0) + 1 }).eq('id', data.id).then();
-                    }
+
+                // Insert scan record
+                supabase.rpc('log_card_scan', { p_card_id: data.id }).then(({ error }) => {
+                    if (error) console.error('Error logging scan via RPC:', error);
                 });
             } catch (error: any) {
                 console.error('Error fetching card:', error);
