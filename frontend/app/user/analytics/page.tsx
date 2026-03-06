@@ -25,14 +25,26 @@ export default function AnalyticsPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            // 1. Fetch card stats (views and scans)
+            // 1. Fetch card stats (views)
             const { data: cardData, error: cardError } = await supabase
                 .from('cards')
-                .select('view_count, scan_count')
+                .select('id, view_count')
                 .eq('user_id', user.id)
                 .single();
 
             if (cardError) console.error('Error fetching card stats:', cardError);
+
+            // 1b. Fetch scan stats from card_scans table
+            let totalScans = 0;
+            if (cardData && cardData.id) {
+                const { count: scanCount, error: scanError } = await supabase
+                    .from('card_scans')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('card_id', cardData.id);
+
+                if (scanError) console.error('Error fetching scan stats:', scanError);
+                totalScans = scanCount || 0;
+            }
 
             // 2. Fetch contact count
             const { count: contactCount, error: contactError } = await supabase
@@ -42,8 +54,8 @@ export default function AnalyticsPage() {
 
             setStats({
                 totalViews: cardData?.view_count || 0,
-                totalScans: cardData?.scan_count || 0,
-                recentScans: cardData?.scan_count || 0, // Simplified for now
+                totalScans: totalScans,
+                recentScans: totalScans, // Simplified for now
                 totalContacts: contactCount || 0,
                 dailyScans: {} // Mock for now until we have scan_logs table
             });
