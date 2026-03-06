@@ -179,21 +179,20 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
             const firstName = parts[0] || '';
             const lastName = parts.slice(1).join(' ') || '';
 
-            const response = await fetch(`/api/public/card/${card!.publicSlug}/exchange`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    firstName,
-                    lastName,
-                    email: formData.email,
-                    phone: formData.phone,
-                    notes: formData.notes
-                })
+            const supabase = createClient();
+            const { error: rpcError } = await supabase.rpc('create_contact_lead', {
+                p_card_id: card!.id,
+                p_user_id: card!.userId,
+                p_company_id: card!.companyId || null,
+                p_first_name: firstName,
+                p_last_name: lastName,
+                p_email: formData.email,
+                p_phone: formData.phone,
+                p_notes: formData.notes
             });
 
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                throw new Error(errData.error || 'Erreur réseau');
+            if (rpcError) {
+                throw new Error(rpcError.message || "Erreur réseau lors de l'envoi.");
             }
 
             toast.success('Vos informations ont été envoyées !');
