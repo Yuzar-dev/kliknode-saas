@@ -55,8 +55,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
 
     // Form state for Exchange Contact
     const [formData, setFormData] = useState({
-        firstName: '',
-        lastName: '',
+        name: '',
         email: '',
         phone: '',
         notes: ''
@@ -114,11 +113,16 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
 
                 setCard(mappedData);
 
-                // Increment view count (Async, don't block UI)
+                // Increment view and scan count (Async, don't block UI)
                 supabase.rpc('increment_view_count', { card_id_param: data.id }).then(({ error }) => {
                     if (error) {
                         // If RPC fails, try direct update
                         supabase.from('cards').update({ view_count: (data.view_count || 0) + 1 }).eq('id', data.id).then();
+                    }
+                });
+                supabase.rpc('increment_scan_count', { card_id_param: data.id }).then(({ error }) => {
+                    if (error) {
+                        supabase.from('cards').update({ scan_count: (data.scan_count || 0) + 1 }).eq('id', data.id).then();
                     }
                 });
             } catch (error: any) {
@@ -171,26 +175,33 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
         e.preventDefault();
         setIsSharing(true);
         try {
-            const supabase = createClient();
-            const { error } = await supabase.from('contacts_leads').insert({
-                card_id: card!.id,
-                user_id: card!.userId,
-                company_id: card!.companyId || null,
-                first_name: formData.firstName,
-                last_name: formData.lastName,
-                email: formData.email,
-                phone: formData.phone,
-                notes: formData.notes,
-                source: 'web_link'
+            const parts = formData.name.trim().split(' ');
+            const firstName = parts[0] || '';
+            const lastName = parts.slice(1).join(' ') || '';
+
+            const response = await fetch(`/api/public/card/${card!.publicSlug}/exchange`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    firstName,
+                    lastName,
+                    email: formData.email,
+                    phone: formData.phone,
+                    notes: formData.notes
+                })
             });
 
-            if (error) throw error;
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || 'Erreur réseau');
+            }
 
             toast.success('Vos informations ont été envoyées !');
             setShowModal(false);
-            setFormData({ firstName: '', lastName: '', email: '', phone: '', notes: '' });
+            setFormData({ name: '', email: '', phone: '', notes: '' });
         } catch (error: any) {
-            toast.error('Erreur lors de l\'envoi.');
+            console.error(error);
+            toast.error(error.message || 'Erreur lors de l\'envoi.');
         } finally {
             setIsSharing(false);
         }
@@ -498,16 +509,8 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                                     </div>
                                     <input
                                         required
-                                        value={`${formData.firstName}${formData.lastName ? ' ' + formData.lastName : ''}`}
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            const parts = val.split(' ');
-                                            setFormData({
-                                                ...formData,
-                                                firstName: parts[0] || '',
-                                                lastName: parts.slice(1).join(' ') || ''
-                                            });
-                                        }}
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         className="block w-full pl-14 pr-6 py-5 bg-white/70 dark:bg-white/5 border border-transparent focus:border-gray-200 dark:focus:border-white/10 rounded-3xl text-apple-textDark dark:text-white placeholder:text-gray-400 outline-none transition-all shadow-sm"
                                         placeholder="Nom Complet" type="text"
                                     />
