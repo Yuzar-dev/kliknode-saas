@@ -77,14 +77,14 @@ function LoginForm() {
             toast.success(`Bienvenue ${userData?.first_name || data.email} !`);
 
             // 3. Redirect based on role
-            if (role === 'super_admin') {
+            if (role === 'ADMIN') {
                 router.push('/admin');
-            } else if (role === 'company_admin') {
+            } else if (role === 'MANAGER') {
                 router.push('/company');
-            } else if (role === 'employee') {
-                router.push('/user');
-            } else if (role === 'operator') {
+            } else if (role === 'OPERATOR') {
                 router.push('/operator');
+            } else if (role === 'USER') {
+                router.push('/user');
             } else {
                 router.push(redirectUrl);
             }

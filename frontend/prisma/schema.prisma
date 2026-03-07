@@ -68,6 +68,7 @@ model Company {
   subscription   Subscription?
   transactions   Transaction[]
   users          User[]
+  cards          Card[]
 
   @@index([slug])
   @@index([status])
@@ -185,9 +186,12 @@ model Card {
   contactLeads  ContactLead[]
   physicalCard  PhysicalCard?
   socialLinks   Json?         @default("[]") @map("social_links")
+  companyId     String?       @map("company_id")
+  company       Company?      @relation(fields: [companyId], references: [id])
 
   @@index([userId])
   @@index([publicSlug])
+  @@index([companyId])
   @@map("cards")
 }
 
@@ -385,10 +389,11 @@ model CompanyInvitation {
 }
 
 enum UserRole {
-  super_admin
-  company_admin
-  employee
-  operator
+  USER
+  EMPLOYEE
+  MANAGER
+  OPERATOR
+  ADMIN
 }
 
 enum CountryCode {

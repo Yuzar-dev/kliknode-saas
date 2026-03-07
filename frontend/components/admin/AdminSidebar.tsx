@@ -128,7 +128,7 @@ export default function AdminSidebar() {
                             {user ? `${user.firstName} ${user.lastName}` : 'Thomas Dubois'}
                         </span>
                         <span className="text-xs text-slate-500 dark:text-slate-400">
-                            {user?.role === 'super_admin' ? 'Responsable Logistique' : 'Opérateur'}
+                            {user?.role === 'ADMIN' ? 'Responsable Logistique' : 'Opérateur'}
                         </span>
                     </div>
                 </div>

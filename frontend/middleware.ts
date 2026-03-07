@@ -71,27 +71,27 @@ export async function middleware(request: NextRequest) {
             .eq('id', user.id)
             .single();
 
-        const role = userData?.role || 'employee';
+        const role = userData?.role || 'USER';
 
         // Redirect from login/signup if already auth
         if (isPublicPath && (pathname === '/login' || pathname === '/signup')) {
-            if (role === 'super_admin') return NextResponse.redirect(new URL('/admin', request.url));
-            if (role === 'company_admin') return NextResponse.redirect(new URL('/company', request.url));
-            if (role === 'operator') return NextResponse.redirect(new URL('/operator', request.url));
+            if (role === 'ADMIN') return NextResponse.redirect(new URL('/admin', request.url));
+            if (role === 'MANAGER') return NextResponse.redirect(new URL('/company', request.url));
+            if (role === 'OPERATOR') return NextResponse.redirect(new URL('/operator', request.url));
             return NextResponse.redirect(new URL('/user', request.url));
         }
 
         // Role-path protection
-        if (pathname.startsWith('/admin') && role !== 'super_admin') {
+        if (pathname.startsWith('/admin') && role !== 'ADMIN') {
             return NextResponse.redirect(new URL('/user', request.url));
         }
-        if (pathname.startsWith('/company') && role !== 'company_admin') {
+        if (pathname.startsWith('/company') && role !== 'MANAGER' && role !== 'ADMIN') {
             return NextResponse.redirect(new URL('/user', request.url));
         }
-        if (pathname.startsWith('/operator') && !['operator', 'super_admin'].includes(role)) {
+        if (pathname.startsWith('/operator') && !['OPERATOR', 'ADMIN'].includes(role)) {
             return NextResponse.redirect(new URL('/user', request.url));
         }
-        if (pathname.startsWith('/user') && !['employee', 'super_admin', 'company_admin', 'operator'].includes(role)) {
+        if (pathname.startsWith('/user') && !['USER', 'EMPLOYEE', 'ADMIN', 'MANAGER', 'OPERATOR'].includes(role)) {
             return NextResponse.redirect(new URL('/', request.url));
         }
     }

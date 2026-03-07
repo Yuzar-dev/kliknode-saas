@@ -32,7 +32,7 @@ BEGIN
     '', 
     new.raw_user_meta_data->>'first_name', 
     new.raw_user_meta_data->>'last_name', 
-    'employee'::public."UserRole", 
+    'USER'::public."UserRole", 
     now(), 
     now()
   );

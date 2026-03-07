@@ -59,7 +59,7 @@ export const login = async (req: Request, res: Response<ApiResponse>) => {
         const tokens = generateTokens({
             id: user.id,
             email: user.email,
-            role: user.role,
+            role: user.role as any,
             companyId: user.companyId || undefined,
         });
 
@@ -89,7 +89,7 @@ export const login = async (req: Request, res: Response<ApiResponse>) => {
                     email: user.email,
                     firstName: user.firstName,
                     lastName: user.lastName,
-                    role: user.role,
+                    role: user.role as any,
                     companyId: user.companyId,
                     companyName: user.company?.name,
                 },
@@ -134,14 +134,14 @@ export const register = async (req: Request, res: Response<ApiResponse>) => {
         // Hash du mot de passe
         const passwordHash = await hashPassword(password);
 
-        // Créer l'utilisateur (employee sans company)
+        // Créer l'utilisateur (USER sans company)
         const user = await prisma.user.create({
             data: {
                 email: email.toLowerCase(),
                 passwordHash,
                 firstName,
                 lastName,
-                role: 'employee',
+                role: 'USER',
                 language: 'fr',
             },
         });
@@ -181,7 +181,7 @@ export const register = async (req: Request, res: Response<ApiResponse>) => {
         const tokens = generateTokens({
             id: user.id,
             email: user.email,
-            role: user.role,
+            role: user.role as any,
         });
 
         // Sauvegarder le refresh token
@@ -205,7 +205,7 @@ export const register = async (req: Request, res: Response<ApiResponse>) => {
                     email: user.email,
                     firstName: user.firstName,
                     lastName: user.lastName,
-                    role: user.role,
+                    role: user.role as any,
                 },
                 tokens,
                 card: {

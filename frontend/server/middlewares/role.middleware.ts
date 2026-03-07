@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ApiResponse } from '../types/express';
 
-type UserRole = 'super_admin' | 'company_admin' | 'employee' | 'operator';
+type UserRole = 'USER' | 'EMPLOYEE' | 'MANAGER' | 'OPERATOR' | 'ADMIN';
 
 /**
  * Middleware de vérification des rôles
@@ -43,9 +43,9 @@ export const roleMiddleware = (allowedRoles: UserRole[]) => {
 };
 
 /**
- * Raccourcis pour les rôles communs
+ * Specific role middlewares
  */
-export const requireSuperAdmin = roleMiddleware(['super_admin']);
-export const requireCompanyAdmin = roleMiddleware(['company_admin', 'super_admin']);
-export const requireOperator = roleMiddleware(['operator', 'super_admin']);
-export const requireEmployee = roleMiddleware(['employee', 'company_admin', 'super_admin']);
+export const requireSuperAdmin = roleMiddleware(['ADMIN']);
+export const requireCompanyAdmin = roleMiddleware(['MANAGER', 'ADMIN']);
+export const requireOperator = roleMiddleware(['OPERATOR', 'ADMIN']);
+export const requireEmployee = roleMiddleware(['EMPLOYEE', 'MANAGER', 'ADMIN']);

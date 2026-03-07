@@ -9,7 +9,7 @@ export interface User {
     isActive: boolean;
 }
 
-export type UserRole = 'super_admin' | 'company_admin' | 'employee' | 'operator';
+export type UserRole = 'USER' | 'EMPLOYEE' | 'MANAGER' | 'OPERATOR' | 'ADMIN';
 
 export interface AuthTokens {
     accessToken: string;

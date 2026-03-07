@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { AdminButton } from '@/components/ui/AdminButton';
+import { apiClient } from '@/lib/api-client';
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState<any[]>([]);
@@ -12,14 +13,15 @@ export default function AdminDashboard() {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                // In a real app, use the apiClient which handles auth headers
-                // Mock data
+                const response = await apiClient.get('/api/admin/stats');
+                const data = response.data;
+
                 const mockStats = [
-                    { title: 'MRR', value: '€124.5k', icon: 'payments', trend: '+8.2%', trendUp: true },
-                    { title: 'Hardware Cashflow', value: '€45.2k', icon: 'memory', trend: '+12.0%', trendUp: true },
-                    { title: 'ARR', value: '€1.5M', icon: 'bar_chart', trend: 'vs. année dernière', trendUp: null },
-                    { title: 'Taux de Désabonnement', value: '2.4%', icon: 'trending_down', trend: '0.4%', trendUp: false },
-                    { title: 'Utilisateurs Actifs', value: '12,403', icon: 'group', trend: '+142 cette semaine', trendUp: null },
+                    { title: 'Utilisateurs', value: data.totalUsers.toString(), icon: 'group', trend: 'Inscrits globaux', trendUp: null },
+                    { title: 'Cartes Actives', value: data.activeCards.toString(), icon: 'nfc', trend: 'En service', trendUp: true },
+                    { title: 'Entreprises B2B', value: data.totalCompanies.toString(), icon: 'business', trend: 'Dossiers actifs', trendUp: true },
+                    { title: 'MRR (Bêta)', value: '€124.5k', icon: 'payments', trend: '+8.2%', trendUp: true },
+                    { title: 'Hardware Orders', value: '42', icon: 'memory', trend: 'En cours', trendUp: true },
                 ];
 
                 const mockActivities = [
