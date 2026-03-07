@@ -7,7 +7,7 @@ import logger from '../../utils/logger.util';
  * GET /api/admin/stats
  * Get high-level platform statistics for the Super Admin dashboard
  */
-export const getAdminStats = async (req: Request, res: Response<ApiResponse>) => {
+export const getAdminStats = async (_req: Request, res: Response<ApiResponse>) => {
     try {
         // Run aggregations in parallel
         const [totalUsers, activeCards, totalCompanies] = await Promise.all([

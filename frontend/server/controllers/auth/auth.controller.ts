@@ -59,7 +59,7 @@ export const login = async (req: Request, res: Response<ApiResponse>) => {
         const tokens = generateTokens({
             id: user.id,
             email: user.email,
-            role: user.role,
+            role: user.role as any,
             companyId: user.companyId || undefined,
         });
 
@@ -89,7 +89,7 @@ export const login = async (req: Request, res: Response<ApiResponse>) => {
                     email: user.email,
                     firstName: user.firstName,
                     lastName: user.lastName,
-                    role: user.role,
+                    role: user.role as any,
                     companyId: user.companyId,
                     companyName: user.company?.name,
                 },
@@ -141,7 +141,7 @@ export const register = async (req: Request, res: Response<ApiResponse>) => {
                 passwordHash,
                 firstName,
                 lastName,
-                role: 'employee',
+                role: 'USER',
                 language: 'fr',
             },
         });
@@ -181,7 +181,7 @@ export const register = async (req: Request, res: Response<ApiResponse>) => {
         const tokens = generateTokens({
             id: user.id,
             email: user.email,
-            role: user.role,
+            role: user.role as any,
         });
 
         // Sauvegarder le refresh token
@@ -205,7 +205,7 @@ export const register = async (req: Request, res: Response<ApiResponse>) => {
                     email: user.email,
                     firstName: user.firstName,
                     lastName: user.lastName,
-                    role: user.role,
+                    role: user.role as any,
                 },
                 tokens,
                 card: {
@@ -378,7 +378,7 @@ export const refreshToken = async (req: Request, res: Response<ApiResponse>) => 
         const newTokens = generateTokens({
             id: storedToken.user.id,
             email: storedToken.user.email,
-            role: storedToken.user.role,
+            role: storedToken.user.role as any,
             companyId: storedToken.user.companyId || undefined,
         });
 

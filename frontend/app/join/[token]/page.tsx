@@ -69,9 +69,9 @@ export default function JoinCompanyPage() {
 
         // Redirect based on role
         setTimeout(() => {
-          if (user.role === 'company_admin') {
-            router.push('/company');
-          } else if (user.role === 'employee') {
+          if (user.role === 'MANAGER') {
+            router.push('/company')
+          } else if (user.role === 'EMPLOYEE') {
             router.push('/user');
           } else {
             router.push('/');
@@ -88,11 +88,12 @@ export default function JoinCompanyPage() {
   };
 
   const getRoleBadge = (role: string) => {
-    const roles: Record<string, { label: string; color: string }> = {
-      company_admin: { label: 'Administrateur', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
-      employee: { label: 'Employé', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
+    const roleMap: Record<string, { label: string, color: string }> = {
+      MANAGER: { label: 'Administrateur', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
+      EMPLOYEE: { label: 'Employé', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
+      USER: { label: 'Utilisateur', color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200' }
     };
-    return roles[role] || { label: role, color: 'bg-gray-100 text-gray-800' };
+    return roleMap[role] || { label: role, color: 'bg-gray-100 text-gray-800' };
   };
 
   if (isLoading) {

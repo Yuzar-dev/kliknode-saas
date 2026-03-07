@@ -187,7 +187,7 @@ export default function EmployeesPage() {
                                                     </div>
                                                     <div className="ml-4">
                                                         <div className="text-sm font-bold text-slate-900 dark:text-white">{employee.firstName} {employee.lastName}</div>
-                                                        <div className="text-xs text-slate-500 dark:text-slate-400">{employee.role === 'company_admin' ? 'Admin' : 'Employé'} • {employee.department}</div>
+                                                        <div className="text-xs text-slate-500 dark:text-slate-400">{employee.role === 'MANAGER' ? 'Admin' : 'Employé'} • {employee.department}</div>
                                                     </div>
                                                 </div>
                                             </td>

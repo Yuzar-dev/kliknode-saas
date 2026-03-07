@@ -32,9 +32,6 @@ export const activateCard = async (req: Request, res: Response<ApiResponse>) => 
                                 lastName: true,
                             },
                         },
-                        socialLinks: {
-                            where: { isActive: true },
-                        },
                     },
                 },
             },

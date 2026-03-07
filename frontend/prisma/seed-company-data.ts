@@ -42,7 +42,9 @@ async function main() {
     }
 
     // 3. Create Employees
-    const roles = ['employee', 'company_admin'];
+    const domains = ['tech', 'marketing', 'sales', 'design', 'engineering'];
+    const roles = ['EMPLOYEE', 'MANAGER'];
+    const users = [];
     const firstNames = ['Sophie', 'Thomas', 'Julie', 'Lucas', 'Camille', 'Antoine', 'Emma', 'Nicolas', 'Léa', 'Alexandre', 'Manon', 'David'];
     const lastNames = ['Martin', 'Bernard', 'Dubois', 'Petit', 'Laurent', 'Moreau', 'Simon', 'Michel', 'Leroy', 'Roux', 'David', 'Bertrand'];
 
@@ -51,8 +53,9 @@ async function main() {
         const lastName = lastNames[Math.floor(Math.random() * lastNames.length)] + ` ${i}`; // Ensure uniqueness
         const email = `${firstName.toLowerCase()}.${lastName.toLowerCase().replace(' ', '')}@corptech.com`;
         const passwordHash = await hash('password123', 10);
-        const role = i < 3 ? 'company_admin' : 'employee'; // First 3 are admins
+        const role = i < 3 ? 'MANAGER' : 'EMPLOYEE'; // First 3 are admins
         const department = departments[Math.floor(Math.random() * departments.length)];
+        const departmentId = department.id; // Added this line based on the snippet's usage
 
         // Create User
         const user = await prisma.user.create({
@@ -74,14 +77,15 @@ async function main() {
         });
 
         // Create Card for User
+        const slug = `${department.name.substring(0, 2).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`; // Defined slug
         await prisma.card.create({
             data: {
                 userId: user.id,
-                publicSlug: `${department.name.substring(0, 2).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`,
+                publicSlug: slug,
                 isPublic: user.isActive,
                 viewCount: Math.floor(Math.random() * 500),
                 theme: 'light',
-                jobTitle: role === 'company_admin' ? 'Admin' : 'Specialist',
+                jobTitle: role === 'MANAGER' ? 'Admin' : 'Specialist',
                 companyName: company.name
             }
         });
