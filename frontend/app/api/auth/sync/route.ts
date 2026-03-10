@@ -4,8 +4,12 @@ import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 
 let dbUrl = process.env.DATABASE_URL || '';
-if (dbUrl && dbUrl.includes(':6543') && !dbUrl.includes('pgbouncer=true')) {
-    dbUrl = dbUrl.includes('?') ? `${dbUrl}&pgbouncer=true` : `${dbUrl}?pgbouncer=true`;
+if (dbUrl && dbUrl.includes(':6543')) {
+    dbUrl = dbUrl.replace(':6543', ':5432');
+    dbUrl = dbUrl.replace('?pgbouncer=true&', '?').replace('?pgbouncer=true', '').replace('&pgbouncer=true', '');
+}
+if (dbUrl && !dbUrl.includes('connection_limit=')) {
+    dbUrl = dbUrl.includes('?') ? `${dbUrl}&connection_limit=1` : `${dbUrl}?connection_limit=1`;
 }
 
 const prisma = new PrismaClient({

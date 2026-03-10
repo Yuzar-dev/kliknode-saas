@@ -1,15 +1,18 @@
 import { PrismaClient } from '@prisma/client';
 import logger from '../utils/logger.util';
 
-// Injection automatique de pgbouncer=true et connection_limit=1 pour Vercel serverless
+// CONTOURNEMENT BUG SUPABASE : Le pooler Transaction (6543) de Supavisor a un bug connu avec Prisma ("Cannot coerce JSON").
+// La solution officielle est d'utiliser le port direct/Session (5432) avec connection_limit=1 sur Vercel.
 let dbUrl = process.env.DATABASE_URL || '';
 if (dbUrl && dbUrl.includes(':6543')) {
-    if (!dbUrl.includes('pgbouncer=true')) {
-        dbUrl = dbUrl.includes('?') ? `${dbUrl}&pgbouncer=true` : `${dbUrl}?pgbouncer=true`;
-    }
-    if (!dbUrl.includes('connection_limit=')) {
-        dbUrl = `${dbUrl}&connection_limit=1`;
-    }
+    // Force utilisation du port 5432
+    dbUrl = dbUrl.replace(':6543', ':5432');
+    // Retire le paramètre pgbouncer car il n'est plus nécessaire sur le port 5432
+    dbUrl = dbUrl.replace('?pgbouncer=true&', '?').replace('?pgbouncer=true', '').replace('&pgbouncer=true', '');
+}
+// Ajoute connection_limit=1 si absent pour optimiser le serverless sans épuiser les DB connections
+if (dbUrl && !dbUrl.includes('connection_limit=')) {
+    dbUrl = dbUrl.includes('?') ? `${dbUrl}&connection_limit=1` : `${dbUrl}?connection_limit=1`;
 }
 
 // Instance unique de Prisma Client
