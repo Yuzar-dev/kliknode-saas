@@ -1,8 +1,5 @@
+import prisma from '../../config/database';
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
 export const getEmployees = async (req: Request, res: Response) => {
     try {
         const companyId = req.user?.companyId;

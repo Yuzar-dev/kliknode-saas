@@ -1,8 +1,5 @@
+import prisma from '../../config/database';
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
 /**
  * Récupère les détails de l'abonnement de l'entreprise
  */
