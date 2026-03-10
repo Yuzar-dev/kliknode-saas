@@ -7,9 +7,12 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('🌱 Starting database seed...\n');
 
-    // Nettoyer la base (seulement en dev !)
-    if (process.env.NODE_ENV === 'development') {
-        console.log('🧹 Cleaning database...');
+    // Nettoyer la base (seulement en local !)
+    const dbUrl = process.env.DATABASE_URL || '';
+    const isRemoteDb = dbUrl.includes('supabase.com') || dbUrl.includes('amazonaws.com');
+
+    if (process.env.NODE_ENV === 'development' && !isRemoteDb) {
+        console.log('🧹 Cleaning database (Local DB confirmed)...');
         await prisma.auditLog.deleteMany();
         await prisma.refreshToken.deleteMany();
         await prisma.passwordReset.deleteMany();
