@@ -1,10 +1,15 @@
 import { PrismaClient } from '@prisma/client';
 import logger from '../utils/logger.util';
 
-// Injection automatique de pgbouncer=true si on utilise le port 6543 (pooler Supabase)
+// Injection automatique de pgbouncer=true et connection_limit=1 pour Vercel serverless
 let dbUrl = process.env.DATABASE_URL || '';
-if (dbUrl && dbUrl.includes(':6543') && !dbUrl.includes('pgbouncer=true')) {
-    dbUrl = dbUrl.includes('?') ? `${dbUrl}&pgbouncer=true` : `${dbUrl}?pgbouncer=true`;
+if (dbUrl && dbUrl.includes(':6543')) {
+    if (!dbUrl.includes('pgbouncer=true')) {
+        dbUrl = dbUrl.includes('?') ? `${dbUrl}&pgbouncer=true` : `${dbUrl}?pgbouncer=true`;
+    }
+    if (!dbUrl.includes('connection_limit=')) {
+        dbUrl = `${dbUrl}&connection_limit=1`;
+    }
 }
 
 // Instance unique de Prisma Client
