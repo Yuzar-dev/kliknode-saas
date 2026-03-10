@@ -62,16 +62,19 @@ function LoginForm() {
             if (authError) throw authError;
             if (!authData.user) throw new Error("Erreur de connexion");
 
-            // 2. Fetch profile to get role
+            // 2. Fetch profile to get role (use maybeSingle to avoid crash if no public user row exists yet)
             const { data: userData, error: profileError } = await supabase
                 .from('users')
                 .select('role, first_name')
                 .eq('id', authData.user.id)
-                .single();
+                .maybeSingle();
 
-            if (profileError) throw profileError;
+            if (profileError) {
+                console.error("Profile fetch error:", profileError);
+            }
 
-            const role = userData?.role || 'employee';
+            // Fallback to 'USER' if no role is found in public.users
+            const role = userData?.role || 'USER';
 
             // Show success message
             toast.success(`Bienvenue ${userData?.first_name || data.email} !`);
@@ -89,8 +92,17 @@ function LoginForm() {
                 router.push(redirectUrl);
             }
         } catch (error: any) {
-            console.error('Login error:', error);
-            const errorMessage = error.message || 'Erreur de connexion. Veuillez réessayer.';
+            console.error('Login error RAW:', error);
+            console.error('Login error JSON:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+
+            let errorMessage = 'Erreur de connexion. Veuillez réessayer.';
+            if (error?.message) {
+                errorMessage = error.message;
+            }
+            if (error?.details) {
+                errorMessage += ` (${error.details})`;
+            }
+
             toast.error(errorMessage);
         } finally {
             setIsLoading(false);

@@ -65,11 +65,15 @@ export async function middleware(request: NextRequest) {
     // 4. Role-based Redirection
     if (user) {
         // Fetch profile with role
-        const { data: userData } = await supabase
+        const { data: userData, error: profileError } = await supabase
             .from('users')
             .select('role')
             .eq('id', user.id)
-            .single();
+            .maybeSingle();
+
+        if (profileError) {
+            console.error('Middleware profile fetch error:', profileError);
+        }
 
         const role = userData?.role || 'USER';
 
