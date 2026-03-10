@@ -1,6 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 
-const supabaseUrl = "postgresql://postgres:yt4em4N7EY.!L*&@db.hpyclqmbzqhlbqrkxdsm.supabase.co:5432/postgres";
+const supabaseUrl = "postgresql://postgres.hpyclqmbzqhlbqrkxdsm:yt4em4N7EY.!L*&@aws-1-eu-west-1.pooler.supabase.com:6543/postgres";
 
 const prisma = new PrismaClient({
     datasources: {

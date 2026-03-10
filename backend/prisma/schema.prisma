@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -24,6 +25,7 @@ model User {
   createdAt       DateTime            @default(now()) @map("created_at")
   updatedAt       DateTime            @updatedAt @map("updated_at")
   deletedAt       DateTime?           @map("deleted_at")
+  warehouse       Warehouse?
   auditLogs       AuditLog[]
   card            Card?
   invitationsSent CompanyInvitation[] @relation("InvitedBy")
@@ -154,47 +156,45 @@ model PromoCode {
 
 model Card {
   id            String        @id @default(uuid())
-  userId        String        @unique @map("user_id")
-  publicSlug    String        @unique @map("public_slug") @db.VarChar(100)
-  firstName     String?       @map("first_name") @db.VarChar(100)
-  lastName      String?       @map("last_name") @db.VarChar(100)
-  jobTitle      String?       @map("job_title") @db.VarChar(150)
-  companyName   String?       @map("company_name") @db.VarChar(255)
-  bio           String?
-  bio_visible   Boolean       @default(true) @map("bio_visible")
-  avatarUrl     String?       @map("avatar_url")
-  coverUrl      String?       @map("cover_url")
-  phoneMobile   String?       @map("phone_mobile") @db.VarChar(20)
-  phoneOffice   String?       @map("phone_office") @db.VarChar(20)
-  email         String?       @db.VarChar(255)
-  website       String?       @db.VarChar(255)
-  address       String?
-  city          String?       @db.VarChar(100)
-  country       String?       @db.VarChar(100)
-  theme         CardTheme     @default(light)
-  primaryColor  String?       @map("primary_color") @db.VarChar(7)
-  isPublic      Boolean       @default(true) @map("is_public")
-  viewCount     Int           @default(0) @map("view_count")
-  qrCodeUrl     String?       @map("qr_code_url")
-  walletPassUrl String?       @map("wallet_pass_url")
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
+  viewCount     Int           @default(0) @map("view_count")
+  address       String?
+  avatarUrl     String?       @map("avatar_url")
+  bio           String?
+  city          String?       @db.VarChar(100)
+  companyName   String?       @map("company_name") @db.VarChar(255)
+  country       String?       @db.VarChar(100)
+  coverUrl      String?       @map("cover_url")
   deletedAt     DateTime?     @map("deleted_at")
-  scans         CardScan[]
-  user          User          @relation(fields: [userId], references: [id])
-  contactLeads  ContactLead[]
-  physicalCard  PhysicalCard?
+  email         String?       @db.VarChar(255)
+  firstName     String?       @map("first_name") @db.VarChar(100)
+  isPublic      Boolean       @default(true) @map("is_public")
+  jobTitle      String?       @map("job_title") @db.VarChar(150)
+  lastName      String?       @map("last_name") @db.VarChar(100)
+  phoneMobile   String?       @map("phone_mobile") @db.VarChar(20)
+  phoneOffice   String?       @map("phone_office") @db.VarChar(20)
+  primaryColor  String?       @map("primary_color") @db.VarChar(7)
+  publicSlug    String        @unique @map("public_slug") @db.VarChar(100)
+  qrCodeUrl     String?       @map("qr_code_url")
+  theme         CardTheme     @default(light)
+  userId        String        @unique @map("user_id")
+  walletPassUrl String?       @map("wallet_pass_url")
+  website       String?       @db.VarChar(255)
+  bio_visible   Boolean       @default(true) @map("bio_visible")
   socialLinks   Json?         @default("[]") @map("social_links")
   companyId     String?       @map("company_id")
+  scans         CardScan[]
+  user          User          @relation(fields: [userId], references: [id])
   company       Company?      @relation(fields: [companyId], references: [id])
+  contactLeads  ContactLead[]
+  physicalCard  PhysicalCard?
 
   @@index([userId])
   @@index([publicSlug])
   @@index([companyId])
   @@map("cards")
 }
-
-
 
 model PhysicalCard {
   id                 String             @id @default(uuid())
@@ -238,7 +238,7 @@ model ContactLead {
   id          String        @id @default(uuid())
   cardId      String        @map("card_id")
   userId      String        @map("user_id")
-  companyId   String        @map("company_id")
+  companyId   String?       @map("company_id")
   firstName   String?       @map("first_name") @db.VarChar(100)
   lastName    String?       @map("last_name") @db.VarChar(100)
   email       String?       @db.VarChar(255)
@@ -248,7 +248,7 @@ model ContactLead {
   source      ContactSource
   createdAt   DateTime      @default(now()) @map("created_at")
   card        Card          @relation(fields: [cardId], references: [id])
-  company     Company       @relation(fields: [companyId], references: [id])
+  company     Company?      @relation(fields: [companyId], references: [id], onDelete: Restrict)
   user        User          @relation("ContactLeadUser", fields: [userId], references: [id])
 
   @@index([userId])
