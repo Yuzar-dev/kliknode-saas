@@ -335,16 +335,19 @@ export const createAdminCompany = async (req: Request, res: Response<ApiResponse
         });
 
         // Envoi réel du mail d'activation (lien de définition du mot de passe)
-        // Le lien pointe vers la page join (/join?token=...)
-        await emailService.sendCompanyInvitationEmail(email, name, result.invitation.token);
+        const reqOrigin = (req.headers.origin as string) || (req.headers.host ? `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}` : undefined);
+        const emailSent = await emailService.sendCompanyInvitationEmail(email, name, result.invitation.token, reqOrigin);
 
-        logger.info(`Nouvelle entreprise B2B : ${name}. Email d'activation envoyé à ${email}.`);
+        logger.info(`Nouvelle entreprise B2B : ${name}. Email d'activation envoyé à ${email} (sent=${emailSent}).`);
 
         return res.status(201).json({
             success: true,
             data: {
                 company: result.company,
-                message: "Entreprise configurée. L'administrateur va recevoir un email d'activation."
+                joinToken: result.invitation.token,
+                joinPath: `/join/${result.invitation.token}`,
+                emailSent,
+                message: "Entreprise configurée. L'administrateur a reçu son email d'activation."
             }
         });
     } catch (error: any) {
@@ -524,16 +527,6 @@ export const resendCompanyInvitation = async (req: Request, res: Response<ApiRes
 
         const managerUser = company.users[0];
 
-        if (managerUser.isActive) {
-            return res.status(400).json({
-                success: false,
-                error: {
-                    code: 'VALIDATION_ERROR',
-                    message: 'Le compte de ce Manager est déjà activé.'
-                }
-            });
-        }
-
         // Créer un nouveau token d'invitation
         const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
         const expiresAt = new Date();
@@ -550,14 +543,20 @@ export const resendCompanyInvitation = async (req: Request, res: Response<ApiRes
         });
 
         // Envoi de l'email
-        await emailService.sendCompanyInvitationEmail(managerUser.email, company.name, token);
+        const reqOrigin = (req.headers.origin as string) || (req.headers.host ? `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}` : undefined);
+        const emailSent = await emailService.sendCompanyInvitationEmail(managerUser.email, company.name, token, reqOrigin);
 
-        logger.info(`Nouvelle invitation envoyée pour l'entreprise ${company.name} à l'adresse ${managerUser.email}`);
+        logger.info(`Nouvelle invitation envoyée pour l'entreprise ${company.name} à l'adresse ${managerUser.email} (sent=${emailSent})`);
 
         return res.status(200).json({
             success: true,
             data: {
-                message: "L'invitation a été renvoyée avec succès."
+                joinToken: token,
+                joinPath: `/join/${token}`,
+                emailSent,
+                message: emailSent
+                    ? `Email d'activation envoyé à ${managerUser.email} (lien copié dans le presse-papier).`
+                    : `Lien d'activation généré et copié dans le presse-papier.`
             }
         });
     } catch (error: any) {

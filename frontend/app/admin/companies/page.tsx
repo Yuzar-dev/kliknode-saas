@@ -62,7 +62,11 @@ export default function CompanyList() {
             toast.loading("Envoi de l'invitation...", { id: "resend" });
             const response = await apiClient.post(`/api/admin/companies/${companyId}/resend-invitation`);
             if (response.data.success) {
-                toast.success(response.data.data.message, { id: "resend" });
+                const joinPath = response.data.data?.joinPath;
+                if (joinPath && typeof window !== 'undefined' && navigator.clipboard) {
+                    await navigator.clipboard.writeText(`${window.location.origin}${joinPath}`).catch(() => {});
+                }
+                toast.success(response.data.data.message || "Invitation envoyée et lien copié !", { id: "resend", duration: 5000 });
             }
         } catch (error: any) {
             toast.error(error.response?.data?.error?.message || "Erreur lors de l'envoi", { id: "resend" });
@@ -270,7 +274,7 @@ export default function CompanyList() {
                                                 </div>
                                             </td>
                                             <td className="px-8 py-5 text-right">
-                                                <div className={`flex items-center justify-end gap-3 transition-all ${openDropdown === company.id ? 'opacity-100 translate-x-0' : 'opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0'}`}>
+                                                <div className="flex items-center justify-end gap-3 transition-all opacity-100">
                                                     <Link href={`/admin/companies/${company.id}`} className="w-9 h-9 rounded-full hover:bg-white dark:hover:bg-white/10 flex items-center justify-center text-apple-secondary hover:text-primary transition-all shadow-sm group/btn" title="Voir Fiche">
                                                         <span className="material-symbols-outlined text-[20px] group-hover/btn:scale-110">visibility</span>
                                                     </Link>

@@ -93,6 +93,10 @@ export default function NewCompanyOnboarding() {
         try {
             const response = await apiClient.post('/api/admin/companies', formData);
             if (response.data.success) {
+                const joinPath = response.data.data?.joinPath;
+                if (joinPath && typeof window !== 'undefined' && navigator.clipboard) {
+                    await navigator.clipboard.writeText(`${window.location.origin}${joinPath}`).catch(() => {});
+                }
                 toast.success(response.data.data.message || "Entreprise configurée avec succès !");
                 router.push('/admin/companies');
             }

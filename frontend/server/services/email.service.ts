@@ -1,42 +1,54 @@
 import nodemailer from 'nodemailer';
 import logger from '../utils/logger.util';
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3001';
 const EMAIL_FROM = process.env.EMAIL_FROM || '"Kliknode" <service@kliknode.com>';
+const SMTP_HOST = process.env.SMTP_HOST || 'smtp.hostinger.com';
+const SMTP_PORT = parseInt(process.env.SMTP_PORT || '465', 10);
+const SMTP_SECURE = process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : SMTP_PORT === 465;
+const SMTP_USER = process.env.SMTP_USER || 'service@kliknode.com';
+const SMTP_PASS =
+    process.env.SMTP_PASS && process.env.SMTP_PASS !== 'votre_mot_de_passe_ici'
+        ? process.env.SMTP_PASS
+        : 'Nc3:pU7q:';
+
+export const resolveFrontendUrl = (originOrHost?: string): string => {
+    if (originOrHost && !originOrHost.includes('localhost') && !originOrHost.includes('127.0.0.1')) {
+        return originOrHost.startsWith('http') ? originOrHost.replace(/\/$/, '') : `https://${originOrHost.replace(/\/$/, '')}`;
+    }
+    if (
+        process.env.FRONTEND_URL &&
+        !process.env.FRONTEND_URL.includes('localhost') &&
+        !process.env.FRONTEND_URL.includes('127.0.0.1')
+    ) {
+        return process.env.FRONTEND_URL.replace(/\/$/, '');
+    }
+    if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+        return 'https://app.kliknode.com';
+    }
+    return process.env.FRONTEND_URL || 'http://localhost:3001';
+};
 
 // Configuration du transporteur SMTP (Hostinger)
 const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.hostinger.com',
-    port: parseInt(process.env.SMTP_PORT || '465', 10),
-    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_SECURE,
     auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: SMTP_USER,
+        pass: SMTP_PASS,
     },
 });
 
-// Vérifier la configuration au démarrage
-if (!process.env.SMTP_PASS || process.env.SMTP_PASS === 'votre_mot_de_passe_ici') {
-    logger.warn('SMTP password is not configured. Emails will not be sent.');
-} else {
-    transporter.verify((error) => {
-        if (error) {
-            logger.error('SMTP Connection error:', error);
-        } else {
-            logger.info('SMTP Server is ready to take our messages');
-        }
-    });
-}
-
 /**
- * Service pour la gestion des emails via SendGrid
+ * Service pour la gestion des emails Transactionnels (Hostinger SMTP)
  */
 export const emailService = {
     /**
      * Envoie un email de réinitialisation de mot de passe
      */
-    async sendPasswordResetEmail(email: string, token: string) {
-        const resetLink = `${FRONTEND_URL}/reset-password/${token}`;
+    async sendPasswordResetEmail(email: string, token: string, baseUrl?: string) {
+        const frontendUrl = resolveFrontendUrl(baseUrl);
+        const resetLink = `${frontendUrl}/reset-password/${token}`;
 
         const msg = {
             to: email,
@@ -70,10 +82,6 @@ export const emailService = {
         };
 
         try {
-            if (!process.env.SMTP_PASS || process.env.SMTP_PASS === 'votre_mot_de_passe_ici') {
-                logger.error(`Cannot send email to ${email}: SMTP password is not configured.`);
-                return false;
-            }
             await transporter.sendMail(msg);
             logger.info(`Password reset email sent successfully to ${email}`);
             return true;
@@ -86,8 +94,9 @@ export const emailService = {
     /**
      * Envoie un email d'invitation pour un nouveau compte Manager
      */
-    async sendCompanyInvitationEmail(email: string, companyName: string, token: string) {
-        const joinLink = `${FRONTEND_URL}/join/${token}`;
+    async sendCompanyInvitationEmail(email: string, companyName: string, token: string, baseUrl?: string) {
+        const frontendUrl = resolveFrontendUrl(baseUrl);
+        const joinLink = `${frontendUrl}/join/${token}`;
 
         const msg = {
             to: email,
@@ -110,6 +119,9 @@ export const emailService = {
                                 Activer mon compte
                             </a>
                         </div>
+                        <p style="font-size: 13px; color: #64748b; line-height: 20px; word-break: break-all;">
+                            Lien direct : <a href="${joinLink}" style="color: #0666EB;">${joinLink}</a>
+                        </p>
                         <p style="font-size: 14px; color: #64748b; line-height: 20px;">
                             Ce lien expirera dans 7 jours. Si vous n'êtes pas au courant de cette création de compte, vous pouvez ignorer cet email.
                         </p>
@@ -122,10 +134,6 @@ export const emailService = {
         };
 
         try {
-            if (!process.env.SMTP_PASS || process.env.SMTP_PASS === 'votre_mot_de_passe_ici') {
-                logger.error(`Cannot send invitation email to ${email}: SMTP password is not configured.`);
-                return false;
-            }
             await transporter.sendMail(msg);
             logger.info(`Invitation email sent successfully to ${email}`);
             return true;
