@@ -28,6 +28,10 @@ export default function SettingsPage() {
     } | null>(null);
     const [b2cPlans, setB2cPlans] = useState<B2CPlan[]>([]);
     const [currentPlan, setCurrentPlan] = useState<B2CPlan | null>(null);
+    const [isCompanyMember, setIsCompanyMember] = useState<boolean>(Boolean(authUser?.companyId));
+    const [companyName, setCompanyName] = useState<string>(authUser?.companyName || '');
+    const [companyAdminEmail, setCompanyAdminEmail] = useState<string>('');
+    const [upgradeRequested, setUpgradeRequested] = useState<boolean>(false);
     const [loading, setLoading] = useState(true);
     const [subscribingId, setSubscribingId] = useState<string | null>(null);
 
@@ -44,7 +48,21 @@ export default function SettingsPage() {
         try {
             const res = await apiClient.get('/api/user/plans');
             if (res.data.success) {
-                const { user, plans, currentPlan: activePlan, isPro } = res.data.data;
+                const {
+                    user,
+                    plans,
+                    currentPlan: activePlan,
+                    isPro,
+                    isCompanyMember: companyMember,
+                    companyName: cName,
+                    companyAdminEmail: cAdminEmail,
+                    upgradeRequested: uReq,
+                } = res.data.data;
+
+                setIsCompanyMember(Boolean(companyMember || user?.companyId));
+                setCompanyName(cName || user?.companyName || authUser?.companyName || '');
+                setCompanyAdminEmail(cAdminEmail || '');
+                setUpgradeRequested(Boolean(uReq));
                 setB2cPlans(plans || []);
                 setCurrentPlan(activePlan || null);
                 setProfile({
@@ -52,9 +70,13 @@ export default function SettingsPage() {
                     lastName: user?.lastName || authUser?.lastName || '',
                     email: user?.email || authUser?.email || '',
                     role: user?.role || authUser?.role || 'USER',
-                    isPro: Boolean(isPro)
+                    isPro: Boolean(isPro),
                 });
-                updateUser({ isPro: Boolean(isPro) });
+                updateUser({
+                    isPro: Boolean(isPro),
+                    ...(user?.companyId !== undefined ? { companyId: user.companyId } : {}),
+                    ...(cName ? { companyName: cName } : {}),
+                });
             }
         } catch (err) {
             console.error(err);
@@ -64,11 +86,30 @@ export default function SettingsPage() {
                     lastName: authUser.lastName || '',
                     email: authUser.email || '',
                     role: authUser.role || 'USER',
-                    isPro: Boolean(authUser.isPro)
+                    isPro: Boolean(authUser.isPro),
                 });
             }
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleRequestManagerUpgrade = async () => {
+        setSubscribingId('manager-request');
+        try {
+            const res = await apiClient.post('/api/user/subscribe', { requestManagerApproval: true });
+            if (res.data.success) {
+                setUpgradeRequested(true);
+                updateUser({ isPro: Boolean(res.data.data?.isPro) });
+                toast.success(
+                    res.data.data?.message || `Demande transmise au Manager (${companyAdminEmail || companyName})`,
+                    { icon: '📩', duration: 5000 }
+                );
+            }
+        } catch (err: any) {
+            toast.error(err.response?.data?.error?.message || "Erreur lors de l'envoi de la demande");
+        } finally {
+            setSubscribingId(null);
         }
     };
 
@@ -77,14 +118,27 @@ export default function SettingsPage() {
         try {
             const res = await apiClient.post('/api/user/subscribe', { planId: plan.id });
             if (res.data.success) {
-                const newIsPro = Boolean(res.data.data?.user?.isPro);
-                updateUser({ isPro: newIsPro });
-                setProfile(prev => prev ? { ...prev, isPro: newIsPro } : prev);
-                setCurrentPlan(plan);
-                toast.success(res.data.data?.message || `Offre ${plan.name} activée !`);
+                const data = res.data.data;
+                if (data?.requiresManagerApproval) {
+                    setUpgradeRequested(true);
+                    toast.success(data.message || 'Demande envoyée au Manager.');
+                    return;
+                }
+                if (data?.checkoutUrl) {
+                    toast.loading('Redirection vers le paiement sécurisé Stripe...', { duration: 3000 });
+                    window.location.href = data.checkoutUrl;
+                    return;
+                }
+                if (data?.activated) {
+                    const newIsPro = Boolean(data?.user?.isPro);
+                    updateUser({ isPro: newIsPro });
+                    setProfile(prev => prev ? { ...prev, isPro: newIsPro } : prev);
+                    setCurrentPlan(plan);
+                    toast.success(data?.message || `Offre ${plan.name} activée !`);
+                }
             }
         } catch (err: any) {
-            toast.error(err.response?.data?.error?.message || 'Erreur lors du changement d\'offre');
+            toast.error(err.response?.data?.error?.message || 'Paiement requis pour changer d\'offre');
         } finally {
             setSubscribingId(null);
         }
@@ -125,95 +179,142 @@ export default function SettingsPage() {
                     <p className="text-apple-secondary dark:text-gray-400 font-bold text-sm mt-2">Gérez votre offre B2C, votre sécurité et les paramètres de votre compte.</p>
                 </div>
 
-                {/* Section Abonnement B2C */}
-                <div className="klik-glass p-10 rounded-[2.5rem] border border-white/60 dark:border-white/5 shadow-lg mb-8 relative overflow-hidden">
+                {/* Section Abonnement (B2B Entreprise ou B2C Individuel) */}
+                <div className="klik-glass p-6 sm:p-10 rounded-[2.5rem] border border-white/60 dark:border-white/5 shadow-lg mb-8 relative overflow-hidden">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                         <div>
-                            <h3 className="text-xs font-black uppercase tracking-[0.25em] text-apple-secondary dark:text-gray-500">Mon Abonnement B2C</h3>
+                            <h3 className="text-xs font-black uppercase tracking-[0.25em] text-apple-secondary dark:text-gray-500">
+                                {isCompanyMember ? 'Abonnement Entreprise (B2B)' : 'Mon Abonnement B2C'}
+                            </h3>
                             <p className="text-2xl font-black text-apple-textDark dark:text-white mt-1">
-                                {currentPlan?.name || (profile?.isPro ? 'KlikNode PRO' : 'Standard Gratuit')}
+                                {isCompanyMember
+                                    ? `${companyName || 'Entreprise'} — Offre ${currentPlan?.name || 'Free'}`
+                                    : (currentPlan?.name || (profile?.isPro ? 'KlikNode PRO' : 'Standard Gratuit'))}
                             </p>
                         </div>
                         <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border self-start sm:self-auto ${profile?.isPro
                             ? 'bg-amber-500/15 text-amber-600 border-amber-500/30'
                             : 'bg-slate-100 dark:bg-white/10 text-apple-secondary border-transparent'
                             }`}>
-                            {profile?.isPro ? 'MEMBRE PRO ACTIF ⚡' : 'COMPTE STANDARD'}
+                            {profile?.isPro ? 'ACCÈS PRO ACTIF ⚡' : isCompanyMember ? `PLAN ENTREPRISE ${currentPlan?.name || 'FREE'}` : 'COMPTE STANDARD'}
                         </span>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {b2cPlans.map((plan) => {
-                            const isPaid = Number(plan.priceEur) > 0 || plan.features?.grantsPro === true;
-                            const isCurrent = currentPlan?.id === plan.id || (profile?.isPro === isPaid && !currentPlan);
+                    {isCompanyMember ? (
+                        <div className="p-6 rounded-3xl border border-gray-200/80 dark:border-white/10 bg-white/50 dark:bg-white/5 space-y-5">
+                            <div className="flex items-start gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                    <span className="material-symbols-outlined text-2xl" translate="no">domain</span>
+                                </div>
+                                <div>
+                                    <h4 className="text-base font-black text-apple-textDark dark:text-white">
+                                        Compte Collaborateur rattaché à {companyName || 'votre entreprise'}
+                                    </h4>
+                                    <p className="text-xs sm:text-sm font-medium text-apple-secondary dark:text-gray-400 mt-1 leading-relaxed">
+                                        La facturation et les fonctionnalités PRO de votre carte dépendent exclusivement de l&apos;abonnement B2B souscrit par votre entreprise
+                                        {companyAdminEmail ? ` (géré par ${companyAdminEmail})` : ''}. Vous ne pouvez pas activer d&apos;abonnement individuel sans la validation de votre Manager.
+                                    </p>
+                                </div>
+                            </div>
 
-                            return (
-                                <div
-                                    key={plan.id}
-                                    className={`p-6 rounded-3xl border-2 flex flex-col justify-between transition-all ${isCurrent
-                                        ? 'border-primary bg-primary/5'
-                                        : 'border-gray-100 dark:border-white/10 bg-white/40 dark:bg-white/5'
-                                        }`}
-                                >
-                                    <div>
-                                        <div className="flex items-center justify-between gap-2 mb-2">
-                                            <h4 className="text-lg font-black text-apple-textDark dark:text-white">{plan.name}</h4>
-                                            {isCurrent && (
-                                                <span className="px-2.5 py-0.5 rounded-full bg-primary text-white text-[9px] font-black uppercase tracking-widest">
-                                                    Actuel
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="flex items-baseline gap-1.5 mb-4">
-                                            <span className="text-3xl font-black text-apple-textDark dark:text-white">
-                                                {Number(plan.priceEur) === 0 ? 'Gratuit' : `${Number(plan.priceEur).toFixed(2)}€`}
-                                            </span>
-                                            {Number(plan.priceEur) > 0 && (
-                                                <span className="text-xs font-bold text-apple-secondary">
-                                                    / {plan.billingPeriod === 'yearly' ? 'an' : 'mois'} ({plan.priceMad} MAD)
-                                                </span>
-                                            )}
-                                        </div>
-                                        <ul className="space-y-2 mb-6 text-xs font-semibold text-apple-secondary">
-                                            <li className="flex items-center gap-2">
-                                                <span className="material-symbols-outlined text-emerald-500 text-base">check_circle</span>
-                                                Profil digital NFC &amp; QR Code
-                                            </li>
-                                            {isPaid && (
-                                                <>
-                                                    <li className="flex items-center gap-2 text-apple-textDark dark:text-white">
-                                                        <span className="material-symbols-outlined text-amber-500 text-base">bolt</span>
-                                                        CRM Prospect &amp; Capture de Leads
-                                                    </li>
-                                                    <li className="flex items-center gap-2 text-apple-textDark dark:text-white">
-                                                        <span className="material-symbols-outlined text-amber-500 text-base">bolt</span>
-                                                        Analytics avancés &amp; Apple Wallet
-                                                    </li>
-                                                </>
-                                            )}
-                                        </ul>
+                            {!profile?.isPro && (
+                                <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-t border-gray-100 dark:border-white/5">
+                                    <div className="text-xs font-bold text-apple-secondary">
+                                        Besoin du CRM Prospects, des Analytics avancés ou du Pass Wallet ?
                                     </div>
                                     <button
                                         type="button"
-                                        disabled={isCurrent || subscribingId === plan.id}
-                                        onClick={() => handleSubscribeB2C(plan)}
-                                        className={`w-full py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${isCurrent
-                                            ? 'bg-gray-100 dark:bg-white/10 text-apple-secondary cursor-default'
-                                            : 'btn-obsidian btn-obsidian-primary text-white shadow-lg cursor-pointer hover:scale-[1.02]'
-                                            }`}
+                                        disabled={upgradeRequested || subscribingId === 'manager-request'}
+                                        onClick={handleRequestManagerUpgrade}
+                                        className={`px-6 py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shrink-0 ${
+                                            upgradeRequested
+                                                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 cursor-default'
+                                                : 'btn-obsidian btn-obsidian-primary text-white shadow-lg cursor-pointer hover:scale-[1.02]'
+                                        }`}
                                     >
-                                        {subscribingId === plan.id
-                                            ? 'Activation...'
-                                            : isCurrent
-                                                ? 'Offre Active'
-                                                : isPaid
-                                                    ? 'Passer sur cette offre PRO ⚡'
-                                                    : 'Revenir au plan Gratuit'}
+                                        {subscribingId === 'manager-request'
+                                            ? 'Envoi en cours...'
+                                            : upgradeRequested
+                                                ? 'Demande envoyée au Manager ✓'
+                                                : 'Demander l\'activation au Manager'}
                                     </button>
                                 </div>
-                            );
-                        })}
-                    </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {b2cPlans.map((plan) => {
+                                const isPaid = Number(plan.priceEur) > 0 || plan.features?.grantsPro === true;
+                                const isCurrent = currentPlan?.id === plan.id || (profile?.isPro === isPaid && !currentPlan);
+
+                                return (
+                                    <div
+                                        key={plan.id}
+                                        className={`p-6 rounded-3xl border-2 flex flex-col justify-between transition-all ${isCurrent
+                                            ? 'border-primary bg-primary/5'
+                                            : 'border-gray-100 dark:border-white/10 bg-white/40 dark:bg-white/5'
+                                            }`}
+                                    >
+                                        <div>
+                                            <div className="flex items-center justify-between gap-2 mb-2">
+                                                <h4 className="text-lg font-black text-apple-textDark dark:text-white">{plan.name}</h4>
+                                                {isCurrent && (
+                                                    <span className="px-2.5 py-0.5 rounded-full bg-primary text-white text-[9px] font-black uppercase tracking-widest">
+                                                        Actuel
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-baseline gap-1.5 mb-4">
+                                                <span className="text-3xl font-black text-apple-textDark dark:text-white">
+                                                    {Number(plan.priceEur) === 0 ? 'Gratuit' : `${Number(plan.priceEur).toFixed(2)}€`}
+                                                </span>
+                                                {Number(plan.priceEur) > 0 && (
+                                                    <span className="text-xs font-bold text-apple-secondary">
+                                                        / {plan.billingPeriod === 'yearly' ? 'an' : 'mois'} ({plan.priceMad} MAD)
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <ul className="space-y-2 mb-6 text-xs font-semibold text-apple-secondary">
+                                                <li className="flex items-center gap-2">
+                                                    <span className="material-symbols-outlined text-emerald-500 text-base">check_circle</span>
+                                                    Profil digital NFC &amp; QR Code
+                                                </li>
+                                                {isPaid && (
+                                                    <>
+                                                        <li className="flex items-center gap-2 text-apple-textDark dark:text-white">
+                                                            <span className="material-symbols-outlined text-amber-500 text-base">bolt</span>
+                                                            CRM Prospect &amp; Capture de Leads
+                                                        </li>
+                                                        <li className="flex items-center gap-2 text-apple-textDark dark:text-white">
+                                                            <span className="material-symbols-outlined text-amber-500 text-base">bolt</span>
+                                                            Analytics avancés &amp; Apple Wallet
+                                                        </li>
+                                                    </>
+                                                )}
+                                            </ul>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            disabled={isCurrent || subscribingId === plan.id}
+                                            onClick={() => handleSubscribeB2C(plan)}
+                                            className={`w-full py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${isCurrent
+                                                ? 'bg-gray-100 dark:bg-white/10 text-apple-secondary cursor-default'
+                                                : 'btn-obsidian btn-obsidian-primary text-white shadow-lg cursor-pointer hover:scale-[1.02]'
+                                                }`}
+                                        >
+                                            {subscribingId === plan.id
+                                                ? 'Traitement...'
+                                                : isCurrent
+                                                    ? 'Offre Active'
+                                                    : isPaid
+                                                        ? `Souscrire & Payer (${Number(plan.priceEur).toFixed(2)}€) ⚡`
+                                                        : 'Revenir au plan Gratuit'}
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
 
                 {/* Account info */}

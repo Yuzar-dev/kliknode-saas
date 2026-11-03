@@ -40,6 +40,7 @@ export default function SubscriptionPage() {
     const [subscription, setSubscription] = useState<Subscription | null>(null);
     const [plans, setPlans] = useState<Plan[]>([]);
     const [usedLicenses, setUsedLicenses] = useState(0);
+    const [upgradeRequests, setUpgradeRequests] = useState<Array<{ id: string; employeeEmail?: string; employeeName?: string; createdAt?: string }>>([]);
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [pagination, setPagination] = useState({
@@ -67,6 +68,7 @@ export default function SubscriptionPage() {
                 setSubscription(response.data.data);
                 setPlans(response.data.plans || []);
                 setUsedLicenses(response.data.usedLicenses || 0);
+                setUpgradeRequests(response.data.upgradeRequests || []);
                 if (response.data.data?.paymentMethod) {
                     setSelectedPaymentMethod(response.data.data.paymentMethod);
                 }
@@ -189,6 +191,31 @@ export default function SubscriptionPage() {
                 <h1 className="text-4xl md:text-5xl font-black text-apple-textDark dark:text-white tracking-tighter">Mon Abonnement</h1>
                 <p className="text-[11px] font-black uppercase tracking-[0.25em] text-apple-secondary dark:text-slate-500 mt-3">Gérez votre offre et vos moyens de paiement.</p>
             </header>
+
+            {upgradeRequests.length > 0 && Number(subscription?.plan?.priceEur || 0) === 0 && (
+                <div className="p-6 rounded-[28px] bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                        <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                            <span className="material-symbols-outlined">notifications_active</span>
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-black text-apple-textDark dark:text-white">
+                                Demande d&apos;activation PRO de vos collaborateurs ({upgradeRequests.length})
+                            </h3>
+                            <p className="text-xs font-medium text-apple-secondary dark:text-slate-300 mt-1">
+                                {upgradeRequests.map(r => r.employeeEmail || r.employeeName).filter(Boolean).slice(0, 3).join(', ')} souhaite(nt) débloquer les fonctionnalités PRO (CRM Prospects, Analytics, Pass Wallet).
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setIsPlanModalOpen(true)}
+                        className="px-6 py-3 rounded-full btn-titanium btn-titanium-primary text-white text-xs font-black uppercase tracking-widest shrink-0 cursor-pointer"
+                    >
+                        Passer l&apos;entreprise en PRO
+                    </button>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Plan Details Card */}

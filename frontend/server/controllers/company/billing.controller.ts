@@ -17,7 +17,7 @@ export const getSubscription = async (req: Request, res: Response) => {
             return;
         }
 
-        const [subscription, usedLicenses, allActivePlans] = await Promise.all([
+        const [subscription, usedLicenses, allActivePlans, upgradeLogs] = await Promise.all([
             prisma.subscription.findUnique({
                 where: { companyId },
                 include: {
@@ -30,7 +30,16 @@ export const getSubscription = async (req: Request, res: Response) => {
             prisma.subscriptionPlan.findMany({
                 where: { isActive: true },
                 orderBy: { priceEur: 'asc' }
-            })
+            }),
+            prisma.auditLog.findMany({
+                where: {
+                    entityType: 'company',
+                    entityId: companyId,
+                    action: 'EMPLOYEE_UPGRADE_REQUEST',
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 10,
+            }).catch(() => []),
         ]);
 
         // Ne proposer dans l'interface Entreprise (B2B) que les plans B2B (ou le plan actuellement actif de l'entreprise)
@@ -38,12 +47,19 @@ export const getSubscription = async (req: Request, res: Response) => {
             (p) => resolvePlanAudience(p) === 'B2B' || p.id === subscription?.planId
         );
 
+        const upgradeRequests = upgradeLogs.map((log: any) => ({
+            id: log.id,
+            createdAt: log.createdAt,
+            ...(log.changes && typeof log.changes === 'object' ? log.changes : {}),
+        }));
+
         if (!subscription) {
             res.json({
                 success: true,
                 data: null,
                 usedLicenses,
-                plans
+                plans,
+                upgradeRequests,
             });
             return;
         }
@@ -55,7 +71,8 @@ export const getSubscription = async (req: Request, res: Response) => {
                 usedLicenses
             },
             usedLicenses,
-            plans
+            plans,
+            upgradeRequests,
         });
         return;
 
@@ -102,6 +119,23 @@ export const updateSubscription = async (req: Request, res: Response) => {
                 include: { plan: true }
             });
 
+            const grantsPro = Boolean(
+                created.plan &&
+                Number(created.plan.priceEur) > 0 &&
+                String(created.plan.slug || '').toLowerCase() !== 'free' &&
+                String(created.plan.name || '').toLowerCase() !== 'free'
+            );
+            await prisma.user.updateMany({
+                where: { companyId, role: 'USER' },
+                data: { isPro: grantsPro },
+            }).catch(() => {});
+
+            if (grantsPro) {
+                await prisma.auditLog.deleteMany({
+                    where: { entityType: 'company', entityId: companyId, action: 'EMPLOYEE_UPGRADE_REQUEST' },
+                }).catch(() => {});
+            }
+
             res.json({
                 success: true,
                 data: created,
@@ -118,6 +152,23 @@ export const updateSubscription = async (req: Request, res: Response) => {
             },
             include: { plan: true }
         });
+
+        const grantsPro = Boolean(
+            updated.plan &&
+            Number(updated.plan.priceEur) > 0 &&
+            String(updated.plan.slug || '').toLowerCase() !== 'free' &&
+            String(updated.plan.name || '').toLowerCase() !== 'free'
+        );
+        await prisma.user.updateMany({
+            where: { companyId, role: 'USER' },
+            data: { isPro: grantsPro },
+        }).catch(() => {});
+
+        if (grantsPro) {
+            await prisma.auditLog.deleteMany({
+                where: { entityType: 'company', entityId: companyId, action: 'EMPLOYEE_UPGRADE_REQUEST' },
+            }).catch(() => {});
+        }
 
         res.json({
             success: true,

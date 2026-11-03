@@ -51,10 +51,18 @@ export const ensureCleanDatabase = async (): Promise<void> => {
             }).catch(() => {});
 
             // 2. S'assurer que chaque compte adminEmail d'entreprise active (ex: direction@yuzarprod.com)
-            // a bien son companyId et son rôle MANAGER rattachés, et nettoyer les noms INSEE "PRENOM NOM (ENSEIGNE)"
+            // a bien son companyId et son rôle MANAGER rattachés, nettoyer les noms INSEE "PRENOM NOM (ENSEIGNE)"
+            // et synchroniser le statut isPro des collaborateurs avec le plan actif de leur entreprise
             const activeCompanies = await prisma.company.findMany({
                 where: { deletedAt: null },
-                select: { id: true, name: true, adminEmail: true },
+                select: {
+                    id: true,
+                    name: true,
+                    adminEmail: true,
+                    subscription: {
+                        include: { plan: true },
+                    },
+                },
             }).catch(() => []);
 
             for (const comp of activeCompanies) {
@@ -70,6 +78,22 @@ export const ensureCleanDatabase = async (): Promise<void> => {
                         data: { companyName: cleanedName },
                     }).catch(() => {});
                 }
+
+                // Synchroniser isPro des collaborateurs (USER) selon le plan B2B réel de l'entreprise
+                const companyPlan = comp.subscription?.plan;
+                const isSubActive = !comp.subscription || comp.subscription.status === 'active' || comp.subscription.status === 'trialing';
+                const companyGrantsPro = Boolean(
+                    companyPlan &&
+                    isSubActive &&
+                    Number(companyPlan.priceEur) > 0 &&
+                    String(companyPlan.slug || '').toLowerCase() !== 'free' &&
+                    String(companyPlan.name || '').toLowerCase() !== 'free'
+                );
+
+                await prisma.user.updateMany({
+                    where: { companyId: comp.id, role: 'USER' },
+                    data: { isPro: companyGrantsPro },
+                }).catch(() => {});
 
                 if (comp.adminEmail && comp.adminEmail.toLowerCase() !== 'you.rhanime@gmail.com') {
                     await prisma.user.updateMany({

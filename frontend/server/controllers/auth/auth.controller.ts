@@ -19,7 +19,16 @@ export const login = async (req: Request, res: Response<ApiResponse>) => {
         // Rechercher l'utilisateur
         const user = await prisma.user.findUnique({
             where: { email: email.toLowerCase() },
-            include: { company: true, card: true },
+            include: {
+                company: {
+                    include: {
+                        subscription: {
+                            include: { plan: true },
+                        },
+                    },
+                },
+                card: true,
+            },
         });
 
         if (!user) {
@@ -96,7 +105,23 @@ export const login = async (req: Request, res: Response<ApiResponse>) => {
             companyId: user.companyId || undefined,
         });
 
-        // Sauvegarder le refresh token et mettre à jour lastLoginAt en parallèle
+        // Si l'utilisateur est un collaborateur d'entreprise (companyId défini),
+        // son statut PRO dépend exclusivement du plan B2B actif de son entreprise
+        let effectiveIsPro = Boolean((user as any).isPro);
+        if (user.companyId && user.role === 'USER') {
+            const companySub = user.company?.subscription;
+            const companyPlan = companySub?.plan;
+            const isSubActive = !companySub || companySub.status === 'active' || companySub.status === 'trialing';
+            effectiveIsPro = Boolean(
+                companyPlan &&
+                isSubActive &&
+                Number(companyPlan.priceEur) > 0 &&
+                String(companyPlan.slug || '').toLowerCase() !== 'free' &&
+                String(companyPlan.name || '').toLowerCase() !== 'free'
+            );
+        }
+
+        // Sauvegarder le refresh token et mettre à jour lastLoginAt (+ synchroniser isPro si besoin) en parallèle
         await Promise.all([
             prisma.refreshToken.create({
                 data: {
@@ -107,7 +132,10 @@ export const login = async (req: Request, res: Response<ApiResponse>) => {
             }).catch(() => {}),
             prisma.user.update({
                 where: { id: user.id },
-                data: { lastLoginAt: new Date() },
+                data: {
+                    lastLoginAt: new Date(),
+                    ...((user as any).isPro !== effectiveIsPro ? { isPro: effectiveIsPro } : {}),
+                },
             }).catch(() => {}),
         ]);
 
@@ -127,7 +155,7 @@ export const login = async (req: Request, res: Response<ApiResponse>) => {
                     companyName: user.company?.name,
                     avatarUrl: user.avatarUrl,
                     isActive: user.isActive,
-                    isPro: (user as any).isPro || false,
+                    isPro: effectiveIsPro,
                 },
                 tokens,
             },

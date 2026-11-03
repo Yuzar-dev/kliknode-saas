@@ -5,6 +5,7 @@ export interface User {
     lastName: string | null;
     role: UserRole;
     companyId: string | null;
+    companyName?: string | null;
     avatarUrl: string | null;
     isActive: boolean;
     isPro?: boolean;

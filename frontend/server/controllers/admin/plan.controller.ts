@@ -403,6 +403,19 @@ export const assignCompanyPlan = async (req: Request, res: Response<ApiResponse>
             });
         }
 
+        const companyGrantsPro = Boolean(
+            subscription.plan &&
+            (subscription.status === 'active' || subscription.status === 'trialing') &&
+            Number(subscription.plan.priceEur) > 0 &&
+            String(subscription.plan.slug || '').toLowerCase() !== 'free' &&
+            String(subscription.plan.name || '').toLowerCase() !== 'free'
+        );
+
+        await prisma.user.updateMany({
+            where: { companyId, role: 'USER' },
+            data: { isPro: companyGrantsPro },
+        }).catch(() => {});
+
         return res.status(200).json({
             success: true,
             data: subscription
