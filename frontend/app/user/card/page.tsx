@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
 import CardPreview, { COVER_PRESETS } from '@/components/user/CardPreview';
+import ProFeatureGuard from '@/components/user/ProFeatureGuard';
 
 interface CardData {
     id: string;
@@ -20,6 +21,7 @@ interface CardData {
     bioVisible: boolean;
     socialLinks: any[];
     publicSlug?: string;
+    leadGenActive: boolean;
 }
 
 const COLOR_PRESETS = [
@@ -40,7 +42,7 @@ export default function CardEditorPage() {
     const [form, setForm] = useState<Partial<CardData>>({});
     const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'identity' | 'style'>('identity');
+    const [activeTab, setActiveTab] = useState<'identity' | 'style' | 'pro'>('identity');
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const avatarInputRef = useRef<HTMLInputElement>(null);
 
@@ -71,6 +73,7 @@ export default function CardEditorPage() {
                     bioVisible: data.bio_visible !== false, // Default to true
                     socialLinks: data.social_links || [],
                     publicSlug: data.public_slug || user.id, // Fallback to user.id for slug
+                    leadGenActive: data.lead_gen_active !== false,
                 };
                 setCard(mappedData as any);
                 setForm(mappedData);
@@ -79,7 +82,7 @@ export default function CardEditorPage() {
                 const { data: userData } = await supabase.from('users').select('first_name, last_name, email').eq('id', user.id).single();
                 if (userData) {
                     setForm({
-                        firstName: userData.first_name || '', lastName: userData.last_name || '', email: userData.email || '', primaryColor: '#0666EB', theme: 'light', bioVisible: true
+                        firstName: userData.first_name || '', lastName: userData.last_name || '', email: userData.email || '', primaryColor: '#0666EB', theme: 'light', bioVisible: true, leadGenActive: true
                     });
                 }
             }
@@ -110,6 +113,7 @@ export default function CardEditorPage() {
                 bio_visible: form.bioVisible,
                 avatar_url: form.avatarUrl,
                 public_slug: card?.publicSlug || user.id, // Make sure public_slug is saved during upsert
+                lead_gen_active: form.leadGenActive !== false,
                 updated_at: new Date().toISOString(),
             };
 
@@ -193,6 +197,7 @@ export default function CardEditorPage() {
                     {[
                         { id: 'identity', label: 'Identité', icon: 'person' },
                         { id: 'style', label: 'Design', icon: 'palette' },
+                        { id: 'pro', label: 'Options PRO ⚡', icon: 'star' },
                     ].map(tab => (
                         <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
                             className={`flex items-center gap-2.5 px-6 md:px-8 py-2.5 md:py-3 rounded-[1.5rem] text-sm font-bold transition-all duration-500 shrink-0 ${activeTab === tab.id
@@ -397,6 +402,130 @@ export default function CardEditorPage() {
                             </div>
                         </div>
                     </div>
+                )}
+
+                {activeTab === 'pro' && (
+                    <ProFeatureGuard 
+                        title="Fonctionnalités PRO exclusives" 
+                        description="Activez le CRM public de capture de leads et l'export direct vers Apple & Google Wallet."
+                    >
+                        <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            {/* Lead Generation Toggle */}
+                            <div className="klik-glass p-6 md:p-10 rounded-[2rem] md:rounded-[2.5rem] border border-white/60 dark:border-white/5 shadow-lg relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-3xl opacity-30 -mr-16 -mt-16 group-hover:opacity-50 transition-all duration-700" />
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                                    <div className="space-y-2">
+                                        <h3 className="text-lg font-bold text-apple-textDark dark:text-white tracking-tight flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-[24px] text-indigo-500 font-light" translate="no">contact_page</span>
+                                            Capture de Prospects B2C
+                                        </h3>
+                                        <p className="text-sm text-apple-secondary dark:text-gray-400 font-medium max-w-lg leading-relaxed">
+                                            Affichez le formulaire public <span className="font-semibold text-slate-800 dark:text-slate-200">"Échangeons nos contacts"</span> directement sur votre profil public pour capturer des prospects qualifiés lors de vos rencontres.
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-3 self-start sm:self-center shrink-0">
+                                        <span className="text-[10px] font-black text-apple-secondary uppercase tracking-widest">{form.leadGenActive ? 'Activé' : 'Désactivé'}</span>
+                                        <button
+                                            onClick={() => setForm(f => ({ ...f, leadGenActive: !f.leadGenActive }))}
+                                            className={`relative w-12 h-6 rounded-full transition-all duration-300 ${form.leadGenActive ? 'bg-indigo-500' : 'bg-gray-200 dark:bg-gray-800'}`}
+                                        >
+                                            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-300 ${form.leadGenActive ? 'left-6.5' : 'left-0.5'}`} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Wallet Pass Section */}
+                            <div className="klik-glass p-6 md:p-10 rounded-[2rem] md:rounded-[2.5rem] border border-white/60 dark:border-white/5 shadow-lg relative overflow-hidden">
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6 md:mb-8 px-1">
+                                    <div>
+                                        <h3 className="text-[10px] md:text-xs font-black uppercase tracking-[0.25em] text-apple-secondary dark:text-gray-500">
+                                            Pass Wallet iPhone & Android (Sans Abonnement Apple)
+                                        </h3>
+                                        <p className="text-xs text-apple-secondary dark:text-gray-400 mt-1">
+                                            Ouvrez votre carte format Wallet plein écran, téléchargez l&apos;image HD pour votre écran verrouillé ou associez-la au double-clic / bouton Action iPhone.
+                                        </p>
+                                    </div>
+                                    {card?.publicSlug && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const url = `${window.location.origin}/wallet/${card.publicSlug}`;
+                                                navigator.clipboard.writeText(url);
+                                                toast.success('Lien du Pass Wallet copié !');
+                                            }}
+                                            className="px-4 py-2.5 rounded-xl bg-primary/10 border border-primary/20 text-primary text-[11px] font-black uppercase tracking-widest shrink-0 cursor-pointer hover:bg-primary/20 transition-all"
+                                        >
+                                            Copier Lien Pass Wallet
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    {/* Apple Wallet / iPhone Pass */}
+                                    <div className="p-6 rounded-2xl bg-black border border-white/10 flex flex-col justify-between min-h-[190px] shadow-2xl relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 blur-xl rounded-full" />
+                                        <div className="flex items-start justify-between">
+                                            <div className="space-y-1">
+                                                <h4 className="text-white font-black tracking-tight text-lg flex items-center gap-2">
+                                                    <span>Pass Wallet iPhone</span>
+                                                </h4>
+                                                <p className="text-xs text-gray-400 font-medium">
+                                                    Carte plein écran QR Code haute luminosité + Raccourci Bouton Latéral / Écran d&apos;accueil iOS.
+                                                </p>
+                                            </div>
+                                            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white">
+                                                <span className="material-symbols-outlined font-light" translate="no">wallet</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 mt-6">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (!card?.publicSlug) return toast.error('Slug de carte introuvable');
+                                                    window.open(`/wallet/${card.publicSlug}`, '_blank');
+                                                }}
+                                                className="w-fit h-10 px-5 rounded-xl bg-white text-black text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                                            >
+                                                <span className="material-symbols-outlined text-[18px]" translate="no">qr_code_2</span>
+                                                Ouvrir mon Pass iPhone
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Google Wallet / Android Pass */}
+                                    <div className="p-6 rounded-2xl bg-[#0F172A] border border-white/5 flex flex-col justify-between min-h-[190px] shadow-2xl relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 blur-xl rounded-full" />
+                                        <div className="flex items-start justify-between">
+                                            <div className="space-y-1">
+                                                <h4 className="text-white font-black tracking-tight text-lg flex items-center gap-2">
+                                                    <span>Pass Wallet Android & Image HD</span>
+                                                </h4>
+                                                <p className="text-xs text-gray-400 font-medium">
+                                                    Installez votre carte sur l&apos;écran d&apos;accueil Android ou téléchargez l&apos;image Pass Wallet HD.
+                                                </p>
+                                            </div>
+                                            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white">
+                                                <span className="material-symbols-outlined font-light" translate="no">contactless</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 mt-6">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (!card?.publicSlug) return toast.error('Slug de carte introuvable');
+                                                    window.open(`/wallet/${card.publicSlug}`, '_blank');
+                                                }}
+                                                className="w-fit h-10 px-5 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                                            >
+                                                <span className="material-symbols-outlined text-[18px]" translate="no">add_to_home_screen</span>
+                                                Ouvrir & Télécharger Image HD
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </ProFeatureGuard>
                 )}
 
                 {/* Save Button (Bottom) */}

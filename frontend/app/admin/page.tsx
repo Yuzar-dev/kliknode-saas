@@ -4,63 +4,45 @@ import { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { AdminButton } from '@/components/ui/AdminButton';
 import { apiClient } from '@/lib/api-client';
+import { useRouter } from 'next/navigation';
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState<any[]>([]);
     const [activities, setActivities] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const router = useRouter();
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
                 const response = await apiClient.get('/api/admin/stats');
-                const data = response.data;
+                // The API returns { success: true, data: { totalUsers: X, ... } }
+                const data = response.data.data;
 
-                const mockStats = [
+                const realStats = [
                     { title: 'Utilisateurs', value: data.totalUsers.toString(), icon: 'group', trend: 'Inscrits globaux', trendUp: null },
                     { title: 'Cartes Actives', value: data.activeCards.toString(), icon: 'nfc', trend: 'En service', trendUp: true },
                     { title: 'Entreprises B2B', value: data.totalCompanies.toString(), icon: 'business', trend: 'Dossiers actifs', trendUp: true },
-                    { title: 'MRR (Bêta)', value: '€124.5k', icon: 'payments', trend: '+8.2%', trendUp: true },
-                    { title: 'Hardware Orders', value: '42', icon: 'memory', trend: 'En cours', trendUp: true },
+                    { title: 'MRR (Bêta)', value: `€${(data.mrrEur || 0).toLocaleString()}`, icon: 'payments', trend: '30 Derniers Jours', trendUp: true },
+                    { title: 'Hardware Orders', value: (data.hardwareOrdersPending || 0).toString(), icon: 'memory', trend: 'En attente', trendUp: true },
                 ];
 
-                const mockActivities = [
-                    {
-                        icon: 'check_circle',
-                        iconBg: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400',
-                        title: 'Facture Tesla Inc. payée',
-                        description: 'Facture #INV-2024-001 - €12,400',
-                        time: 'il y a 2m',
-                        badge: { text: 'Payé', variant: 'emerald' }
-                    },
-                    {
-                        icon: 'warning',
-                        iconBg: 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400',
-                        title: 'Stock Casa critique',
-                        description: 'Server Racks (SKU-992) < 5 unités',
-                        time: 'il y a 45m',
-                        badge: { text: 'Alerte Critique', variant: 'rose' }
-                    },
-                    {
-                        icon: 'person_add',
-                        iconBg: 'bg-blue-100 text-blue-600',
-                        title: 'Nouvelle inscription utilisateur',
-                        description: 'Sophia L. a rejoint l\'Équipe Ingénierie',
-                        time: 'il y a 1h',
-                        badge: { text: 'Nouvel Utilisateur', variant: 'blue' }
-                    },
-                    {
-                        icon: 'file_download',
-                        iconBg: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400',
-                        title: 'Rapport Financier T3',
-                        description: 'Exporté par l\'Équipe Finance',
-                        time: 'il y a 3h',
-                        badge: null
-                    }
-                ];
+                let realActivities = data.recentActivities || [];
+                if (realActivities.length === 0) {
+                    realActivities = [
+                        {
+                            icon: 'info',
+                            iconBg: 'bg-slate-100 text-slate-600',
+                            title: 'Aucune activité récente',
+                            description: 'Le journal est vide.',
+                            time: '',
+                            badge: null
+                        }
+                    ];
+                }
 
-                setStats(mockStats);
-                setActivities(mockActivities);
+                setStats(realStats);
+                setActivities(realActivities);
 
             } catch (error) {
                 console.error('Failed to fetch dashboard stats', error);
@@ -77,19 +59,20 @@ export default function AdminDashboard() {
     return (
         <AdminLayout>
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-10">
                 {stats.map((stat, index) => (
-                    <div key={index} className="bg-white dark:bg-surface-dark p-5 rounded-xl border border-slate-200 dark:border-border-dark shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex justify-between items-start mb-2">
-                            <p className="text-sm font-medium text-text-muted">{stat.title}</p>
-                            <span className="material-icons-outlined text-slate-300 text-lg">{stat.icon}</span>
+                    <div key={index} className="klik-glass p-8 rounded-[2.5rem] border border-white/40 dark:border-white/5 shadow-glass-light dark:shadow-glass-dark hover:scale-[1.05] transition-all duration-500 group overflow-hidden relative">
+                        <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/10 blur-2xl -mr-8 -mt-8 group-hover:bg-blue-500/20 transition-all"></div>
+                        <div className="flex justify-between items-start mb-6">
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-apple-secondary dark:text-slate-500">{stat.title}</p>
+                            <span className="material-icons-outlined text-blue-500/40 group-hover:text-blue-500 transition-colors text-xl">{stat.icon}</span>
                         </div>
-                        <div className="flex items-baseline gap-2">
-                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</h3>
+                        <div className="flex items-baseline gap-2 mb-4">
+                            <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">{stat.value}</h3>
                         </div>
-                        <div className={`mt-2 flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded w-fit ${stat.trendUp === true ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' :
-                            stat.trendUp === false ? 'text-rose-600 bg-rose-50 dark:bg-rose-900/20' :
-                                'text-slate-500 bg-slate-100 dark:bg-slate-800'
+                        <div className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl w-fit border ${stat.trendUp === true ? 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20' :
+                            stat.trendUp === false ? 'text-rose-600 bg-rose-500/10 border-rose-500/20' :
+                                'text-slate-500 bg-slate-500/10 border-slate-500/20'
                             }`}>
                             {stat.trendUp !== null && (
                                 <span className="material-icons-outlined text-[14px]">
@@ -103,13 +86,13 @@ export default function AdminDashboard() {
             </div>
 
             {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
                 {/* Chart */}
-                <div className="lg:col-span-2 bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark shadow-sm p-6 flex flex-col">
-                    <div className="flex justify-between items-center mb-6">
+                <div className="lg:col-span-2 klik-glass rounded-[2.5rem] border border-white/40 dark:border-white/5 shadow-glass-light dark:shadow-glass-dark p-10 flex flex-col">
+                    <div className="flex justify-between items-center mb-10">
                         <div>
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Comparaison Croissance Utilisateurs</h3>
-                            <p className="text-sm text-text-muted">Répartition régionale : France vs Maroc (6 derniers mois)</p>
+                            <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Comparaison Croissance Utilisateurs</h3>
+                            <p className="text-[11px] font-bold text-apple-secondary dark:text-slate-500 uppercase tracking-widest mt-1">Répartition régionale : France vs Maroc (6 derniers mois)</p>
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="flex items-center gap-2">
@@ -166,10 +149,10 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Recent Activity */}
-                <div className="bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark shadow-sm flex flex-col overflow-hidden">
-                    <div className="p-5 border-b border-slate-200 dark:border-border-dark flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
-                        <h3 className="text-base font-bold text-slate-900 dark:text-white">Activité Récente</h3>
-                        <a className="text-xs font-semibold text-primary hover:text-primary-hover" href="#">Tout Voir</a>
+                <div className="klik-glass rounded-[2.5rem] border border-white/40 dark:border-white/5 shadow-glass-light dark:shadow-glass-dark mb-8 flex flex-col overflow-hidden">
+                    <div className="p-8 border-b border-white/10 flex justify-between items-center bg-white/5 dark:bg-black/20">
+                        <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Activité Récente</h3>
+                        <a className="text-[10px] font-black uppercase tracking-widest text-blue-500 hover:text-blue-600 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 transition-all" href="#">Tout Voir</a>
                     </div>
                     <div className="flex-1 overflow-y-auto p-0">
                         {activities.map((activity, index) => (
@@ -182,7 +165,7 @@ export default function AdminDashboard() {
                                 <div className="flex-1">
                                     <div className="flex justify-between items-start">
                                         <p className="text-sm font-medium text-slate-900 dark:text-white">{activity.title}</p>
-                                        <span className="text-[10px] text-text-muted whitespace-nowrap">{activity.time}</span>
+                                        <span className="text-[10px] text-text-muted whitespace-nowrap">{new Date(activity.time).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
                                     <p className="text-xs text-text-muted mt-0.5 mb-2">{activity.description}</p>
                                     {activity.badge && (
@@ -200,54 +183,52 @@ export default function AdminDashboard() {
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pb-8">
                 {/* Upload Invoices */}
-                <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-5 text-white shadow-lg shadow-blue-600/20 flex flex-col justify-between h-32 relative overflow-hidden group cursor-pointer">
+                <div onClick={() => router.push('/admin/transactions')} className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-[24px] p-6 text-white shadow-lg shadow-blue-600/20 flex flex-col justify-between h-36 relative overflow-hidden group cursor-pointer transition-all duration-300 hover:scale-[1.02]">
                     <div className="absolute right-0 top-0 w-24 h-24 bg-white opacity-5 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
                     <div className="relative z-10">
-                        <span className="material-icons-outlined text-2xl mb-2 opacity-80">cloud_upload</span>
-                        <h4 className="font-bold">Télécharger Factures</h4>
+                        <span className="material-icons-outlined text-2xl mb-2 opacity-80">receipt_long</span>
+                        <h4 className="font-bold">Gérer Factures</h4>
                     </div>
                     <div className="relative z-10 flex items-center gap-2 text-sm font-medium opacity-90">
-                        <span>Glisser & Déposer</span>
+                        <span>Ouvrir</span>
                         <span className="material-icons-outlined text-sm">arrow_forward</span>
                     </div>
                 </div>
 
                 {/* Track Shipment */}
-                <div className="bg-white dark:bg-surface-dark rounded-xl p-5 border border-slate-200 dark:border-border-dark flex flex-col justify-between h-32 hover:border-blue-500/50 transition-colors cursor-pointer group">
+                <div onClick={() => router.push('/admin/hardware-orders')} className="klik-glass rounded-[24px] p-6 border-none shadow-glass-light dark:shadow-glass-dark flex flex-col justify-between h-36 hover:scale-[1.02] transition-all duration-300 cursor-pointer group">
                     <div>
                         <div className="flex justify-between items-start">
                             <span className="material-icons-outlined text-2xl text-slate-400 group-hover:text-primary transition-colors">local_shipping</span>
-                            <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-1.5 py-0.5 rounded">LOGISTICS</span>
+                            <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full">LOGISTICS</span>
                         </div>
-                        <h4 className="font-bold text-slate-900 dark:text-white mt-2">Suivre Livraison</h4>
+                        <h4 className="font-bold text-slate-900 dark:text-white mt-2">Suivre Commandes</h4>
                     </div>
-                    <p className="text-xs text-text-muted">ID: #SHP-99281 en Transit</p>
+                    <p className="text-xs text-text-muted">{stats[4]?.value} commande(s) en attente</p>
                 </div>
 
                 {/* Pending Approvals */}
-                <div className="bg-white dark:bg-surface-dark rounded-xl p-5 border border-slate-200 dark:border-border-dark flex flex-col justify-between h-32 hover:border-blue-500/50 transition-colors cursor-pointer group">
+                <div onClick={() => router.push('/admin/companies/new')} className="klik-glass rounded-[24px] p-6 border-none shadow-glass-light dark:shadow-glass-dark flex flex-col justify-between h-36 hover:scale-[1.02] transition-all duration-300 cursor-pointer group">
                     <div>
                         <div className="flex justify-between items-start">
                             <span className="material-icons-outlined text-2xl text-slate-400 group-hover:text-primary transition-colors">group_add</span>
-                            <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-1.5 py-0.5 rounded">HR</span>
+                            <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full">SALES</span>
                         </div>
-                        <h4 className="font-bold text-slate-900 dark:text-white mt-2">Approbations en Attente</h4>
+                        <h4 className="font-bold text-slate-900 dark:text-white mt-2">Nouveaux Dossiers B2B</h4>
                     </div>
                     <div className="flex -space-x-2 overflow-hidden">
-                        <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-blue-600 flex items-center justify-center text-[10px] text-white font-bold">S</div>
-                        <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-emerald-600 flex items-center justify-center text-[10px] text-white font-bold">M</div>
-                        <div className="h-6 w-6 rounded-full ring-2 ring-white bg-slate-100 flex items-center justify-center text-[10px] text-slate-500 font-bold">+2</div>
+                        <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white dark:ring-black bg-blue-600 flex items-center justify-center text-[10px] text-white font-bold">+</div>
                     </div>
                 </div>
 
                 {/* Live Operations Map */}
-                <div className="bg-white dark:bg-surface-dark rounded-xl p-0 border border-slate-200 dark:border-border-dark h-32 overflow-hidden relative group">
+                <div onClick={() => router.push('/admin/batch-generator')} className="klik-glass rounded-[24px] p-0 border-none h-36 overflow-hidden relative group cursor-pointer hover:scale-[1.02] transition-all duration-300">
                     <div className="w-full h-full bg-slate-800"></div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent p-5 flex flex-col justify-end">
-                        <h4 className="font-bold text-white">Carte Opérations en Direct</h4>
-                        <div className="flex items-center gap-1 text-white/80 text-xs mt-1">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                            <span>Système Opérationnel</span>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-6 flex flex-col justify-end">
+                        <h4 className="font-bold text-white">Générateur Lots B2B</h4>
+                        <div className="flex items-center gap-2 text-white/80 text-xs mt-1">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
+                            <span>Système Prêt</span>
                         </div>
                     </div>
                 </div>

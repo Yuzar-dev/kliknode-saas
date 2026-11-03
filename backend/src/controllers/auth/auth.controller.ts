@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import prisma from '../../config/database';
+import prisma, { ensureCleanDatabase, syncUserToSupabaseAuth } from '../../config/database';
 import { hashPassword, comparePassword } from '../../utils/bcrypt.util';
 import { generateTokens } from '../../utils/jwt.util';
 import { ApiResponse } from '../../types/express';
@@ -13,6 +13,7 @@ import { emailService } from '../../services/email.service';
  */
 export const login = async (req: Request, res: Response<ApiResponse>) => {
     try {
+        await ensureCleanDatabase();
         const { email, password } = req.body;
 
         // Rechercher l'utilisateur
@@ -42,8 +43,23 @@ export const login = async (req: Request, res: Response<ApiResponse>) => {
             });
         }
 
-        // Vérifier le mot de passe
-        const isPasswordValid = await comparePassword(password, user.passwordHash);
+        // Vérifier le mot de passe (public.users puis fallback auth.users Supabase)
+        let isPasswordValid = false;
+        if (user.passwordHash && user.passwordHash.startsWith('$2')) {
+            isPasswordValid = await comparePassword(password, user.passwordHash);
+        }
+        if (!isPasswordValid) {
+            try {
+                const authRows = await prisma.$queryRaw<Array<{ encrypted_password: string | null }>>`
+                    SELECT encrypted_password FROM auth.users WHERE lower(email) = ${email.toLowerCase()} LIMIT 1
+                `;
+                if (authRows.length > 0 && authRows[0].encrypted_password) {
+                    isPasswordValid = await comparePassword(password, authRows[0].encrypted_password);
+                }
+            } catch (e) {
+                // Ignore if auth.users is not accessible
+            }
+        }
 
         if (!isPasswordValid) {
             return res.status(401).json({
@@ -63,20 +79,20 @@ export const login = async (req: Request, res: Response<ApiResponse>) => {
             companyId: user.companyId || undefined,
         });
 
-        // Sauvegarder le refresh token
-        await prisma.refreshToken.create({
-            data: {
-                userId: user.id,
-                token: tokens.refreshToken,
-                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 jours
-            },
-        });
-
-        // Mettre à jour lastLoginAt
-        await prisma.user.update({
-            where: { id: user.id },
-            data: { lastLoginAt: new Date() },
-        });
+        // Sauvegarder le refresh token et mettre à jour lastLoginAt en parallèle
+        await Promise.all([
+            prisma.refreshToken.create({
+                data: {
+                    userId: user.id,
+                    token: tokens.refreshToken,
+                    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 jours
+                },
+            }).catch(() => {}),
+            prisma.user.update({
+                where: { id: user.id },
+                data: { lastLoginAt: new Date() },
+            }).catch(() => {}),
+        ]);
 
         logger.info(`User ${user.email} logged in successfully`);
 
@@ -92,6 +108,9 @@ export const login = async (req: Request, res: Response<ApiResponse>) => {
                     role: user.role as any,
                     companyId: user.companyId,
                     companyName: user.company?.name,
+                    avatarUrl: user.avatarUrl,
+                    isActive: user.isActive,
+                    isPro: (user as any).isPro || false,
                 },
                 tokens,
             },
@@ -144,6 +163,15 @@ export const register = async (req: Request, res: Response<ApiResponse>) => {
                 role: 'USER',
                 language: 'fr',
             },
+        });
+
+        await syncUserToSupabaseAuth({
+            id: user.id,
+            email: user.email,
+            passwordHash,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role: 'USER',
         });
 
         // Créer la carte virtuelle associée

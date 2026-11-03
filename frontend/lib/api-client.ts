@@ -30,6 +30,13 @@ axiosInstance.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
+        // Auto-retry once if backend is briefly restarting (ERR_NETWORK)
+        if (!error.response && error.code === 'ERR_NETWORK' && originalRequest && !originalRequest._networkRetry) {
+            originalRequest._networkRetry = true;
+            await new Promise((resolve) => setTimeout(resolve, 1200));
+            return axiosInstance(originalRequest);
+        }
+
         // If 401 and not already retried, try to refresh token
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
@@ -37,10 +44,15 @@ axiosInstance.interceptors.response.use(
             try {
                 const refreshToken = localStorage.getItem('refreshToken');
                 if (!refreshToken) {
-                    throw new Error('No refresh token');
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('auth-storage');
+                    if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+                        window.location.replace('/login');
+                    }
+                    return new Promise(() => { });
                 }
 
-                const response = await axios.post(`${api.baseURL}/api/auth/refresh`, {
+                const response = await axios.post(`${api.baseURL}/api/auth/refresh-token`, {
                     refreshToken,
                 });
 
@@ -50,11 +62,14 @@ axiosInstance.interceptors.response.use(
                 originalRequest.headers.Authorization = `Bearer ${accessToken}`;
                 return axiosInstance(originalRequest);
             } catch (refreshError) {
-                // Refresh failed, logout user
+                // Échec du rafraîchissement
                 localStorage.removeItem('accessToken');
                 localStorage.removeItem('refreshToken');
-                window.location.href = '/login';
-                return Promise.reject(refreshError);
+                localStorage.removeItem('auth-storage');
+                if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+                    window.location.replace('/login');
+                }
+                return new Promise(() => { });
             }
         }
 

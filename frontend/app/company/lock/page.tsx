@@ -56,120 +56,133 @@ export default function MasterLockPage() {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+                <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+                <p className="text-apple-secondary font-medium animate-pulse tracking-tight">Chargement des paramètres Master Lock...</p>
             </div>
         );
     }
 
     return (
-        <main className="max-w-4xl mx-auto space-y-8 font-display">
-            <header className="mb-8">
-                <div className="flex items-center gap-3 mb-2">
-                    <span className="material-icons text-primary text-3xl">lock_person</span>
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Master Lock</h1>
+        <main className="max-w-4xl mx-auto space-y-10 font-display animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div>
+                    <div className="flex items-center gap-4 mb-2">
+                        <div className="w-12 h-12 rounded-[1.2rem] glass flex items-center justify-center text-primary shadow-sm border border-white/20">
+                            <span className="material-symbols-outlined text-[28px]">lock_person</span>
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-black text-apple-textDark dark:text-white tracking-tighter">Master Lock</h1>
+                    </div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.25em] text-apple-secondary dark:text-slate-500 mt-4">
+                        Verrouillez les champs pour garantir la cohérence de votre image de marque à travers l'organisation.
+                    </p>
                 </div>
-                <p className="text-slate-500 dark:text-slate-400 text-lg">
-                    Verrouillez les champs pour garantir la cohérence de votre image de marque à travers l'organisation.
-                </p>
-            </header>
+            </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Restrictions globales</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Ces paramètres s'appliquent à tous les comptes employés non-administrateurs.</p>
+            <div className="klik-glass rounded-[40px] border border-white/40 dark:border-white/5 shadow-2xl overflow-hidden mt-8">
+                <div className="px-8 py-6 border-b border-gray-100/10 dark:border-white/5 bg-white/30 dark:bg-white/5">
+                    <h3 className="text-2xl font-black text-apple-textDark dark:text-white tracking-tight">Restrictions globales</h3>
+                    <p className="text-[10px] font-bold text-apple-secondary uppercase tracking-widest mt-2">Ces paramètres s'appliquent à tous les comptes employés non-administrateurs.</p>
                 </div>
 
-                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                <div className="divide-y divide-gray-100/20 dark:divide-white/10">
                     {/* Lock Photo */}
-                    <div className="p-6 flex items-start justify-between gap-4">
+                    <div className="p-8 flex items-start justify-between gap-6 hover:bg-white/40 dark:hover:bg-white/5 transition-colors">
                         <div className="flex-1">
-                            <label className="text-base font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                            <label className="text-lg font-black text-apple-textDark dark:text-white tracking-tight flex items-center gap-3">
                                 Interdire la modification de la photo de profil
-                                <span className="material-icons text-slate-400 text-sm cursor-help" title="Empêche les employés de remplacer leur photo professionnelle par une image personnelle.">info</span>
+                                <span className="material-symbols-outlined text-apple-secondary text-[20px] cursor-help" title="Empêche les employés de remplacer leur photo professionnelle par une image personnelle.">info</span>
                             </label>
-                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Empêche les employés de remplacer leur photo professionnelle par une image personnelle. Idéal pour l'uniformité.</p>
+                            <p className="text-[11px] font-bold text-apple-secondary uppercase tracking-widest mt-2 leading-relaxed">Empêche les employés de remplacer leur photo professionnelle par une image personnelle. Idéal pour l'uniformité.</p>
                         </div>
                         <button
                             onClick={() => toggleLock('lockPhoto')}
-                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-900 ${branding.lockPhoto ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'}`}
+                            className={`relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary/20 ${branding.lockPhoto ? 'bg-primary shadow-lg shadow-primary/30' : 'bg-gray-200 dark:bg-[#1C1C1E]'}`}
                         >
-                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${branding.lockPhoto ? 'translate-x-5' : 'translate-x-0'}`}></span>
+                            <span className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-sm ring-0 transition duration-300 ease-in-out ${branding.lockPhoto ? 'translate-x-6' : 'translate-x-0'}`}></span>
                         </button>
                     </div>
 
                     {/* Lock Job Title */}
-                    <div className="p-6 flex items-start justify-between gap-4">
+                    <div className="p-8 flex items-start justify-between gap-6 hover:bg-white/40 dark:hover:bg-white/5 transition-colors">
                         <div className="flex-1">
-                            <label className="text-base font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                            <label className="text-lg font-black text-apple-textDark dark:text-white tracking-tight flex items-center gap-3">
                                 Interdire la modification du poste / titre
                             </label>
-                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Garantit que les intitulés de poste restent conformes à la base de données RH et ne sont pas modifiés manuellement.</p>
+                            <p className="text-[11px] font-bold text-apple-secondary uppercase tracking-widest mt-2 leading-relaxed">Garantit que les intitulés de poste restent conformes à la base de données RH et ne sont pas modifiés manuellement.</p>
                         </div>
                         <button
                             onClick={() => toggleLock('lockJobTitle')}
-                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-900 ${branding.lockJobTitle ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'}`}
+                            className={`relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary/20 ${branding.lockJobTitle ? 'bg-primary shadow-lg shadow-primary/30' : 'bg-gray-200 dark:bg-[#1C1C1E]'}`}
                         >
-                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${branding.lockJobTitle ? 'translate-x-5' : 'translate-x-0'}`}></span>
+                            <span className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-sm ring-0 transition duration-300 ease-in-out ${branding.lockJobTitle ? 'translate-x-6' : 'translate-x-0'}`}></span>
                         </button>
                     </div>
 
                     {/* Force Corporate Logo */}
-                    <div className="p-6 flex items-start justify-between gap-4">
+                    <div className="p-8 flex items-start justify-between gap-6 hover:bg-white/40 dark:hover:bg-white/5 transition-colors">
                         <div className="flex-1">
-                            <label className="text-base font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                            <label className="text-lg font-black text-apple-textDark dark:text-white tracking-tight flex items-center gap-3">
                                 Forcer l'affichage du logo corporate sur toutes les cartes
                             </label>
-                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Le logo de l'entreprise sera visible sur toutes les signatures email et cartes virtuelles, sans possibilité de le masquer.</p>
+                            <p className="text-[11px] font-bold text-apple-secondary uppercase tracking-widest mt-2 leading-relaxed">Le logo de l'entreprise sera visible sur toutes les signatures email et cartes virtuelles, sans possibilité de le masquer.</p>
                         </div>
                         <button
                             onClick={() => toggleLock('forceLogo')}
-                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-900 ${branding.forceLogo ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'}`}
+                            className={`relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary/20 ${branding.forceLogo ? 'bg-primary shadow-lg shadow-primary/30' : 'bg-gray-200 dark:bg-[#1C1C1E]'}`}
                         >
-                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${branding.forceLogo ? 'translate-x-5' : 'translate-x-0'}`}></span>
+                            <span className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-sm ring-0 transition duration-300 ease-in-out ${branding.forceLogo ? 'translate-x-6' : 'translate-x-0'}`}></span>
                         </button>
                     </div>
 
                     {/* Lock Social Links */}
-                    <div className="p-6 flex items-start justify-between gap-4">
+                    <div className="p-8 flex items-start justify-between gap-6 hover:bg-white/40 dark:hover:bg-white/5 transition-colors">
                         <div className="flex-1">
-                            <label className="text-base font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                            <label className="text-lg font-black text-apple-textDark dark:text-white tracking-tight flex items-center gap-3">
                                 Verrouiller les liens de réseaux sociaux
                             </label>
-                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Si activé, les employés ne pourront pas ajouter ou modifier leurs liens LinkedIn, Twitter ou autres plateformes.</p>
+                            <p className="text-[11px] font-bold text-apple-secondary uppercase tracking-widest mt-2 leading-relaxed">Si activé, les employés ne pourront pas ajouter ou modifier leurs liens LinkedIn, Twitter ou autres plateformes.</p>
                         </div>
                         <button
                             onClick={() => toggleLock('lockSocialLinks')}
-                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-900 ${branding.lockSocialLinks ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'}`}
+                            className={`relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary/20 ${branding.lockSocialLinks ? 'bg-primary shadow-lg shadow-primary/30' : 'bg-gray-200 dark:bg-[#1C1C1E]'}`}
                         >
-                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${branding.lockSocialLinks ? 'translate-x-5' : 'translate-x-0'}`}></span>
+                            <span className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-sm ring-0 transition duration-300 ease-in-out ${branding.lockSocialLinks ? 'translate-x-6' : 'translate-x-0'}`}></span>
                         </button>
                     </div>
                 </div>
 
-                <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-4 flex items-center justify-end border-t border-slate-200 dark:border-slate-700 gap-3">
+                <div className="bg-white/30 dark:bg-white/5 px-8 py-6 flex flex-col sm:flex-row items-center justify-end border-t border-gray-100/10 dark:border-white/5 gap-4">
                     <button
                         onClick={fetchBranding}
-                        className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                        className="w-full sm:w-auto px-8 h-12 rounded-full glass border border-white/40 dark:border-white/10 hover:bg-white/40 dark:hover:bg-white/5 transition-all flex items-center justify-center gap-3 text-xs font-black uppercase tracking-widest text-apple-textDark dark:text-white shadow-sm"
                     >
                         Annuler
                     </button>
                     <button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary border border-transparent rounded-lg shadow-sm hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all disabled:opacity-50"
+                        className="w-full sm:w-auto px-10 h-12 rounded-full btn-titanium-primary shadow-xl shadow-primary/30 flex items-center justify-center gap-3 text-xs font-black uppercase tracking-widest text-white transition-all disabled:opacity-50"
                     >
-                        <span className="material-icons text-sm mr-2">{isSaving ? 'sync' : 'save'}</span>
+                        {isSaving ? (
+                            <span className="material-symbols-outlined text-[20px] animate-spin">sync</span>
+                        ) : (
+                            <span className="material-symbols-outlined text-[20px]">save</span>
+                        )}
                         {isSaving ? 'Enregistrement...' : 'Enregistrer les modifications'}
                     </button>
                 </div>
             </div>
 
-            <div className="flex gap-4 p-4 bg-primary/10 rounded-lg border border-primary/20">
-                <span className="material-icons text-primary">tips_and_updates</span>
+            {/* Tip Card */}
+            <div className="klik-glass p-6 rounded-[24px] border border-primary/20 bg-primary/5 flex gap-4 mt-8">
+                <div className="w-12 h-12 rounded-[1.2rem] glass border border-primary/20 flex items-center justify-center text-primary flex-shrink-0">
+                    <span className="material-symbols-outlined text-[24px]">tips_and_updates</span>
+                </div>
                 <div>
-                    <h4 className="text-sm font-semibold text-primary mb-1">Astuce Branding</h4>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">Verrouiller la photo de profil est recommandé si vous avez récemment organisé une séance photo professionnelle pour vos équipes.</p>
+                    <h4 className="text-lg font-black text-primary tracking-tight mb-2">Astuce Branding</h4>
+                    <p className="text-[11px] font-bold text-apple-secondary uppercase tracking-widest leading-relaxed">Verrouiller la photo de profil est recommandé si vous avez récemment organisé une séance photo professionnelle pour vos équipes.</p>
                 </div>
             </div>
         </main>

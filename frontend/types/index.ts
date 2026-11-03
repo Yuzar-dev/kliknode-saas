@@ -7,6 +7,7 @@ export interface User {
     companyId: string | null;
     avatarUrl: string | null;
     isActive: boolean;
+    isPro?: boolean;
 }
 
 export type UserRole = 'USER' | 'EMPLOYEE' | 'MANAGER' | 'OPERATOR' | 'ADMIN';
@@ -56,6 +57,7 @@ export interface Card {
     avatarUrl: string | null;
     isPublic: boolean;
     viewCount: number;
+    leadGenActive?: boolean;
 }
 
 export interface SubscriptionPlan {

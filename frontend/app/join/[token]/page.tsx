@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/auth-store';
+import { createClient } from '@/utils/supabase/client';
 import { apiClient } from '@/lib/api-client';
 import toast from 'react-hot-toast';
 import { AdminButton } from '@/components/ui/AdminButton';
@@ -31,6 +32,9 @@ export default function JoinCompanyPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAccepting, setIsAccepting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const login = useAuthStore((state) => state.login);
 
@@ -54,10 +58,53 @@ export default function JoinCompanyPage() {
   }, [token]);
 
   const handleAcceptInvitation = async () => {
+    if (password.length < 8) {
+      toast.error('Le mot de passe doit contenir au moins 8 caractères');
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error('Les mots de passe ne correspondent pas');
+      return;
+    }
+
     setIsAccepting(true);
 
     try {
-      const response = await apiClient.post(`/api/invitations/accept/${token}`);
+      // 1. Authenticate / Create user in Supabase Auth first
+      // This ensures the middleware recognizes the session
+      if (invitationData) {
+        const supabase = createClient();
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: invitationData.user.email,
+          password: password,
+          options: {
+            data: {
+              first_name: invitationData.user.firstName,
+              last_name: invitationData.user.lastName,
+            }
+          }
+        });
+
+        // If the user already exists in Supabase Auth, signUp might throw an error or return without a session.
+        // For now, we proceed as long as it didn't throw a catastrophic error.
+        if (authError && !authError.message.includes('already registered')) {
+          throw authError;
+        }
+
+        // If user is already registered, try to sign in
+        if (authError && authError.message.includes('already registered')) {
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+                email: invitationData.user.email,
+                password: password,
+            });
+            if (signInError) throw new Error("Compte existant : Mot de passe incorrect.");
+        }
+      }
+
+      // 2. Call backend to update password_hash and activate user
+      const response = await apiClient.post(`/api/invitations/accept/${token}`, {
+        password
+      });
 
       if (response.data.success) {
         const { user, tokens } = response.data.data;
@@ -89,9 +136,8 @@ export default function JoinCompanyPage() {
 
   const getRoleBadge = (role: string) => {
     const roleMap: Record<string, { label: string, color: string }> = {
-      MANAGER: { label: 'Administrateur', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
+      MANAGER: { label: 'Manager', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
       EMPLOYEE: { label: 'Employé', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
-      USER: { label: 'Utilisateur', color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200' }
     };
     return roleMap[role] || { label: role, color: 'bg-gray-100 text-gray-800' };
   };
@@ -140,17 +186,16 @@ export default function JoinCompanyPage() {
   const companyInitials = invitationData.company.name.split(' ').map(word => word[0]).join('').substring(0, 2).toUpperCase();
 
   return (
-    <div className="bg-background-light dark:bg-background-dark font-display antialiased text-slate-900 dark:text-white transition-colors duration-200">
+    <div className="bg-apple-bgLight dark:bg-black font-display antialiased text-apple-textDark dark:text-white transition-colors duration-200">
       <div className="relative flex min-h-screen flex-col overflow-hidden">
         {/* Top Navigation */}
-        <header className="flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md px-6 py-4 sticky top-0 z-50">
+        <header className="flex items-center justify-between whitespace-nowrap border-b border-gray-200/40 dark:border-white/5 bg-white/60 dark:bg-black/40 backdrop-blur-[12px] px-6 py-4 sticky top-0 z-50">
           <div className="flex items-center gap-3">
-            <div className="size-8 text-primary">
-              <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
-              </svg>
-            </div>
-            <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">V-Card SaaS</h2>
+            <img src="/logo-icon-black.svg" alt="KlikNode" className="h-[22px] w-auto dark:hidden shrink-0" />
+            <img src="/logo-icon-white.svg" alt="KlikNode" className="h-[22px] w-auto hidden dark:block shrink-0" />
+            <span className="text-[22px] font-bold tracking-tighter text-slate-900 dark:text-white leading-none">
+                kliknode
+            </span>
           </div>
           <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-sm font-semibold">
             <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,16 +223,16 @@ export default function JoinCompanyPage() {
                   )}
                 </div>
               </div>
-              <h1 className="text-slate-900 dark:text-white text-3xl sm:text-4xl font-black tracking-tight">
+              <h1 className="text-apple-textDark dark:text-white text-3xl sm:text-4xl font-black tracking-tight">
                 Bienvenue chez <span className="text-primary">{invitationData.company.name}</span>
               </h1>
-              <p className="text-slate-500 dark:text-slate-400 text-lg max-w-lg mx-auto leading-relaxed">
+              <p className="text-apple-secondary text-lg max-w-lg mx-auto leading-relaxed">
                 Vous avez été invité à rejoindre l'espace de travail de votre équipe. Veuillez vérifier vos informations pour continuer.
               </p>
             </div>
 
             {/* Card Container */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
+            <div className="klik-glass rounded-[24px] overflow-hidden">
               {/* Decorative Header inside Card */}
               <div className="relative h-32 bg-slate-900 overflow-hidden group">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-90"></div>
@@ -232,9 +277,9 @@ export default function JoinCompanyPage() {
 
                   {/* Role Field */}
                   <div className="flex flex-col gap-2">
-                    <label className="text-slate-700 dark:text-slate-300 text-sm font-semibold">Rôle assigné</label>
+                    <label className="text-apple-textDark dark:text-white text-sm font-semibold">Rôle assigné</label>
                     <div className="relative">
-                      <div className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 flex items-center justify-between">
+                      <div className="w-full bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-3 flex items-center justify-between">
                         <span className={`inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-xs font-semibold ${roleBadge.color}`}>
                           {roleBadge.label}
                         </span>
@@ -247,10 +292,10 @@ export default function JoinCompanyPage() {
 
                   {/* Email Field (Full Width) */}
                   <div className="flex flex-col gap-2 sm:col-span-2">
-                    <label className="text-slate-700 dark:text-slate-300 text-sm font-semibold">Adresse email professionnelle</label>
+                    <label className="text-apple-textDark dark:text-white text-sm font-semibold">Adresse email professionnelle</label>
                     <div className="relative">
                       <input
-                        className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-500 dark:text-slate-400 font-medium focus:ring-0 cursor-not-allowed pl-11"
+                        className="w-full bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-3 text-apple-secondary font-medium focus:ring-0 cursor-not-allowed pl-11"
                         readOnly
                         type="email"
                         value={invitationData.user.email}
@@ -267,10 +312,48 @@ export default function JoinCompanyPage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Password Field */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-apple-textDark dark:text-white text-sm font-semibold">Nouveau mot de passe</label>
+                    <div className="relative">
+                      <input
+                        className="w-full bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-3 text-apple-textDark dark:text-white font-medium focus:ring-2 focus:ring-primary focus:border-transparent transition-all pl-11"
+                        type="password"
+                        placeholder="Au moins 8 caractères"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                      />
+                      <div className="absolute inset-y-0 left-4 flex items-center text-slate-400">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Confirm Password Field */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-apple-textDark dark:text-white text-sm font-semibold">Confirmer le mot de passe</label>
+                    <div className="relative">
+                      <input
+                        className="w-full bg-white/50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-3 text-apple-textDark dark:text-white font-medium focus:ring-2 focus:ring-primary focus:border-transparent transition-all pl-11"
+                        type="password"
+                        placeholder="Répétez le mot de passe"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                      />
+                      <div className="absolute inset-y-0 left-4 flex items-center text-slate-400">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Divider */}
-                <div className="h-px bg-slate-100 dark:bg-slate-800 my-2"></div>
+                <div className="h-px bg-gray-200/40 dark:bg-white/10 my-2"></div>
 
                 {/* Info Box */}
                 <div className="flex flex-col gap-4">
@@ -286,26 +369,29 @@ export default function JoinCompanyPage() {
                 </div>
 
                 {/* Action Button */}
-                {/* Action Button */}
-                <AdminButton
+                <button
                   onClick={handleAcceptInvitation}
                   disabled={isAccepting}
-                  isLoading={isAccepting}
-                  variant="primary"
-                  className="w-full bg-primary hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full btn-titanium btn-titanium-primary rounded-full font-bold py-4 px-6 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4"
                 >
-                  <span>Finissez votre configuration</span>
-                  <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                </AdminButton>
+                  {isAccepting ? (
+                    <span className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <span>Finissez votre configuration</span>
+                      <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                      </svg>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
 
             {/* Footer Links */}
-            <div className="flex flex-col items-center gap-4 text-center">
+            <div className="flex flex-col items-center gap-4 text-center mt-4 mb-8">
               <p className="text-sm text-slate-400 dark:text-slate-500">
-                Propulsé par <span className="font-semibold text-slate-600 dark:text-slate-400">V-Card SaaS</span> © 2026
+                Propulsé par <span className="font-semibold text-slate-600 dark:text-slate-400">Kliknode</span> © 2026
               </p>
               <div className="flex gap-6 text-xs font-medium text-slate-500 dark:text-slate-400">
                 <Link href="/legal/cgu" className="hover:text-primary transition-colors">Conditions d'utilisation</Link>

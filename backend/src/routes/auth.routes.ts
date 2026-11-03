@@ -55,6 +55,7 @@ router.post('/reset-password', validateMiddleware(resetPasswordSchema), resetPas
  * @access  Public
  */
 router.post('/refresh-token', validateMiddleware(refreshTokenSchema), refreshToken);
+router.post('/refresh', validateMiddleware(refreshTokenSchema), refreshToken);
 
 /**
  * TODO: Ajouter les routes SSO (Google, Microsoft)

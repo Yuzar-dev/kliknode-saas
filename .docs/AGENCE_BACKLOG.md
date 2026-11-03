@@ -38,33 +38,33 @@
 
 | # | Tâche | Statut | Notes |
 |---|-------|--------|-------|
-| SA-B01 | Dashboard stats endpoint | ⏳ | Controller admin vide |
-| SA-B02 | Companies CRUD endpoint | ⏳ | |
-| SA-B03 | Plans CRUD endpoint | ⏳ | |
-| SA-B04 | Transactions list + manual payment | ⏳ | |
-| SA-B05 | Promo codes CRUD endpoint | ⏳ | |
-| SA-B06 | Inventory management endpoint | ⏳ | |
-| SA-B07 | Hardware orders endpoint | ⏳ | |
-| SA-B08 | Batch generator endpoint | ⏳ | |
-| SA-B09 | Operators CRUD endpoint | ⏳ | |
-| SA-B10 | Audit logs endpoint | ⏳ | |
-| SA-B11 | Admin routes registration | ⏳ | Pas de `admin.routes.ts` dans `routes/index.ts` |
+| SA-B01 | Dashboard stats endpoint | ✅ | `dashboard.controller.ts` |
+| SA-B02 | Companies CRUD endpoint | ✅ | Création et Liste OK |
+| SA-B03 | Plans CRUD endpoint | ✅ | `plan.controller.ts` |
+| SA-B04 | Transactions list + manual payment | ✅ | `transaction.controller.ts` |
+| SA-B05 | Promo codes CRUD endpoint | ✅ | `promo.controller.ts` |
+| SA-B06 | Inventory management endpoint | ✅ | `inventory.controller.ts` |
+| SA-B07 | Hardware orders endpoint | ✅ | `hardware-order.controller.ts` |
+| SA-B08 | Batch generator endpoint | ✅ | `batch.controller.ts` |
+| SA-B09 | Operators CRUD endpoint | ✅ | `operator.controller.ts` |
+| SA-B10 | Audit logs endpoint | ✅ | `audit.controller.ts` |
+| SA-B11 | Admin routes registration | ✅ | `admin.routes.ts` branché |
 
 ### Frontend (Pages)
 
 | # | Tâche | Statut | Notes |
 |---|-------|--------|-------|
-| SA-F01 | Admin Dashboard page | ✅ | `admin/page.tsx` (16.5KB) |
-| SA-F02 | Companies list + detail | ✅ | `admin/companies/` (3 fichiers) |
-| SA-F03 | Plans page | ✅ | `admin/plans/page.tsx` |
-| SA-F04 | Transactions page | ✅ | `admin/transactions/page.tsx` |
-| SA-F05 | Promo codes page | ✅ | `admin/promo-codes/page.tsx` |
-| SA-F06 | Inventory page | ✅ | `admin/inventory/page.tsx` |
-| SA-F07 | Hardware orders page | ✅ | `admin/hardware-orders/page.tsx` |
-| SA-F08 | Batch generator page | ✅ | `admin/batch-generator/page.tsx` |
-| SA-F09 | Operators page | ✅ | `admin/operators/page.tsx` |
-| SA-F10 | Audit logs page | ✅ | `admin/audit-logs/page.tsx` |
-| SA-F11 | Connecter les pages aux vrais endpoints API | 🔴 | Dépend de SA-B01→B11 |
+| SA-F01 | Admin Dashboard page | ✅ | Page connectée aux vraies données (Plans, Revenue, Inv, Stats) |
+| SA-F02 | Companies list + detail | ✅ | `admin/companies/` (Liste OK, export OK) |
+| SA-F02b| Onboarding Entreprise B2B | ✅ | Page finalisée avec appels API réels et sélection du plan |
+| SA-F03 | Plans page | ✅ | CRUD complet 100% opérationnel |
+| SA-F04 | Transactions page | ✅ | Liste, Stats, Tri, Remboursement et Création manuelle OK |
+| SA-F05 | Promo codes page | ✅ | CRUD complet et filtres 100% opérationnels |
+| SA-F06 | Inventory page | ✅ | Connecté à la BDD + fonction Upsert "Ajuster Stock" OK |
+| SA-F07 | Hardware orders page | ✅ | Boutons Création & Changement de statut/Tracking fonctionnels |
+| SA-F08 | Batch generator page | ✅ | Création et export CSV 100% opérationnels |
+| SA-F09 | Operators page | ✅ | Création et révocation 100% opérationnelles |
+| SA-F10 | Audit logs page | ✅ | Liste et filtres 100% opérationnels |
 
 ---
 

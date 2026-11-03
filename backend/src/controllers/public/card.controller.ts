@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
  */
 export const getPublicCard = async (req: Request, res: Response) => {
     try {
-        const { slug } = req.params;
+        const slug = String(req.params.slug);
 
         const card = await prisma.card.findUnique({
             where: { publicSlug: slug },
@@ -70,8 +70,8 @@ export const getPublicCard = async (req: Request, res: Response) => {
  */
 export const exchangeContact = async (req: Request, res: Response) => {
     try {
-        const { slug } = req.params;
-        const { firstName, lastName, email, phone, notes } = req.body;
+        const slug = String(req.params.slug);
+        const { firstName, lastName, email, phone, companyName, notes } = req.body;
 
         const card = await prisma.card.findUnique({
             where: { publicSlug: slug },
@@ -99,6 +99,7 @@ export const exchangeContact = async (req: Request, res: Response) => {
             lastName,
             email,
             phone,
+            companyName: companyName || null,
             notes,
             source: 'web_link',
         };
@@ -109,6 +110,32 @@ export const exchangeContact = async (req: Request, res: Response) => {
         }
 
         const lead = await prisma.contactLead.create({ data: leadData });
+
+        // Synchronisation automatique temps réel vers le CRM (Tiime.fr, HubSpot, Pipedrive, Webhook)
+        try {
+            const { getCrmConfig, pushLeadToCrm } = await import('../../services/crm-sync.service');
+            const ownerFullName = [card.firstName, card.lastName].filter(Boolean).join(' ') || 'Membre KlikNode';
+
+            if (card.user.companyId) {
+                const companyScope = `company:${card.user.companyId}`;
+                const companyCrm = getCrmConfig(companyScope);
+                if (companyCrm.enabled && companyCrm.autoSync) {
+                    pushLeadToCrm(companyScope, { ...lead, ownerName: ownerFullName }).catch((err) =>
+                        console.error('Auto CRM sync (company) failed:', err)
+                    );
+                }
+            }
+
+            const userScope = `user:${card.userId}`;
+            const userCrm = getCrmConfig(userScope);
+            if (userCrm.enabled && userCrm.autoSync) {
+                pushLeadToCrm(userScope, { ...lead, ownerName: ownerFullName }).catch((err) =>
+                    console.error('Auto CRM sync (user) failed:', err)
+                );
+            }
+        } catch (crmErr) {
+            console.error('CRM auto-sync hook error:', crmErr);
+        }
 
         return res.json({
             success: true,

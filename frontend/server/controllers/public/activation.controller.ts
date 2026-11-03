@@ -16,11 +16,19 @@ import { ApiResponse } from '../../types/express';
  */
 export const activateCard = async (req: Request, res: Response<ApiResponse>) => {
     try {
-        const uid = req.params.uid as string;
+        const rawUid = decodeURIComponent(String(req.params.uid || '')).trim();
+        const cleanUid = rawUid.replace(/:/g, '').toUpperCase();
+        const colonUid = cleanUid.match(/.{1,2}/g)?.join(':') || rawUid;
 
-        // Chercher la carte physique par UID
-        const physicalCard = await prisma.physicalCard.findUnique({
-            where: { uid },
+        // Chercher la carte physique par UID (format uniforme 14 caractères ou ancien format avec :)
+        const physicalCard = await prisma.physicalCard.findFirst({
+            where: {
+                OR: [
+                    { uid: { equals: rawUid, mode: 'insensitive' } },
+                    { uid: { equals: cleanUid, mode: 'insensitive' } },
+                    { uid: { equals: colonUid, mode: 'insensitive' } },
+                ],
+            },
             include: {
                 pairedCard: {
                     include: {
@@ -53,7 +61,7 @@ export const activateCard = async (req: Request, res: Response<ApiResponse>) => 
         if (physicalCard.status === 'lost') {
             return res.status(200).json({
                 success: true,
-                data: { status: 'lost' },
+                data: { status: 'lost', uid: physicalCard.uid },
             });
         }
 
@@ -61,7 +69,7 @@ export const activateCard = async (req: Request, res: Response<ApiResponse>) => 
         if (physicalCard.status === 'in_stock') {
             return res.status(200).json({
                 success: true,
-                data: { status: 'in_stock' },
+                data: { status: 'in_stock', uid: physicalCard.uid },
             });
         }
 
@@ -71,33 +79,41 @@ export const activateCard = async (req: Request, res: Response<ApiResponse>) => 
                 success: true,
                 data: {
                     status: 'reserved',
+                    uid: physicalCard.uid,
+                    companyId: physicalCard.companyId,
                     message: 'Carte réservée, en attente de pairage',
                 },
             });
         }
 
-        // Carte pairée → vérifier si le profil est complet
+        // Carte pairée → rediriger vers le profil public /p/:slug et incrémenter le compteur
         if (physicalCard.status === 'paired' && physicalCard.pairedCard) {
             const card = physicalCard.pairedCard;
-            const hasProfile = card.user && card.firstName && card.lastName;
+            const slug = card.publicSlug || card.userId;
 
-            if (hasProfile) {
+            // Incrémenter le compteur de vues/scans sans bloquer
+            prisma.card.update({
+                where: { id: card.id },
+                data: { viewCount: { increment: 1 } },
+            }).catch(() => {});
+
+            if (slug) {
                 return res.status(200).json({
                     success: true,
                     data: {
                         status: 'paired_with_profile',
-                        publicSlug: card.publicSlug,
-                        redirectUrl: `/p/${card.publicSlug}`,
+                        uid: physicalCard.uid,
+                        publicSlug: slug,
+                        redirectUrl: `/p/${slug}`,
                     },
                 });
             }
 
-            // Pairée mais profil incomplet → l'utilisateur doit créer un compte
             return res.status(200).json({
                 success: true,
                 data: {
                     status: 'paired_no_profile',
-                    cardUid: uid,
+                    cardUid: physicalCard.uid,
                 },
             });
         }

@@ -16,6 +16,7 @@ model User {
   lastName        String?             @map("last_name") @db.VarChar(100)
   role            UserRole
   companyId       String?             @map("company_id")
+  isPro           Boolean             @default(false) @map("is_pro")
   phone           String?             @db.VarChar(20)
   language        String              @default("fr") @db.VarChar(2)
   avatarUrl       String?             @map("avatar_url")
@@ -69,6 +70,7 @@ model Company {
   transactions   Transaction[]
   users          User[]
   cards          Card[]
+  physicalCards  PhysicalCard[]
 
   @@index([slug])
   @@index([status])
@@ -184,7 +186,10 @@ model Card {
   bio_visible   Boolean       @default(true) @map("bio_visible")
   socialLinks   Json?         @default("[]") @map("social_links")
   companyId     String?       @map("company_id")
+  leadGenActive Boolean       @default(true) @map("lead_gen_active")
   scans         CardScan[]
+  leads         Lead[]
+  linkClicks    LinkClick[]
   user          User          @relation(fields: [userId], references: [id])
   company       Company?      @relation(fields: [companyId], references: [id])
   contactLeads  ContactLead[]
@@ -206,14 +211,17 @@ model PhysicalCard {
   pairedCardId       String?            @unique @map("paired_card_id")
   pairedAt           DateTime?          @map("paired_at")
   pairedByOperatorId String?            @map("paired_by_operator_id")
+  companyId          String?            @map("company_id")
   createdAt          DateTime           @default(now()) @map("created_at")
   updatedAt          DateTime           @updatedAt @map("updated_at")
   pairedByOperator   User?              @relation("PairedBy", fields: [pairedByOperatorId], references: [id])
   pairedCard         Card?              @relation(fields: [pairedCardId], references: [id])
+  company            Company?           @relation(fields: [companyId], references: [id])
 
   @@index([uid])
   @@index([status])
   @@index([warehouse])
+  @@index([companyId])
   @@map("physical_cards")
 }
 
@@ -471,4 +479,27 @@ enum ContactSource {
   qr_scan
   nfc_tap
   web_link
+}
+
+model Lead {
+  id        String   @id @default(uuid())
+  profileId String   @map("profile_id")
+  name      String
+  email     String
+  phone     String
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  card      Card     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("leads")
+}
+
+model LinkClick {
+  id        String   @id @default(uuid())
+  profileId String   @map("profile_id")
+  linkType  String   @map("link_type")
+  clickedAt DateTime @default(now()) @map("clicked_at")
+  card      Card     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("link_clicks")
 }

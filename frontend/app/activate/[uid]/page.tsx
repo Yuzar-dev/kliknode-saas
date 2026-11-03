@@ -9,11 +9,56 @@ export default async function ActivatePage({
 }) {
     const { uid: encodedUid } = await params;
     const uid = decodeURIComponent(encodedUid);
+    const headersList = await headers();
+    const host = headersList.get('host') || '';
+    const isNfcDomain = host.includes('k.kliknode.com');
+    const appUrl = isNfcDomain ? 'https://app.kliknode.com' : '';
+
+    // 1. Priorité au backend Express (Prisma Direct) pour éviter tout blocage réseau Supabase
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    let backendPayload: any = null;
+    try {
+        const res = await fetch(`${backendUrl}/api/public/activate/${encodeURIComponent(uid)}`, {
+            cache: 'no-store',
+        });
+        backendPayload = await res.json().catch(() => null);
+    } catch {
+        // Fallback vers Supabase si le backend n'est pas joignable
+    }
+
+    if (backendPayload?.data?.status) {
+        const status = backendPayload.data.status;
+        const resolvedUid = backendPayload.data.uid || uid;
+
+        if (status === 'not_found') {
+            return <NotFound />;
+        }
+        if (status === 'lost') {
+            return <Lost />;
+        }
+        if (status === 'in_stock') {
+            redirect(`${appUrl}/signup?card_id=${encodeURIComponent(resolvedUid)}`);
+        }
+        if (status === 'reserved') {
+            const compId = backendPayload.data.companyId;
+            if (compId) {
+                redirect(`${appUrl}/join/employee?card_id=${encodeURIComponent(resolvedUid)}&company_id=${encodeURIComponent(compId)}`);
+            }
+            redirect(`${appUrl}/signup?card_id=${encodeURIComponent(resolvedUid)}`);
+        }
+        if (status === 'paired_with_profile' && backendPayload.data.publicSlug) {
+            redirect(`${appUrl}/p/${backendPayload.data.publicSlug}`);
+        }
+        if (status === 'paired_no_profile') {
+            redirect(`${appUrl}/signup?card_id=${encodeURIComponent(resolvedUid)}`);
+        }
+    }
+
     const supabase = await createClient();
 
     const { data: physicalCard } = await supabase
         .from('physical_cards')
-        .select(`status, paired_card_id`)
+        .select(`status, paired_card_id, company_id`)
         .eq('uid', uid)
         .single();
 
@@ -22,12 +67,11 @@ export default async function ActivatePage({
     }
 
     if (physicalCard.status === 'in_stock' || physicalCard.status === 'reserved') {
-        const headersList = await headers();
-        const host = headersList.get('host') || '';
-        const isNfcDomain = host.includes('k.kliknode.com');
-        const appUrl = isNfcDomain ? 'https://app.kliknode.com' : '';
-
-        redirect(`${appUrl}/signup?card_id=${uid}`);
+        if (physicalCard.status === 'reserved' && physicalCard.company_id) {
+            redirect(`${appUrl}/join/employee?card_id=${uid}&company_id=${physicalCard.company_id}`);
+        } else {
+            redirect(`${appUrl}/signup?card_id=${uid}`);
+        }
     }
 
     if (physicalCard.status === 'paired') {
@@ -40,14 +84,7 @@ export default async function ActivatePage({
         const slug = virtualCard?.public_slug || virtualCard?.user_id;
 
         if (slug && virtualCard) {
-            const headersList = await headers();
-            const host = headersList.get('host') || '';
-            const isNfcDomain = host.includes('k.kliknode.com');
-            const appUrl = isNfcDomain ? 'https://app.kliknode.com' : '';
-
-            // Increment scan count
             await supabase.rpc('increment_scan_count', { card_id_param: virtualCard.id });
-
             redirect(`${appUrl}/p/${slug}`);
         }
     }

@@ -26,6 +26,7 @@ interface CardData {
     theme: string | null;
     bioVisible: boolean;
     socialLinks: any[];
+    leadGenActive: boolean;
     user: {
         firstName: string | null;
         lastName: string | null;
@@ -33,6 +34,7 @@ interface CardData {
             name: string;
             branding: any;
         } | null;
+        isPro: boolean;
     };
 }
 
@@ -66,7 +68,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
             try {
                 const supabase = createClient();
 
-                let query = supabase.from('cards').select('*, users ( company_id )');
+                let query = supabase.from('cards').select('*, users ( company_id, is_pro )');
 
                 // UUID regex
                 const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(slug);
@@ -104,10 +106,12 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                     theme: data.theme || 'light',
                     bioVisible: data.bio_visible !== false,
                     socialLinks: data.social_links || [],
+                    leadGenActive: data.lead_gen_active !== false,
                     user: {
                         firstName: data.first_name,
                         lastName: data.last_name,
-                        company: null
+                        company: null,
+                        isPro: data.users?.is_pro === true
                     }
                 };
 
@@ -171,31 +175,68 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
         toast.success('Contact prêt à être enregistré !');
     };
 
+    const handleLinkClick = async (linkType: string) => {
+        if (!card) return;
+        try {
+            await fetch('/api/public/analytics/track-click', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    cardId: card.id,
+                    linkType: linkType
+                })
+            });
+        } catch (error) {
+            console.error('Error tracking link click:', error);
+        }
+    };
+
     const handleExchangeSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSharing(true);
         try {
-            const parts = formData.name.trim().split(' ');
-            const firstName = parts[0] || '';
-            const lastName = parts.slice(1).join(' ') || '';
+            if (card?.user?.isPro && card?.leadGenActive) {
+                // Submit to B2C public lead capture API
+                const response = await fetch('/api/public/leads/capture', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cardId: card.id,
+                        name: formData.name,
+                        email: formData.email,
+                        phone: formData.phone,
+                        notes: formData.notes
+                    })
+                });
+                const resData = await response.json();
+                if (!response.ok || !resData.success) {
+                    throw new Error(resData.error || 'Une erreur est survenue.');
+                }
+                toast.success('Vos informations ont été envoyées !');
+            } else {
+                // B2B flow using Supabase RPC
+                const parts = formData.name.trim().split(' ');
+                const firstName = parts[0] || '';
+                const lastName = parts.slice(1).join(' ') || '';
 
-            const supabase = createClient();
-            const { error: rpcError } = await supabase.rpc('create_contact_lead', {
-                p_card_id: card!.id,
-                p_user_id: card!.userId,
-                p_company_id: card!.companyId || null,
-                p_first_name: firstName,
-                p_last_name: lastName,
-                p_email: formData.email,
-                p_phone: formData.phone,
-                p_notes: formData.notes
-            });
+                const supabase = createClient();
+                const { error: rpcError } = await supabase.rpc('create_contact_lead', {
+                    p_card_id: card!.id,
+                    p_user_id: card!.userId,
+                    p_company_id: card!.companyId || null,
+                    p_first_name: firstName,
+                    p_last_name: lastName,
+                    p_email: formData.email,
+                    p_phone: formData.phone,
+                    p_notes: formData.notes
+                });
 
-            if (rpcError) {
-                throw new Error(rpcError.message || "Erreur réseau lors de l'envoi.");
+                if (rpcError) {
+                    throw new Error(rpcError.message || "Erreur réseau lors de l'envoi.");
+                }
+
+                toast.success('Vos informations ont été envoyées !');
             }
-
-            toast.success('Vos informations ont été envoyées !');
             setShowModal(false);
             setFormData({ name: '', email: '', phone: '', notes: '' });
         } catch (error: any) {
@@ -330,15 +371,15 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
 
                     {/* Quick Action Buttons (Alex Sterling Style) */}
                     <div className="flex items-center gap-6 mt-10 w-full max-w-sm">
-                        <a href={`mailto:${card.email}`} className="flex-1 flex items-center justify-center gap-2.5 h-16 rounded-full text-white shadow-2xl active:scale-95 transition-all hover:brightness-110"
+                        <a href={`mailto:${card.email}`} onClick={() => handleLinkClick('email')} className="flex-1 flex items-center justify-center gap-2.5 h-16 rounded-full text-white shadow-2xl active:scale-95 transition-all hover:brightness-110"
                             style={{ background: card.primaryColor || '#0666EB' }}>
                             <span className="material-symbols-outlined font-light text-[22px]" translate="no">mail</span>
                             <span className="font-bold tracking-wide">Email</span>
                         </a>
-                        <a href={`tel:${card.phoneMobile}`} className="h-16 w-16 flex items-center justify-center rounded-full bg-white shadow-xl text-apple-textDark dark:bg-[#1C1C1E] dark:text-white border border-gray-100 dark:border-white/5 hover:scale-105 active:scale-95 transition-all">
+                        <a href={`tel:${card.phoneMobile}`} onClick={() => handleLinkClick('appel')} className="h-16 w-16 flex items-center justify-center rounded-full bg-white shadow-xl text-apple-textDark dark:bg-[#1C1C1E] dark:text-white border border-gray-100 dark:border-white/5 hover:scale-105 active:scale-95 transition-all">
                             <span className="material-symbols-outlined font-light" translate="no">call</span>
                         </a>
-                        <a href={`sms:${card.phoneMobile}`} className="h-16 w-16 flex items-center justify-center rounded-full bg-white shadow-xl text-apple-textDark dark:bg-[#1C1C1E] dark:text-white border border-gray-100 dark:border-white/5 hover:scale-105 active:scale-95 transition-all">
+                        <a href={`sms:${card.phoneMobile}`} onClick={() => handleLinkClick('sms')} className="h-16 w-16 flex items-center justify-center rounded-full bg-white shadow-xl text-apple-textDark dark:bg-[#1C1C1E] dark:text-white border border-gray-100 dark:border-white/5 hover:scale-105 active:scale-95 transition-all">
                             <span className="material-symbols-outlined font-light" translate="no">chat_bubble</span>
                         </a>
                     </div>
@@ -346,7 +387,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                     {/* Website Button */}
                     {card.website && (
                         <div className="w-full max-w-sm mt-4">
-                            <a href={card.website.startsWith('http') ? card.website : `https://${card.website}`} target="_blank" rel="noopener noreferrer"
+                            <a href={card.website.startsWith('http') ? card.website : `https://${card.website}`} onClick={() => handleLinkClick('site web')} target="_blank" rel="noopener noreferrer"
                                 className="flex items-center justify-center gap-2.5 h-14 w-full rounded-full bg-white/60 dark:bg-white/5 backdrop-blur-md border border-white/50 dark:border-white/10 shadow-sm text-apple-textDark dark:text-white hover:bg-white/80 dark:hover:bg-white/10 transition-all font-bold active:scale-95">
                                 <span className="material-symbols-outlined font-light text-[20px]" translate="no">language</span>
                                 Visiter notre site
@@ -406,6 +447,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                                                     <a
                                                         key={link.id}
                                                         href={normalizeUrl(link.url)}
+                                                        onClick={() => handleLinkClick(link.platform || 'Social')}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="w-[60px] h-[60px] shrink-0 bg-white/90 dark:bg-[#1C1C1E] shadow-sm border border-gray-100 dark:border-white/10 hover:shadow-lg rounded-[1.25rem] flex items-center justify-center transition-all duration-300 hover:-translate-y-1 hover:scale-105 snap-center"
@@ -436,6 +478,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                                                 <a
                                                     key={link.id}
                                                     href={normalizeUrl(link.url)}
+                                                    onClick={() => handleLinkClick(link.label || link.platform || 'Lien externe')}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="group relative flex items-center justify-start gap-4 w-full px-5 py-3.5 rounded-full bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 active:scale-95 overflow-hidden"
@@ -455,16 +498,91 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                     })()}
                 </div>
 
+                {/* CRM Form in hard for PRO user if leadGenActive is true */}
+                {card.user?.isPro && card.leadGenActive && (
+                    <div className="mt-8 px-6">
+                        <div className="klik-glass p-8 rounded-[2.5rem] shadow-xl border border-white/60 dark:border-white/5 overflow-hidden relative group">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-indigo-500/10 to-primary/10 blur-3xl opacity-30 -mr-16 -mt-16 group-hover:opacity-50 transition-all duration-700" />
+                            <h3 className="text-xl font-black text-apple-textDark dark:text-white tracking-tight flex items-center gap-2 mb-2">
+                                <span className="material-symbols-outlined text-[24px] text-indigo-500 font-light" translate="no">contact_page</span>
+                                Échangeons nos contacts !
+                            </h3>
+                            <p className="text-xs text-apple-secondary dark:text-gray-400 font-medium mb-6 leading-relaxed">
+                                Laissez vos coordonnées ci-dessous pour rester en contact. Je recevrai une notification instantanée et pourrai vous recontacter facilement.
+                            </p>
+                            <form onSubmit={handleExchangeSubmit} className="space-y-4">
+                                <div className="relative group/input">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within/input:text-apple-textDark dark:group-focus-within/input:text-white transition-colors">
+                                        <span className="material-symbols-outlined text-[20px]" translate="no">person</span>
+                                    </div>
+                                    <input
+                                        required
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        className="block w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-white/5 border border-gray-100 dark:border-white/5 focus:border-gray-200 dark:focus:border-white/10 rounded-2xl text-apple-textDark dark:text-white text-sm placeholder:text-gray-400 outline-none transition-all shadow-sm"
+                                        placeholder="Nom Complet" type="text"
+                                    />
+                                </div>
+                                <div className="relative group/input">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within/input:text-apple-textDark dark:group-focus-within/input:text-white transition-colors">
+                                        <span className="material-symbols-outlined text-[20px]" translate="no">mail</span>
+                                    </div>
+                                    <input
+                                        required
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        className="block w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-white/5 border border-gray-100 dark:border-white/5 focus:border-gray-200 dark:focus:border-white/10 rounded-2xl text-apple-textDark dark:text-white text-sm placeholder:text-gray-400 outline-none transition-all shadow-sm"
+                                        placeholder="Adresse E-mail" type="email"
+                                    />
+                                </div>
+                                <div className="relative group/input">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within/input:text-apple-textDark dark:group-focus-within/input:text-white transition-colors">
+                                        <span className="material-symbols-outlined text-[20px]" translate="no">phone</span>
+                                    </div>
+                                    <input
+                                        value={formData.phone}
+                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                        className="block w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-white/5 border border-gray-100 dark:border-white/5 focus:border-gray-200 dark:focus:border-white/10 rounded-2xl text-apple-textDark dark:text-white text-sm placeholder:text-gray-400 outline-none transition-all shadow-sm"
+                                        placeholder="Numéro de Téléphone" type="tel"
+                                    />
+                                </div>
+                                <div className="relative group/input">
+                                    <div className="absolute left-4 top-4 text-gray-400 group-focus-within/input:text-apple-textDark dark:group-focus-within/input:text-white transition-colors">
+                                        <span className="material-symbols-outlined text-[20px]" translate="no">notes</span>
+                                    </div>
+                                    <textarea
+                                        value={formData.notes}
+                                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                                        className="block w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-white/5 border border-gray-100 dark:border-white/5 focus:border-gray-200 dark:focus:border-white/10 rounded-2xl text-apple-textDark dark:text-white text-sm placeholder:text-gray-400 outline-none transition-all shadow-sm resize-none h-24"
+                                        placeholder="Un petit message pour moi..."
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={isSharing}
+                                    className="w-full h-14 rounded-2xl font-bold tracking-tight text-sm shadow-xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all text-white hover:brightness-110"
+                                    style={{ background: card.primaryColor || '#0666EB' }}
+                                >
+                                    <span>{isSharing ? 'Envoi...' : 'Envoyer mes coordonnées'}</span>
+                                    <span className="material-symbols-outlined text-lg" translate="no">send</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
                 {/* Bottom Action Area (Regular Flow) */}
                 <div className="w-full px-8 mt-4 flex flex-col items-center gap-3">
-                    <button
-                        onClick={() => setShowModal(true)}
-                        className="w-full h-14 rounded-full shadow-xl active:scale-95 flex items-center justify-center gap-3 text-white transition-all hover:brightness-110"
-                        style={{ background: card.primaryColor || '#0666EB' }}
-                    >
-                        <span className="font-extrabold tracking-tight text-base">Échanger le contact</span>
-                        <span className="material-symbols-outlined text-xl" translate="no">chevron_right</span>
-                    </button>
+                    {!(card.user?.isPro && card.leadGenActive) && (
+                        <button
+                            onClick={() => setShowModal(true)}
+                            className="w-full h-14 rounded-full shadow-xl active:scale-95 flex items-center justify-center gap-3 text-white transition-all hover:brightness-110"
+                            style={{ background: card.primaryColor || '#0666EB' }}
+                        >
+                            <span className="font-extrabold tracking-tight text-base">Échanger le contact</span>
+                            <span className="material-symbols-outlined text-xl" translate="no">chevron_right</span>
+                        </button>
+                    )}
 
                     <button
                         onClick={handleSaveContact}

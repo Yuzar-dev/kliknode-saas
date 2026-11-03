@@ -11,7 +11,15 @@ import {
     reorderSocialLinks,
     getAnalytics,
     getLeads,
+    updateUserLead,
+    deleteUserLead,
+    getUserCrmConfig,
+    saveUserCrmConfig,
+    syncUserLeadsToCrm,
     changePassword,
+    getB2CPlans,
+    subscribeB2CPlan,
+    upgradeSimulate,
 } from '../controllers/user/user.controller';
 
 const router = Router();
@@ -34,10 +42,23 @@ router.delete('/social-links/:id', deleteSocialLink);
 // Analytics
 router.get('/analytics', getAnalytics);
 
-// Leads (contacts reçus)
+// Leads (contacts reçus) & CRM
 router.get('/leads', getLeads);
+router.put('/leads/:id', updateUserLead);
+router.delete('/leads/:id', deleteUserLead);
+router.get('/crm-config', getUserCrmConfig);
+router.post('/crm-config', saveUserCrmConfig);
+router.post('/crm-sync', syncUserLeadsToCrm);
 
 // Sécurité / Paramètres
 router.post('/change-password', changePassword);
 
+// Abonnements B2C (Plans & Souscription)
+router.get('/plans', getB2CPlans);
+router.post('/subscribe', subscribeB2CPlan);
+
+// Simulation de passage au statut PRO pour les tests en local
+router.post('/upgrade-simulate', upgradeSimulate);
+
 export default router;
+

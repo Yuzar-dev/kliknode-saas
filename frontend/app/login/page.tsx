@@ -7,8 +7,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/auth-store';
+import { apiClient } from '@/lib/api-client';
 import toast from 'react-hot-toast';
-import { createBrowserClient } from '@supabase/ssr';
 
 // Validation schema
 const loginSchema = z.object({
@@ -22,7 +22,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const redirectUrl = searchParams?.get('redirect') || '/';
+    const login = useAuthStore(state => state.login);
 
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -39,69 +39,52 @@ function LoginForm() {
         setIsLoading(true);
 
         try {
-            // Re-create the client with restricted cookie options if "Remember Me" is not checked.
-            // Using a maxAge of `undefined` usually bypasses explicit expiration, creating a session cookie.
-            // However, to ensure it overrides any `@supabase/ssr` default, we cast to any.
-            // If the user wants to be remembered, we use the default (1 year).
-            const supabase = createBrowserClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-                data.rememberMe ? {} : {
-                    cookieOptions: {
-                        maxAge: undefined as any
-                    }
-                }
-            );
-
-            // 1. Authenticate with Supabase
-            const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+            // 1. Authentification via notre API Backend locale (connectée à PostgreSQL)
+            const response = await apiClient.post('/api/auth/login', {
                 email: data.email,
                 password: data.password,
             });
 
-            if (authError) throw authError;
-            if (!authData.user) throw new Error("Erreur de connexion");
-
-            // 2. Fetch profile to get role (use maybeSingle to avoid crash if no public user row exists yet)
-            const { data: userData, error: profileError } = await supabase
-                .from('users')
-                .select('role, first_name')
-                .eq('id', authData.user.id)
-                .maybeSingle();
-
-            if (profileError) {
-                console.error("Profile fetch error:", profileError);
-            }
-
-            // Fallback to 'USER' if no role is found in public.users
+            const { user: userData, tokens } = response.data.data;
             const role = userData?.role || 'USER';
 
-            // Show success message
-            toast.success(`Bienvenue ${userData?.first_name || data.email} !`);
+            // 2. Persister via Zustand et localStorage
+            login({
+                id: userData.id,
+                email: userData.email || '',
+                firstName: userData.firstName || null,
+                lastName: userData.lastName || null,
+                role: role,
+                companyId: userData.companyId || null,
+                avatarUrl: userData.avatarUrl || null,
+                isActive: userData.isActive ?? true,
+                isPro: userData.isPro ?? false,
+            }, {
+                accessToken: tokens.accessToken,
+                refreshToken: tokens.refreshToken,
+            });
 
-            // 3. Redirect based on role
+            // 3. Redirection immédiate selon le rôle
             if (role === 'ADMIN') {
                 router.push('/admin');
             } else if (role === 'MANAGER') {
                 router.push('/company');
             } else if (role === 'OPERATOR') {
                 router.push('/operator');
-            } else if (role === 'USER') {
+            } else if (role === 'USER' || role === 'EMPLOYEE') {
                 router.push('/user');
             } else {
-                router.push(redirectUrl);
+                router.push('/');
             }
         } catch (error: any) {
-            console.error('Login error RAW:', error);
-            console.error('Login error JSON:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+            console.warn('Login warning:', error?.message);
 
-            let errorMessage = 'Erreur de connexion. Veuillez réessayer.';
-            if (error?.message) {
-                errorMessage = error.message;
-            }
-            if (error?.details) {
-                errorMessage += ` (${error.details})`;
-            }
+            const errorMessage =
+                error?.response?.data?.error?.message ||
+                (error?.code === 'ERR_NETWORK'
+                    ? 'Connexion au serveur en cours, veuillez réessayer dans 2 secondes.'
+                    : error?.message) ||
+                'Erreur de connexion. Veuillez réessayer.';
 
             toast.error(errorMessage);
         } finally {

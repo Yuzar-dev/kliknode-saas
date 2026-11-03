@@ -1,9 +1,10 @@
 import rateLimit from 'express-rate-limit';
 
+const isDev = (process.env.NODE_ENV || 'development') === 'development';
 const windowMs = parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000'); // 1 minute
-const maxRequests = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100');
-const loginMax = parseInt(process.env.RATE_LIMIT_LOGIN_MAX || '5');
-const signupMax = parseInt(process.env.RATE_LIMIT_SIGNUP_MAX || '3');
+const maxRequests = isDev ? 1000 : parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100');
+const loginMax = isDev ? 200 : parseInt(process.env.RATE_LIMIT_LOGIN_MAX || '5');
+const signupMax = isDev ? 200 : parseInt(process.env.RATE_LIMIT_SIGNUP_MAX || '3');
 
 /**
  * Rate limiter général pour l'API

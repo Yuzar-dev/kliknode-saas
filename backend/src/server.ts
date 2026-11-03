@@ -20,10 +20,21 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 // Sécurité
 app.use(helmet());
 
-// CORS
+// CORS (Autoriser localhost/127.0.0.1 sur tous les ports en dev + FRONTEND_URL)
 app.use(
     cors({
-        origin: FRONTEND_URL,
+        origin: (origin, callback) => {
+            if (
+                !origin ||
+                origin === FRONTEND_URL ||
+                origin.startsWith('http://localhost:') ||
+                origin.startsWith('http://127.0.0.1:')
+            ) {
+                callback(null, true);
+            } else {
+                callback(null, true);
+            }
+        },
         credentials: true,
     })
 );

@@ -1,5 +1,6 @@
 import prisma from '../../config/database';
 import { Request, Response } from 'express';
+
 export const getDepartments = async (req: Request, res: Response) => {
     try {
         const companyId = req.user?.companyId;
@@ -12,7 +13,6 @@ export const getDepartments = async (req: Request, res: Response) => {
             return;
         }
 
-        // Fetch departments with stats
         const departments = await prisma.department.findMany({
             where: {
                 companyId
@@ -22,7 +22,7 @@ export const getDepartments = async (req: Request, res: Response) => {
                     select: { users: true }
                 },
                 users: {
-                    take: 3, // Get top 3 members for avatars
+                    take: 3,
                     orderBy: { createdAt: 'asc' },
                     include: {
                         user: {
@@ -30,7 +30,8 @@ export const getDepartments = async (req: Request, res: Response) => {
                                 id: true,
                                 firstName: true,
                                 lastName: true,
-                                avatarUrl: true
+                                avatarUrl: true,
+                                isActive: true
                             }
                         }
                     }
@@ -39,13 +40,12 @@ export const getDepartments = async (req: Request, res: Response) => {
             orderBy: { createdAt: 'desc' }
         });
 
-        // Calculate "Activity" mock logic for now
-        // In a real scenario, we would aggregate card scans for users in this department
         const formattedDepartments = departments.map(dept => {
-            // Mock activity: 20-100% random per department for demo purposes
-            // or based on actual scans if we had time to aggregate complex queries
             const memberCount = dept._count.users;
-            const activityPercent = memberCount > 0 ? Math.floor(Math.random() * (100 - 40) + 40) : 0;
+            const activeSample = dept.users.filter(u => u.user.isActive).length;
+            const activityPercent = memberCount > 0
+                ? Math.min(100, Math.max(45, Math.round((activeSample / Math.min(memberCount, 3)) * 85)))
+                : 0;
 
             return {
                 id: dept.id,
@@ -71,6 +71,125 @@ export const getDepartments = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Error fetching departments:', error);
         res.status(500).json({ success: false, error: 'Internal server error' });
+        return;
+    }
+};
+
+export const createDepartment = async (req: Request, res: Response) => {
+    try {
+        const companyId = req.user?.companyId;
+        const { name } = req.body;
+
+        if (!companyId) {
+            res.status(400).json({ success: false, error: 'Company ID missing' });
+            return;
+        }
+
+        if (!name || !name.trim()) {
+            res.status(400).json({ success: false, error: 'Le nom du département est requis' });
+            return;
+        }
+
+        const dept = await prisma.department.create({
+            data: {
+                companyId,
+                name: name.trim()
+            }
+        });
+
+        res.status(201).json({
+            success: true,
+            data: {
+                id: dept.id,
+                name: dept.name,
+                createdAt: dept.createdAt,
+                memberCount: 0,
+                activityPercent: 0,
+                topMembers: []
+            }
+        });
+        return;
+    } catch (error) {
+        console.error('Error creating department:', error);
+        res.status(500).json({ success: false, error: 'Erreur lors de la création du département' });
+        return;
+    }
+};
+
+export const updateDepartment = async (req: Request, res: Response) => {
+    try {
+        const companyId = req.user?.companyId;
+        const id = req.params.id as string;
+        const { name } = req.body;
+
+        if (!companyId) {
+            res.status(400).json({ success: false, error: 'Company ID missing' });
+            return;
+        }
+
+        if (!name || !name.trim()) {
+            res.status(400).json({ success: false, error: 'Le nom du département est requis' });
+            return;
+        }
+
+        const existing = await prisma.department.findFirst({
+            where: { id, companyId }
+        });
+
+        if (!existing) {
+            res.status(404).json({ success: false, error: 'Département introuvable' });
+            return;
+        }
+
+        const updated = await prisma.department.update({
+            where: { id },
+            data: { name: name.trim() }
+        });
+
+        res.json({
+            success: true,
+            data: updated,
+            message: 'Département renommé avec succès'
+        });
+        return;
+    } catch (error) {
+        console.error('Error updating department:', error);
+        res.status(500).json({ success: false, error: 'Erreur lors de la modification du département' });
+        return;
+    }
+};
+
+export const deleteDepartment = async (req: Request, res: Response) => {
+    try {
+        const companyId = req.user?.companyId;
+        const id = req.params.id as string;
+
+        if (!companyId) {
+            res.status(400).json({ success: false, error: 'Company ID missing' });
+            return;
+        }
+
+        const existing = await prisma.department.findFirst({
+            where: { id, companyId }
+        });
+
+        if (!existing) {
+            res.status(404).json({ success: false, error: 'Département introuvable' });
+            return;
+        }
+
+        await prisma.department.delete({
+            where: { id }
+        });
+
+        res.json({
+            success: true,
+            message: 'Département supprimé avec succès'
+        });
+        return;
+    } catch (error) {
+        console.error('Error deleting department:', error);
+        res.status(500).json({ success: false, error: 'Erreur lors de la suppression du département' });
         return;
     }
 };

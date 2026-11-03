@@ -23,13 +23,24 @@ app.use(helmet());
 // CORS
 app.use(
     cors({
-        origin: FRONTEND_URL,
+        origin: (_origin, callback) => {
+            callback(null, true);
+        },
         credentials: true,
     })
 );
 
-// Parsing JSON
-app.use(express.json({ limit: '10mb' }));
+// Parsing JSON (avec capture du raw body pour les webhooks Stripe)
+app.use(
+    express.json({
+        limit: '10mb',
+        verify: (req: any, _res, buf) => {
+            if (req.originalUrl && req.originalUrl.includes('/api/webhooks/stripe')) {
+                req.rawBody = buf;
+            }
+        },
+    })
+);
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Rate limiting global

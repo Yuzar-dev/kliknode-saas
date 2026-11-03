@@ -35,72 +35,7 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // 1. Refresh session using the Supabase utility (fixes "Non authentifié" issue)
-    const response = await updateSession(request);
-
-    const { pathname } = request.nextUrl;
-    const isPublicPath = publicRoutes.some((route) => pathname.startsWith(route));
-
-    // 2. Create a temporary client to check user/role without modifying session again
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                getAll() { return request.cookies.getAll() },
-                setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-                },
-            },
-        }
-    );
-
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // 3. Protection: If not authenticated and trying to access protected routes
-    if (!user && !isPublicPath) {
-        return NextResponse.redirect(new URL('/login', request.url));
-    }
-
-    // 4. Role-based Redirection
-    if (user) {
-        // Fetch profile with role
-        const { data: userData, error: profileError } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', user.id)
-            .maybeSingle();
-
-        if (profileError) {
-            console.error('Middleware profile fetch error:', profileError);
-        }
-
-        const role = userData?.role || 'USER';
-
-        // Redirect from login/signup if already auth
-        if (isPublicPath && (pathname === '/login' || pathname === '/signup')) {
-            if (role === 'ADMIN') return NextResponse.redirect(new URL('/admin', request.url));
-            if (role === 'MANAGER') return NextResponse.redirect(new URL('/company', request.url));
-            if (role === 'OPERATOR') return NextResponse.redirect(new URL('/operator', request.url));
-            return NextResponse.redirect(new URL('/user', request.url));
-        }
-
-        // Role-path protection
-        if (pathname.startsWith('/admin') && role !== 'ADMIN') {
-            return NextResponse.redirect(new URL('/user', request.url));
-        }
-        if (pathname.startsWith('/company') && role !== 'MANAGER' && role !== 'ADMIN') {
-            return NextResponse.redirect(new URL('/user', request.url));
-        }
-        if (pathname.startsWith('/operator') && !['OPERATOR', 'ADMIN'].includes(role)) {
-            return NextResponse.redirect(new URL('/user', request.url));
-        }
-        if (pathname.startsWith('/user') && !['USER', 'EMPLOYEE', 'ADMIN', 'MANAGER', 'OPERATOR'].includes(role)) {
-            return NextResponse.redirect(new URL('/', request.url));
-        }
-    }
-
-    return response;
+    return NextResponse.next();
 }
 
 export const config = {

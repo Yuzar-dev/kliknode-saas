@@ -423,6 +423,107 @@ export const getLeads = async (req: Request, res: Response<ApiResponse>) => {
     }
 };
 
+export const updateUserLead = async (req: Request, res: Response<ApiResponse>) => {
+    try {
+        const id = req.params.id as string;
+        const { notes, firstName, lastName, email, phone, companyName } = req.body;
+        const existing = await prisma.contactLead.findFirst({
+            where: { id, userId: req.user!.id }
+        });
+        if (!existing) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Prospect introuvable' } });
+        }
+        const updated = await prisma.contactLead.update({
+            where: { id },
+            data: {
+                notes: notes !== undefined ? notes : existing.notes,
+                firstName: firstName !== undefined ? firstName : existing.firstName,
+                lastName: lastName !== undefined ? lastName : existing.lastName,
+                email: email !== undefined ? email : existing.email,
+                phone: phone !== undefined ? phone : existing.phone,
+                companyName: companyName !== undefined ? companyName : existing.companyName,
+            }
+        });
+        return res.status(200).json({ success: true, data: updated });
+    } catch (error: any) {
+        logger.error('Update user lead error:', error);
+        return res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Erreur mise à jour prospect' } });
+    }
+};
+
+export const deleteUserLead = async (req: Request, res: Response<ApiResponse>) => {
+    try {
+        const id = req.params.id as string;
+        const existing = await prisma.contactLead.findFirst({
+            where: { id, userId: req.user!.id }
+        });
+        if (!existing) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Prospect introuvable' } });
+        }
+        await prisma.contactLead.delete({ where: { id } });
+        return res.status(200).json({ success: true, data: { deleted: true } });
+    } catch (error: any) {
+        logger.error('Delete user lead error:', error);
+        return res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Erreur suppression prospect' } });
+    }
+};
+
+export const getUserCrmConfig = async (req: Request, res: Response<ApiResponse>) => {
+    try {
+        const { getCrmConfig } = await import('../../services/crm-sync.service');
+        const config = getCrmConfig(`user:${req.user!.id}`);
+        return res.status(200).json({ success: true, data: config });
+    } catch (error: any) {
+        logger.error('Get user CRM config error:', error);
+        return res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Erreur CRM' } });
+    }
+};
+
+export const saveUserCrmConfig = async (req: Request, res: Response<ApiResponse>) => {
+    try {
+        const { provider, enabled, autoSync, apiKey, webhookUrl, tiimeCompanyId } = req.body;
+        const { saveCrmConfig } = await import('../../services/crm-sync.service');
+        const updated = saveCrmConfig(`user:${req.user!.id}`, {
+            provider: provider || 'tiime',
+            enabled: Boolean(enabled),
+            autoSync: autoSync !== undefined ? Boolean(autoSync) : true,
+            apiKey: apiKey !== undefined ? String(apiKey).trim() : '',
+            webhookUrl: webhookUrl !== undefined ? String(webhookUrl).trim() : '',
+            tiimeCompanyId: tiimeCompanyId !== undefined ? String(tiimeCompanyId).trim() : '',
+        });
+        return res.status(200).json({ success: true, data: updated });
+    } catch (error: any) {
+        logger.error('Save user CRM config error:', error);
+        return res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Erreur sauvegarde CRM' } });
+    }
+};
+
+export const syncUserLeadsToCrm = async (req: Request, res: Response<ApiResponse>) => {
+    try {
+        const card = await prisma.card.findUnique({ where: { userId: req.user!.id } });
+        if (!card) {
+            return res.status(404).json({ success: false, error: { code: 'CARD_NOT_FOUND', message: 'Aucune carte associée' } });
+        }
+        const leads = await prisma.contactLead.findMany({
+            where: { cardId: card.id },
+            orderBy: { createdAt: 'desc' },
+            take: 100
+        });
+
+        const { syncLeadsBatchToCrm } = await import('../../services/crm-sync.service');
+        const ownerName = [card.firstName, card.lastName].filter(Boolean).join(' ') || 'Membre PRO';
+        const result = await syncLeadsBatchToCrm(
+            `user:${req.user!.id}`,
+            leads.map(l => ({ ...l, ownerName }))
+        );
+
+        return res.status(200).json({ success: result.syncedCount > 0, data: result });
+    } catch (error: any) {
+        logger.error('Sync user leads CRM error:', error);
+        return res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Erreur synchronisation CRM' } });
+    }
+};
+
 // ═══════════════════════════════════════
 //  SETTINGS
 // ═══════════════════════════════════════
@@ -454,3 +555,166 @@ export const changePassword = async (req: Request, res: Response<ApiResponse>) =
         return res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Erreur' } });
     }
 };
+
+/**
+ * GET /api/user/plans
+ * Récupère les plans d'abonnement B2C actifs et le plan actuel de l'utilisateur
+ */
+export const getB2CPlans = async (req: Request, res: Response<ApiResponse>) => {
+    try {
+        const userId = req.user!.id;
+        const { resolvePlanAudience } = await import('../admin/plan.controller');
+
+        const [user, allActivePlans] = await Promise.all([
+            prisma.user.findUnique({
+                where: { id: userId },
+                select: { id: true, email: true, firstName: true, lastName: true, role: true, isPro: true }
+            }),
+            prisma.subscriptionPlan.findMany({
+                where: { isActive: true },
+                orderBy: { priceEur: 'asc' }
+            })
+        ]);
+
+        let b2cPlans = allActivePlans.filter(p => resolvePlanAudience(p) === 'B2C');
+
+        // S'assurer qu'au moins un plan B2C PRO existe
+        if (!b2cPlans.some(p => Number(p.priceEur) > 0)) {
+            const createdPro = await prisma.subscriptionPlan.create({
+                data: {
+                    name: 'KlikNode PRO (Individuel)',
+                    slug: 'pro-b2c',
+                    priceEur: 9.99,
+                    priceMad: 99,
+                    billingPeriod: 'monthly',
+                    maxLicenses: 1,
+                    isActive: true,
+                    features: {
+                        targetAudience: 'B2C',
+                        grantsPro: true,
+                        lead_gen: true,
+                        analytics: true,
+                        wallet_pass: true,
+                        custom_branding: true,
+                        priority_support: true
+                    }
+                }
+            });
+            b2cPlans.push(createdPro);
+        }
+
+        const currentPlan = user?.isPro
+            ? (b2cPlans.find(p => Number(p.priceEur) > 0) || b2cPlans[0])
+            : (b2cPlans.find(p => Number(p.priceEur) === 0) || null);
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                plans: b2cPlans,
+                currentPlan,
+                isPro: user?.isPro || false,
+                user
+            }
+        });
+    } catch (error: any) {
+        logger.error('Get B2C plans error:', error);
+        return res.status(500).json({
+            success: false,
+            error: { code: 'INTERNAL_ERROR', message: 'Erreur lors de la récupération des offres B2C' }
+        });
+    }
+};
+
+/**
+ * POST /api/user/subscribe
+ * Souscrire ou changer de plan B2C pour un utilisateur normal
+ */
+export const subscribeB2CPlan = async (req: Request, res: Response<ApiResponse>) => {
+    try {
+        const userId = req.user!.id;
+        const { planId } = req.body;
+
+        if (!planId) {
+            return res.status(400).json({
+                success: false,
+                error: { code: 'BAD_REQUEST', message: 'Identifiant du plan requis' }
+            });
+        }
+
+        const plan = await prisma.subscriptionPlan.findUnique({ where: { id: planId } });
+        if (!plan) {
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Plan introuvable' }
+            });
+        }
+
+        const feat = (plan.features && typeof plan.features === 'object') ? (plan.features as any) : {};
+        const grantsPro = feat.grantsPro !== undefined ? Boolean(feat.grantsPro) : Number(plan.priceEur) > 0;
+
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: { isPro: grantsPro }
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                message: grantsPro
+                    ? `Abonnement ${plan.name} activé avec succès ⚡`
+                    : `Vous êtes passé sur l'offre ${plan.name}`,
+                plan,
+                user: {
+                    id: updatedUser.id,
+                    email: updatedUser.email,
+                    isPro: updatedUser.isPro,
+                    role: updatedUser.role
+                }
+            }
+        });
+    } catch (error: any) {
+        logger.error('Subscribe B2C plan error:', error);
+        return res.status(500).json({
+            success: false,
+            error: { code: 'INTERNAL_ERROR', message: 'Erreur lors du changement d\'offre B2C' }
+        });
+    }
+};
+
+/**
+ * POST /api/user/upgrade-simulate
+ * Simulation de passage au statut PRO pour les tests en local
+ */
+export const upgradeSimulate = async (req: Request, res: Response<ApiResponse>) => {
+    try {
+        const userId = req.user!.id;
+
+        // Mettre à jour l'utilisateur local
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: { isPro: true }
+        });
+
+        logger.info(`User ${userId} successfully upgraded to PRO (Simulated)`);
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                message: "Vous êtes maintenant membre PRO ⚡ (Simulation)",
+                user: {
+                    id: updatedUser.id,
+                    email: updatedUser.email,
+                    isPro: updatedUser.isPro,
+                    role: updatedUser.role
+                }
+            }
+        });
+    } catch (error: any) {
+        logger.error('Upgrade simulate error:', error);
+        return res.status(500).json({
+            success: false,
+            error: { code: 'INTERNAL_ERROR', message: 'Erreur lors de la simulation de surclassement PRO' },
+        });
+    }
+};
+

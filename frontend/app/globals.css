@@ -30,6 +30,11 @@
     @apply bg-apple-bgLight dark:bg-black text-apple-textDark dark:text-apple-bgLight;
     font-family: 'Poppins', -apple-system, sans-serif;
   }
+
+  select.appearance-none,
+  select.bg-none {
+    background-image: none !important;
+  }
 }
 
 @utility klik-glass {
@@ -81,6 +86,11 @@
     background: linear-gradient(90deg, #475569 0%, #1E293B 100%);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
   }
+}
+
+@utility titanium-gradient {
+  background: linear-gradient(90deg, #334155 0%, #0F172A 100%);
+  color: #FFFFFF;
 }
 
 

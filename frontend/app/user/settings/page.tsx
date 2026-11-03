@@ -1,65 +1,111 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { apiClient } from '@/lib/api-client';
+import { useAuthStore } from '@/store/auth-store';
 import toast from 'react-hot-toast';
 
+interface B2CPlan {
+    id: string;
+    name: string;
+    slug: string;
+    priceEur: number | string;
+    priceMad: number | string;
+    billingPeriod: string;
+    features: any;
+}
+
 export default function SettingsPage() {
-    const [profile, setProfile] = useState<{ firstName: string, lastName: string, email: string, role: string } | null>(null);
+    const authUser = useAuthStore((s) => s.user);
+    const updateUser = useAuthStore((s) => s.updateUser);
+
+    const [profile, setProfile] = useState<{
+        firstName: string;
+        lastName: string;
+        email: string;
+        role: string;
+        isPro: boolean;
+    } | null>(null);
+    const [b2cPlans, setB2cPlans] = useState<B2CPlan[]>([]);
+    const [currentPlan, setCurrentPlan] = useState<B2CPlan | null>(null);
     const [loading, setLoading] = useState(true);
+    const [subscribingId, setSubscribingId] = useState<string | null>(null);
 
     // Password change
     const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
     const [pwLoading, setPwLoading] = useState(false);
 
     useEffect(() => {
-        loadProfile();
+        loadProfileAndPlans();
     }, []);
 
-    const loadProfile = async () => {
+    const loadProfileAndPlans = async () => {
+        setLoading(true);
         try {
-            const supabase = createClient();
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            const { data, error } = await supabase
-                .from('users')
-                .select('first_name, last_name, email, role')
-                .eq('id', user.id)
-                .single();
-
-            if (error) throw error;
-            if (data) {
+            const res = await apiClient.get('/api/user/plans');
+            if (res.data.success) {
+                const { user, plans, currentPlan: activePlan, isPro } = res.data.data;
+                setB2cPlans(plans || []);
+                setCurrentPlan(activePlan || null);
                 setProfile({
-                    firstName: data.first_name || '',
-                    lastName: data.last_name || '',
-                    email: data.email || '',
-                    role: data.role || 'employee'
+                    firstName: user?.firstName || authUser?.firstName || '',
+                    lastName: user?.lastName || authUser?.lastName || '',
+                    email: user?.email || authUser?.email || '',
+                    role: user?.role || authUser?.role || 'USER',
+                    isPro: Boolean(isPro)
                 });
+                updateUser({ isPro: Boolean(isPro) });
             }
         } catch (err) {
             console.error(err);
+            if (authUser) {
+                setProfile({
+                    firstName: authUser.firstName || '',
+                    lastName: authUser.lastName || '',
+                    email: authUser.email || '',
+                    role: authUser.role || 'USER',
+                    isPro: Boolean(authUser.isPro)
+                });
+            }
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSubscribeB2C = async (plan: B2CPlan) => {
+        setSubscribingId(plan.id);
+        try {
+            const res = await apiClient.post('/api/user/subscribe', { planId: plan.id });
+            if (res.data.success) {
+                const newIsPro = Boolean(res.data.data?.user?.isPro);
+                updateUser({ isPro: newIsPro });
+                setProfile(prev => prev ? { ...prev, isPro: newIsPro } : prev);
+                setCurrentPlan(plan);
+                toast.success(res.data.data?.message || `Offre ${plan.name} activée !`);
+            }
+        } catch (err: any) {
+            toast.error(err.response?.data?.error?.message || 'Erreur lors du changement d\'offre');
+        } finally {
+            setSubscribingId(null);
         }
     };
 
     const handleChangePassword = async (e: React.FormEvent) => {
         e.preventDefault();
         if (pwForm.newPw !== pwForm.confirm) return toast.error('Les mots de passe ne correspondent pas');
-        if (pwForm.newPw.length < 8) return toast.error('Minimum 8 caractères');
+        if (pwForm.newPw.length < 6) return toast.error('Minimum 6 caractères');
         setPwLoading(true);
         try {
-            const supabase = createClient();
-            const { error } = await supabase.auth.updateUser({
-                password: pwForm.newPw
+            const res = await apiClient.post('/api/user/change-password', {
+                currentPassword: pwForm.current,
+                newPassword: pwForm.newPw
             });
-            if (error) throw error;
-
-            toast.success('Mot de passe mis à jour !');
-            setPwForm({ current: '', newPw: '', confirm: '' });
+            if (res.data.success) {
+                toast.success('Mot de passe mis à jour !');
+                setPwForm({ current: '', newPw: '', confirm: '' });
+            }
         } catch (err: any) {
-            toast.error(err.message || 'Erreur');
+            toast.error(err.response?.data?.error?.message || err.message || 'Erreur lors du changement de mot de passe');
         } finally {
             setPwLoading(false);
         }
@@ -75,8 +121,99 @@ export default function SettingsPage() {
         <div className="pb-20 relative selection:bg-slate-200">
             <div className="max-w-3xl mx-auto relative z-10">
                 <div className="mb-10">
-                    <h1 className="text-4xl font-black text-apple-textDark dark:text-white tracking-tight">Réglages</h1>
-                    <p className="text-apple-secondary dark:text-gray-400 font-bold text-sm mt-2">Gérez la sécurité et les paramètres de votre compte.</p>
+                    <h1 className="text-4xl font-black text-apple-textDark dark:text-white tracking-tight">Réglages &amp; Abonnement</h1>
+                    <p className="text-apple-secondary dark:text-gray-400 font-bold text-sm mt-2">Gérez votre offre B2C, votre sécurité et les paramètres de votre compte.</p>
+                </div>
+
+                {/* Section Abonnement B2C */}
+                <div className="klik-glass p-10 rounded-[2.5rem] border border-white/60 dark:border-white/5 shadow-lg mb-8 relative overflow-hidden">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                        <div>
+                            <h3 className="text-xs font-black uppercase tracking-[0.25em] text-apple-secondary dark:text-gray-500">Mon Abonnement B2C</h3>
+                            <p className="text-2xl font-black text-apple-textDark dark:text-white mt-1">
+                                {currentPlan?.name || (profile?.isPro ? 'KlikNode PRO' : 'Standard Gratuit')}
+                            </p>
+                        </div>
+                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border self-start sm:self-auto ${profile?.isPro
+                            ? 'bg-amber-500/15 text-amber-600 border-amber-500/30'
+                            : 'bg-slate-100 dark:bg-white/10 text-apple-secondary border-transparent'
+                            }`}>
+                            {profile?.isPro ? 'MEMBRE PRO ACTIF ⚡' : 'COMPTE STANDARD'}
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {b2cPlans.map((plan) => {
+                            const isPaid = Number(plan.priceEur) > 0 || plan.features?.grantsPro === true;
+                            const isCurrent = currentPlan?.id === plan.id || (profile?.isPro === isPaid && !currentPlan);
+
+                            return (
+                                <div
+                                    key={plan.id}
+                                    className={`p-6 rounded-3xl border-2 flex flex-col justify-between transition-all ${isCurrent
+                                        ? 'border-primary bg-primary/5'
+                                        : 'border-gray-100 dark:border-white/10 bg-white/40 dark:bg-white/5'
+                                        }`}
+                                >
+                                    <div>
+                                        <div className="flex items-center justify-between gap-2 mb-2">
+                                            <h4 className="text-lg font-black text-apple-textDark dark:text-white">{plan.name}</h4>
+                                            {isCurrent && (
+                                                <span className="px-2.5 py-0.5 rounded-full bg-primary text-white text-[9px] font-black uppercase tracking-widest">
+                                                    Actuel
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-baseline gap-1.5 mb-4">
+                                            <span className="text-3xl font-black text-apple-textDark dark:text-white">
+                                                {Number(plan.priceEur) === 0 ? 'Gratuit' : `${Number(plan.priceEur).toFixed(2)}€`}
+                                            </span>
+                                            {Number(plan.priceEur) > 0 && (
+                                                <span className="text-xs font-bold text-apple-secondary">
+                                                    / {plan.billingPeriod === 'yearly' ? 'an' : 'mois'} ({plan.priceMad} MAD)
+                                                </span>
+                                            )}
+                                        </div>
+                                        <ul className="space-y-2 mb-6 text-xs font-semibold text-apple-secondary">
+                                            <li className="flex items-center gap-2">
+                                                <span className="material-symbols-outlined text-emerald-500 text-base">check_circle</span>
+                                                Profil digital NFC &amp; QR Code
+                                            </li>
+                                            {isPaid && (
+                                                <>
+                                                    <li className="flex items-center gap-2 text-apple-textDark dark:text-white">
+                                                        <span className="material-symbols-outlined text-amber-500 text-base">bolt</span>
+                                                        CRM Prospect &amp; Capture de Leads
+                                                    </li>
+                                                    <li className="flex items-center gap-2 text-apple-textDark dark:text-white">
+                                                        <span className="material-symbols-outlined text-amber-500 text-base">bolt</span>
+                                                        Analytics avancés &amp; Apple Wallet
+                                                    </li>
+                                                </>
+                                            )}
+                                        </ul>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        disabled={isCurrent || subscribingId === plan.id}
+                                        onClick={() => handleSubscribeB2C(plan)}
+                                        className={`w-full py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${isCurrent
+                                            ? 'bg-gray-100 dark:bg-white/10 text-apple-secondary cursor-default'
+                                            : 'btn-obsidian btn-obsidian-primary text-white shadow-lg cursor-pointer hover:scale-[1.02]'
+                                            }`}
+                                    >
+                                        {subscribingId === plan.id
+                                            ? 'Activation...'
+                                            : isCurrent
+                                                ? 'Offre Active'
+                                                : isPaid
+                                                    ? 'Passer sur cette offre PRO ⚡'
+                                                    : 'Revenir au plan Gratuit'}
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
 
                 {/* Account info */}
@@ -116,12 +253,12 @@ export default function SettingsPage() {
                 <div className="klik-glass p-10 rounded-[2.5rem] border border-white/60 dark:border-white/5 shadow-lg mb-8 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 dark:bg-blue-400/5 blur-3xl opacity-30 -mr-16 -mt-16 group-hover:opacity-50 transition-all duration-700" />
                     <h3 className="text-xs font-black uppercase tracking-[0.25em] text-apple-secondary dark:text-gray-500 mb-8 px-1">Sécurité</h3>
-                    <p className="text-sm font-bold text-apple-secondary dark:text-gray-400 mb-10 px-1 leading-relaxed">Pour votre sécurité, utilisez un mot de passe fort d'au moins 8 caractères mixant lettres, chiffres et symboles.</p>
+                    <p className="text-sm font-bold text-apple-secondary dark:text-gray-400 mb-10 px-1 leading-relaxed">Pour votre sécurité, utilisez un mot de passe fort d&apos;au moins 6 caractères mixant lettres et chiffres.</p>
 
                     <form onSubmit={handleChangePassword} className="space-y-8">
                         {[
                             { key: 'current', label: 'Mot de passe actuel', type: 'password', placeholder: '••••••••' },
-                            { key: 'newPw', label: 'Nouveau mot de passe', type: 'password', placeholder: 'Minimum 8 caractères' },
+                            { key: 'newPw', label: 'Nouveau mot de passe', type: 'password', placeholder: 'Minimum 6 caractères' },
                             { key: 'confirm', label: 'Confirmer le nouveau mot de passe', type: 'password', placeholder: '••••••••' },
                         ].map(f => (
                             <div key={f.key} className="space-y-3 group/input">
@@ -146,7 +283,7 @@ export default function SettingsPage() {
                         <button
                             type="submit"
                             disabled={pwLoading}
-                            className="btn-obsidian btn-obsidian-primary w-full h-14 rounded-[1.2rem] shadow-xl active:scale-95 disabled:opacity-50 transition-all font-black text-base tracking-tight"
+                            className="btn-obsidian btn-obsidian-primary w-full h-14 rounded-[1.2rem] shadow-xl active:scale-95 disabled:opacity-50 transition-all font-black text-base tracking-tight cursor-pointer"
                         >
                             {pwLoading ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
                         </button>
@@ -189,3 +326,4 @@ export default function SettingsPage() {
         </div>
     );
 }
+

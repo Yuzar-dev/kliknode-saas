@@ -39,12 +39,12 @@ export function AdminButton({
 
     const variants = {
         primary: {
-            base: 'bg-black text-white hover:bg-gray-800 shadow-gray-500/30',
-            clicked: 'bg-black text-white shadow-[0_0_15px_rgba(59,130,246,0.8)] border-blue-500/50'
+            base: 'btn-titanium-primary',
+            clicked: 'btn-titanium-primary shadow-[0_0_15px_rgba(59,130,246,0.8)] border-blue-500/50'
         },
         secondary: {
-            base: 'bg-white text-black border border-gray-200 hover:bg-gray-50 shadow-gray-200/50',
-            clicked: 'bg-white text-black border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.8)]'
+            base: 'klik-glass border-slate-200 dark:border-white/10 text-slate-900 dark:text-white hover:bg-white/80 dark:hover:bg-white/5',
+            clicked: 'klik-glass border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.8)]'
         },
         danger: {
             base: 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/30',
