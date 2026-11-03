@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/auth-store';
-import { createClient } from '@/utils/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ThemeToggle } from '@/components/user/ThemeToggle';
@@ -45,25 +45,21 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
 
     const loadNotifications = async () => {
         try {
-            const supabase = createClient();
-            const { data: { user: authUser } } = await supabase.auth.getUser();
-            if (!authUser) return;
-
-            // Only fetch notifications if possible. We use a try-catch to handle missing columns gracefully.
-            const { data: userData, error: userErr } = await supabase.from('users').select('*').eq('id', authUser.id).single();
-
-            if (!userErr && userData) {
-                setLastRead(userData.notification_last_read || null);
+            const savedLastRead = typeof window !== 'undefined' ? localStorage.getItem('kliknode_notif_last_read') : null;
+            if (savedLastRead) {
+                setLastRead(savedLastRead);
             }
 
-            const { data: contacts } = await supabase
-                .from('contacts_leads')
-                .select('*')
-                .eq('user_id', authUser.id) // Use user_id filter consistently
-                .order('created_at', { ascending: false })
-                .limit(5);
-
-            setNotifications(contacts || []);
+            const res = await apiClient.get('/api/user/leads');
+            if (res.data?.success && res.data?.data?.leads) {
+                const recent = (res.data.data.leads as any[]).slice(0, 5).map((l: any) => ({
+                    id: l.id,
+                    first_name: l.firstName || l.name?.split(' ')[0] || 'Contact',
+                    last_name: l.lastName || l.name?.split(' ').slice(1).join(' ') || '',
+                    created_at: l.createdAt || new Date().toISOString(),
+                }));
+                setNotifications(recent);
+            }
         } catch (err) {
             console.error('Error loading notifications:', err);
         }
@@ -71,12 +67,10 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
 
     const markAsRead = async () => {
         try {
-            const supabase = createClient();
-            const { data: { user: authUser } } = await supabase.auth.getUser();
-            if (!authUser) return;
-
             const now = new Date().toISOString();
-            await supabase.from('users').update({ notification_last_read: now }).eq('id', authUser.id);
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('kliknode_notif_last_read', now);
+            }
             setLastRead(now);
             setShowNotifications(false);
         } catch (err) {
@@ -87,8 +81,6 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
     const unreadCount = notifications.filter(n => !lastRead || new Date(n.created_at) > new Date(lastRead)).length;
 
     const handleLogout = async () => {
-        const supabase = createClient();
-        await supabase.auth.signOut();
         logout();
         router.push('/login');
     };

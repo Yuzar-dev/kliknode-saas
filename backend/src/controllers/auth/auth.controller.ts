@@ -14,12 +14,12 @@ import { emailService } from '../../services/email.service';
 export const login = async (req: Request, res: Response<ApiResponse>) => {
     try {
         await ensureCleanDatabase();
-        const { email, password } = req.body;
+        const { email, password, cardId } = req.body;
 
         // Rechercher l'utilisateur
         const user = await prisma.user.findUnique({
             where: { email: email.toLowerCase() },
-            include: { company: true },
+            include: { company: true, card: true },
         });
 
         if (!user) {
@@ -69,6 +69,23 @@ export const login = async (req: Request, res: Response<ApiResponse>) => {
                     message: 'Email ou mot de passe incorrect',
                 },
             });
+        }
+
+        // Si un UID de carte physique NFC (`cardId`) est transmis lors de la connexion d'un collaborateur/utilisateur,
+        // associer automatiquement la carte physique au profil digital de l'utilisateur
+        if (cardId && user.card && user.role !== 'MANAGER' && user.role !== 'ADMIN') {
+            const cleanUid = String(cardId).replace(/:/g, '').trim().toUpperCase();
+            await prisma.physicalCard.updateMany({
+                where: {
+                    uid: { equals: cleanUid, mode: 'insensitive' },
+                    pairedCardId: null,
+                },
+                data: {
+                    status: 'paired',
+                    pairedCardId: user.card.id,
+                    pairedAt: new Date(),
+                },
+            }).catch(() => {});
         }
 
         // Générer les tokens

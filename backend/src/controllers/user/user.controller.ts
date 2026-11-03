@@ -7,14 +7,43 @@ import { ApiResponse } from '../../types/express';
 //  CARD CRUD
 // ═══════════════════════════════════════
 
+const makeDefaultSlug = (firstName?: string | null, lastName?: string | null) => {
+    const base = `${firstName || 'user'}-${lastName || 'card'}`
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+    const suffix = Math.random().toString(36).substring(2, 6);
+    return `${base}-${suffix}`;
+};
+
 /**
  * GET /api/user/card
- * Récupérer ma carte digitale
+ * Récupérer ma carte digitale (avec auto-création si absente, auto-pairage B2B et branding entreprise)
  */
 export const getMyCard = async (req: Request, res: Response<ApiResponse>) => {
     try {
-        const card = await prisma.card.findUnique({
-            where: { userId: req.user!.id },
+        const user = await prisma.user.findUnique({
+            where: { id: req.user!.id },
+            include: {
+                company: {
+                    include: { branding: true },
+                },
+            },
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: { code: 'USER_NOT_FOUND', message: 'Utilisateur introuvable' },
+            });
+        }
+
+        const branding = user.company?.branding || null;
+
+        let card = await prisma.card.findUnique({
+            where: { userId: user.id },
             include: {
                 physicalCard: {
                     select: {
@@ -26,14 +55,96 @@ export const getMyCard = async (req: Request, res: Response<ApiResponse>) => {
             },
         });
 
+        // Si l'utilisateur n'a pas encore de carte dans `cards`, on la crée automatiquement avec ses infos
         if (!card) {
-            return res.status(404).json({
-                success: false,
-                error: { code: 'CARD_NOT_FOUND', message: 'Aucune carte associée à votre compte' },
+            card = await prisma.card.create({
+                data: {
+                    userId: user.id,
+                    companyId: user.companyId || null,
+                    firstName: user.firstName || '',
+                    lastName: user.lastName || '',
+                    email: user.email,
+                    phoneMobile: user.phone || null,
+                    jobTitle: user.companyId ? 'Collaborateur' : '',
+                    companyName: user.company?.name || null,
+                    primaryColor: branding?.primaryColor || '#0666EB',
+                    publicSlug: makeDefaultSlug(user.firstName, user.lastName),
+                    isPublic: true,
+                },
+                include: {
+                    physicalCard: {
+                        select: {
+                            uid: true,
+                            status: true,
+                            pairedAt: true,
+                        },
+                    },
+                },
+            });
+        } else if (user.companyId && (!card.companyId || (!card.companyName && user.company?.name))) {
+            card = await prisma.card.update({
+                where: { id: card.id },
+                data: {
+                    companyId: user.companyId,
+                    companyName: card.companyName || user.company?.name || null,
+                },
+                include: {
+                    physicalCard: {
+                        select: {
+                            uid: true,
+                            status: true,
+                            pairedAt: true,
+                        },
+                    },
+                },
             });
         }
 
-        return res.status(200).json({ success: true, data: card });
+        // Si l'employé appartient à une entreprise qui a des cartes physiques B2B réservées non encore pairées,
+        // associer automatiquement une carte disponible à son profil
+        if (user.companyId && !card.physicalCard && user.role !== 'MANAGER' && user.role !== 'ADMIN') {
+            const availablePhysical = await prisma.physicalCard.findFirst({
+                where: {
+                    companyId: user.companyId,
+                    status: 'reserved',
+                    pairedCardId: null,
+                },
+                orderBy: { createdAt: 'asc' },
+            }).catch(() => null);
+
+            if (availablePhysical) {
+                const paired = await prisma.physicalCard.update({
+                    where: { id: availablePhysical.id },
+                    data: {
+                        status: 'paired',
+                        pairedCardId: card.id,
+                        pairedAt: new Date(),
+                    },
+                    select: {
+                        uid: true,
+                        status: true,
+                        pairedAt: true,
+                    },
+                }).catch(() => null);
+                if (paired) {
+                    (card as any).physicalCard = paired;
+                }
+            }
+        }
+
+        const effectivePrimaryColor = branding?.primaryColor || card.primaryColor || '#0666EB';
+        const effectiveCompanyName = user.company?.name || card.companyName || '';
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                ...card,
+                primaryColor: effectivePrimaryColor,
+                companyName: effectiveCompanyName,
+                bioVisible: card.bio_visible !== false,
+                companyBranding: branding,
+            },
+        });
     } catch (error: any) {
         logger.error('Get my card error:', error);
         return res.status(500).json({
@@ -45,36 +156,83 @@ export const getMyCard = async (req: Request, res: Response<ApiResponse>) => {
 
 /**
  * PUT /api/user/card
- * Mettre à jour ma carte
+ * Mettre à jour ma carte (avec respect strict du Master Lock B2B)
  */
 export const updateMyCard = async (req: Request, res: Response<ApiResponse>) => {
     try {
         const {
             firstName, lastName, jobTitle, companyName,
-            bio, phoneMobile, phoneOffice, email,
+            bio, bioVisible, phoneMobile, phoneOffice, email,
             website, address, city, country,
-            theme, primaryColor, isPublic,
+            theme, primaryColor, coverUrl, avatarUrl,
+            isPublic, leadGenActive, socialLinks,
         } = req.body;
 
-        const card = await prisma.card.findUnique({ where: { userId: req.user!.id } });
-        if (!card) {
-            return res.status(404).json({
-                success: false,
-                error: { code: 'CARD_NOT_FOUND', message: 'Aucune carte associée' },
-            });
-        }
-
-        const updated = await prisma.card.update({
-            where: { userId: req.user!.id },
-            data: {
-                firstName, lastName, jobTitle, companyName,
-                bio, phoneMobile, phoneOffice, email,
-                website, address, city, country,
-                theme, primaryColor, isPublic,
+        const user = await prisma.user.findUnique({
+            where: { id: req.user!.id },
+            include: {
+                company: {
+                    include: { branding: true },
+                },
             },
         });
 
-        return res.status(200).json({ success: true, data: updated });
+        const branding = user?.company?.branding || null;
+        const lockJobTitle = Boolean(branding?.lockJobTitle);
+        const lockPhoto = Boolean(branding?.lockPhoto);
+        const lockSocialLinks = Boolean(branding?.lockSocialLinks);
+
+        let card = await prisma.card.findUnique({ where: { userId: req.user!.id } });
+        if (!card) {
+            card = await prisma.card.create({
+                data: {
+                    userId: req.user!.id,
+                    companyId: user?.companyId || null,
+                    firstName: firstName || user?.firstName || '',
+                    lastName: lastName || user?.lastName || '',
+                    email: email || user?.email || '',
+                    publicSlug: makeDefaultSlug(firstName || user?.firstName, lastName || user?.lastName),
+                    isPublic: true,
+                },
+            });
+        }
+
+        const updateData: any = {
+            firstName: firstName !== undefined ? firstName : card.firstName,
+            lastName: lastName !== undefined ? lastName : card.lastName,
+            jobTitle: lockJobTitle ? card.jobTitle : (jobTitle !== undefined ? jobTitle : card.jobTitle),
+            companyName: user?.company?.name ? user.company.name : (companyName !== undefined ? companyName : card.companyName),
+            bio: bio !== undefined ? bio : card.bio,
+            bio_visible: bioVisible !== undefined ? Boolean(bioVisible) : card.bio_visible,
+            phoneMobile: phoneMobile !== undefined ? phoneMobile : card.phoneMobile,
+            phoneOffice: phoneOffice !== undefined ? phoneOffice : card.phoneOffice,
+            email: email !== undefined ? email : card.email,
+            website: website !== undefined ? website : card.website,
+            address: address !== undefined ? address : card.address,
+            city: city !== undefined ? city : card.city,
+            country: country !== undefined ? country : card.country,
+            theme: theme !== undefined ? theme : card.theme,
+            primaryColor: branding?.primaryColor ? branding.primaryColor : (primaryColor !== undefined ? primaryColor : card.primaryColor),
+            coverUrl: coverUrl !== undefined ? coverUrl : card.coverUrl,
+            avatarUrl: lockPhoto ? card.avatarUrl : (avatarUrl !== undefined ? avatarUrl : card.avatarUrl),
+            isPublic: isPublic !== undefined ? Boolean(isPublic) : card.isPublic,
+            leadGenActive: leadGenActive !== undefined ? Boolean(leadGenActive) : card.leadGenActive,
+            ...(socialLinks !== undefined && !lockSocialLinks ? { socialLinks } : {}),
+        };
+
+        const updated = await prisma.card.update({
+            where: { userId: req.user!.id },
+            data: updateData,
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                ...updated,
+                bioVisible: updated.bio_visible !== false,
+                companyBranding: branding,
+            },
+        });
     } catch (error: any) {
         logger.error('Update card error:', error);
         return res.status(500).json({
@@ -86,23 +244,27 @@ export const updateMyCard = async (req: Request, res: Response<ApiResponse>) => 
 
 /**
  * POST /api/user/card/avatar
- * Upload avatar (multer, à intégrer plus tard avec S3)
- * Pour l'instant on accepte une URL directe
+ * Upload avatar (supporte Data URL base64 ou URL directe, avec respect de Master Lock)
  */
 export const uploadAvatar = async (req: Request, res: Response<ApiResponse>) => {
     try {
         const { avatarUrl } = req.body;
 
-        if (!avatarUrl) {
-            return res.status(400).json({
+        const user = await prisma.user.findUnique({
+            where: { id: req.user!.id },
+            include: { company: { include: { branding: true } } },
+        });
+
+        if (user?.company?.branding?.lockPhoto) {
+            return res.status(403).json({
                 success: false,
-                error: { code: 'MISSING_URL', message: 'URL de l\'avatar requise' },
+                error: { code: 'MASTER_LOCK', message: 'La photo de profil est verrouillée par votre entreprise (Master Lock)' },
             });
         }
 
         const updated = await prisma.card.update({
             where: { userId: req.user!.id },
-            data: { avatarUrl },
+            data: { avatarUrl: avatarUrl || null },
         });
 
         return res.status(200).json({ success: true, data: { avatarUrl: updated.avatarUrl } });

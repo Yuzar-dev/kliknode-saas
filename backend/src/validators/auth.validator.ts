@@ -7,6 +7,7 @@ export const loginSchema = z.object({
     body: z.object({
         email: z.string().email('Email invalide'),
         password: z.string().min(1, 'Mot de passe requis'),
+        cardId: z.string().optional(),
     }),
 });
 

@@ -40,9 +40,11 @@ function LoginForm() {
 
         try {
             // 1. Authentification via notre API Backend locale (connectée à PostgreSQL)
+            const cardIdFromUrl = searchParams?.get('card_id') || undefined;
             const response = await apiClient.post('/api/auth/login', {
                 email: data.email,
                 password: data.password,
+                ...(cardIdFromUrl ? { cardId: cardIdFromUrl } : {}),
             });
 
             const { user: userData, tokens } = response.data.data;

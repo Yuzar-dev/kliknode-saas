@@ -75,6 +75,48 @@ export const activateCard = async (req: Request, res: Response<ApiResponse>) => 
 
         // Carte réservée mais pas encore pairée
         if (physicalCard.status === 'reserved' && !physicalCard.pairedCardId) {
+            // Si la carte est attribuée à une entreprise qui possède déjà un collaborateur dont la carte digitale n'est pas encore pairée,
+            // on les associe automatiquement pour ouvrir directement son profil public au scan NFC !
+            if (physicalCard.companyId) {
+                const unpairedEmployeeCards = await prisma.card.findMany({
+                    where: {
+                        deletedAt: null,
+                        physicalCard: { is: null },
+                        OR: [
+                            { companyId: physicalCard.companyId },
+                            { user: { companyId: physicalCard.companyId } },
+                        ],
+                        user: {
+                            role: { in: ['USER', 'EMPLOYEE'] },
+                        },
+                    },
+                    orderBy: { createdAt: 'asc' },
+                }).catch(() => []);
+
+                if (unpairedEmployeeCards.length === 1) {
+                    const targetCard = unpairedEmployeeCards[0];
+                    await prisma.physicalCard.update({
+                        where: { id: physicalCard.id },
+                        data: {
+                            status: 'paired',
+                            pairedCardId: targetCard.id,
+                            pairedAt: new Date(),
+                        },
+                    }).catch(() => {});
+
+                    const slug = targetCard.publicSlug || targetCard.userId;
+                    return res.status(200).json({
+                        success: true,
+                        data: {
+                            status: 'paired_with_profile',
+                            uid: physicalCard.uid,
+                            publicSlug: slug,
+                            redirectUrl: `/p/${slug}`,
+                        },
+                    });
+                }
+            }
+
             return res.status(200).json({
                 success: true,
                 data: {

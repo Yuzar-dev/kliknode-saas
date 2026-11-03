@@ -8,15 +8,29 @@ export const getPublicCard = async (req: Request, res: Response) => {
     try {
         const slug = String(req.params.slug);
 
-        const card = await prisma.card.findUnique({
-            where: { publicSlug: slug },
+        const card = await prisma.card.findFirst({
+            where: {
+                OR: [
+                    { publicSlug: slug },
+                    { userId: slug },
+                    { id: slug },
+                ],
+            },
             include: {
+                company: {
+                    include: {
+                        branding: true,
+                    },
+                },
                 user: {
                     select: {
+                        id: true,
                         firstName: true,
                         lastName: true,
                         role: true,
                         avatarUrl: true,
+                        isPro: true,
+                        companyId: true,
                         company: {
                             include: {
                                 branding: true
@@ -38,7 +52,7 @@ export const getPublicCard = async (req: Request, res: Response) => {
         await prisma.card.update({
             where: { id: card.id },
             data: { viewCount: { increment: 1 } }
-        });
+        }).catch(() => {});
 
         // Enregistrer le scan (async sans attendre pour la performance)
         prisma.cardScan.create({
@@ -49,9 +63,18 @@ export const getPublicCard = async (req: Request, res: Response) => {
             }
         }).catch(err => console.error('Error logging scan:', err));
 
+        const companyObj = card.company || card.user?.company || null;
+        const branding = companyObj?.branding || null;
+
         return res.json({
             success: true,
-            data: card
+            data: {
+                ...card,
+                primaryColor: branding?.primaryColor || card.primaryColor || '#0666EB',
+                companyName: companyObj?.name || card.companyName || '',
+                bioVisible: card.bio_visible !== false,
+                companyBranding: branding,
+            }
         });
     } catch (error: any) {
         console.error('Error fetching public card:', error);

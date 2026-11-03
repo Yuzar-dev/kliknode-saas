@@ -2,7 +2,21 @@
 
 import { useState, useEffect, use } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import toast from 'react-hot-toast';
+
+interface CompanyBrandingData {
+    companyId?: string;
+    companyName?: string;
+    logoLightUrl?: string;
+    logoDarkUrl?: string;
+    primaryColor?: string;
+    fontFamily?: string;
+    lockPhoto?: boolean;
+    lockJobTitle?: boolean;
+    lockSocialLinks?: boolean;
+    forceLogo?: boolean;
+}
 
 interface CardData {
     id: string;
@@ -27,6 +41,7 @@ interface CardData {
     bioVisible: boolean;
     socialLinks: any[];
     leadGenActive: boolean;
+    companyBranding?: CompanyBrandingData | null;
     user: {
         firstName: string | null;
         lastName: string | null;
@@ -66,6 +81,54 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
     useEffect(() => {
         const fetchCard = async () => {
             try {
+                // 1. Appel prioritaire via l'API publique (inclut company.branding & Master Lock)
+                try {
+                    const res = await apiClient.get(`/api/public/card/${encodeURIComponent(slug)}`);
+                    if (res.data?.success && res.data?.data) {
+                        const d = res.data.data;
+                        const branding: CompanyBrandingData | null = d.companyBranding || d.user?.company?.branding || null;
+                        const effectiveCompanyName = branding?.companyName || d.user?.company?.name || d.companyName || null;
+                        const effectivePrimaryColor = branding?.primaryColor || d.primaryColor || '#0666EB';
+
+                        setCard({
+                            id: d.id,
+                            userId: d.userId,
+                            companyId: d.companyId || branding?.companyId || null,
+                            publicSlug: d.publicSlug || d.userId || d.id,
+                            firstName: d.firstName || d.user?.firstName || null,
+                            lastName: d.lastName || d.user?.lastName || null,
+                            jobTitle: d.jobTitle || null,
+                            companyName: effectiveCompanyName,
+                            bio: d.bio || null,
+                            avatarUrl: d.avatarUrl || null,
+                            coverUrl: d.coverUrl || null,
+                            phoneMobile: d.phoneMobile || null,
+                            phoneOffice: d.phoneOffice || null,
+                            email: d.email || null,
+                            website: d.website || null,
+                            city: d.city || null,
+                            country: d.country || null,
+                            primaryColor: effectivePrimaryColor,
+                            theme: d.theme || 'light',
+                            bioVisible: d.bioVisible !== false,
+                            socialLinks: Array.isArray(d.socialLinks) ? d.socialLinks : [],
+                            leadGenActive: d.leadGenActive !== false,
+                            companyBranding: branding,
+                            user: {
+                                firstName: d.user?.firstName || d.firstName || null,
+                                lastName: d.user?.lastName || d.lastName || null,
+                                company: d.user?.company || null,
+                                isPro: Boolean(d.user?.isPro),
+                            },
+                        });
+                        setIsLoading(false);
+                        return;
+                    }
+                } catch (apiErr) {
+                    console.warn('Fallback Supabase pour le profil public:', apiErr);
+                }
+
+                // 2. Fallback direct Supabase
                 const supabase = createClient();
 
                 let query = supabase.from('cards').select('*, users ( company_id, is_pro )');
@@ -87,7 +150,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                 const mappedData: CardData = {
                     id: data.id,
                     userId: data.user_id,
-                    companyId: data.users?.company_id || null,
+                    companyId: data.users?.company_id || data.company_id || null,
                     publicSlug: data.public_slug || data.user_id,
                     firstName: data.first_name,
                     lastName: data.last_name,
@@ -116,19 +179,6 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                 };
 
                 setCard(mappedData);
-
-                // Increment view count via RPC
-                supabase.rpc('increment_view_count', { card_id_param: data.id }).then(({ error }) => {
-                    if (error) {
-                        // If RPC fails, try direct update
-                        supabase.from('cards').update({ view_count: (data.view_count || 0) + 1 }).eq('id', data.id).then();
-                    }
-                });
-
-                // Insert scan record
-                supabase.rpc('log_card_scan', { p_card_id: data.id }).then(({ error }) => {
-                    if (error) console.error('Error logging scan via RPC:', error);
-                });
             } catch (error: any) {
                 console.error('Error fetching card:', error);
                 toast.error(error.message || 'Carte introuvable');
@@ -195,53 +245,28 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
         e.preventDefault();
         setIsSharing(true);
         try {
-            if (card?.user?.isPro && card?.leadGenActive) {
-                // Submit to B2C public lead capture API
-                const response = await fetch('/api/public/leads/capture', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        cardId: card.id,
-                        name: formData.name,
-                        email: formData.email,
-                        phone: formData.phone,
-                        notes: formData.notes
-                    })
-                });
-                const resData = await response.json();
-                if (!response.ok || !resData.success) {
-                    throw new Error(resData.error || 'Une erreur est survenue.');
-                }
-                toast.success('Vos informations ont été envoyées !');
-            } else {
-                // B2B flow using Supabase RPC
-                const parts = formData.name.trim().split(' ');
-                const firstName = parts[0] || '';
-                const lastName = parts.slice(1).join(' ') || '';
+            const parts = formData.name.trim().split(' ');
+            const firstName = parts[0] || formData.name.trim() || 'Contact';
+            const lastName = parts.slice(1).join(' ') || '';
 
-                const supabase = createClient();
-                const { error: rpcError } = await supabase.rpc('create_contact_lead', {
-                    p_card_id: card!.id,
-                    p_user_id: card!.userId,
-                    p_company_id: card!.companyId || null,
-                    p_first_name: firstName,
-                    p_last_name: lastName,
-                    p_email: formData.email,
-                    p_phone: formData.phone,
-                    p_notes: formData.notes
-                });
+            const res = await apiClient.post(`/api/public/card/${encodeURIComponent(card!.publicSlug)}/exchange`, {
+                firstName,
+                lastName,
+                email: formData.email,
+                phone: formData.phone,
+                notes: formData.notes,
+            });
 
-                if (rpcError) {
-                    throw new Error(rpcError.message || "Erreur réseau lors de l'envoi.");
-                }
-
-                toast.success('Vos informations ont été envoyées !');
+            if (!res.data?.success) {
+                throw new Error(res.data?.error?.message || 'Une erreur est survenue.');
             }
+
+            toast.success('Vos informations ont été envoyées !');
             setShowModal(false);
             setFormData({ name: '', email: '', phone: '', notes: '' });
         } catch (error: any) {
             console.error(error);
-            toast.error(error.message || 'Erreur lors de l\'envoi.');
+            toast.error(error.response?.data?.error?.message || error.message || "Erreur lors de l'envoi.");
         } finally {
             setIsSharing(false);
         }
@@ -266,8 +291,15 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
         );
     }
 
+    const activeCompanyLogo = card.companyBranding?.logoDarkUrl || card.companyBranding?.logoLightUrl || card.user?.company?.branding?.logoDarkUrl || card.user?.company?.branding?.logoLightUrl;
+    const hasCorporateBanner = Boolean(activeCompanyLogo || card.companyBranding?.forceLogo || card.companyName);
+    const activeFontFamily = card.companyBranding?.fontFamily || card.user?.company?.branding?.fontFamily;
+
     return (
-        <div className="font-display min-h-screen flex justify-center selection:bg-spaceGray/20 relative overflow-x-hidden bg-apple-bgLight dark:bg-black">
+        <div
+            className="font-display min-h-screen flex justify-center selection:bg-spaceGray/20 relative overflow-x-hidden bg-apple-bgLight dark:bg-black"
+            style={activeFontFamily ? { fontFamily: `'${activeFontFamily}', 'Poppins', -apple-system, sans-serif` } : undefined}
+        >
             {/* Background Layer: Image vs Ambient Glow PJ Style */}
             {card.coverUrl && !card.coverUrl.startsWith('linear-gradient') && card.coverUrl !== 'default' ? (
                 /* Full Screen Image Background */
@@ -287,14 +319,14 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                     <div
                         className="absolute -top-[15%] -left-[10%] w-[120%] h-[70%] blur-[100px] opacity-[0.25] dark:opacity-[0.3]"
                         style={{
-                            background: `radial-gradient(circle at 25% 25%, ${card.coverUrl === 'default' ? (card.theme === 'dark' ? '#000000' : '#FFFFFF') : (card.coverUrl?.match(/#[a-fA-F0-9]{6}/)?.[0] || card.primaryColor || '#0666EB')}, transparent 80%)`
+                            background: `radial-gradient(circle at 25% 25%, ${card.coverUrl === 'default' ? (card.primaryColor || '#0666EB') : (card.coverUrl?.match(/#[a-fA-F0-9]{6}/)?.[0] || card.primaryColor || '#0666EB')}, transparent 80%)`
                         }}
                     />
                     {/* Secondary Balanced Glow (Bottom Right hint) - Matched to Preview */}
                     <div
                         className="absolute -bottom-[10%] -right-[10%] w-[70%] h-[40%] blur-[80px] opacity-[0.1] dark:opacity-[0.15]"
                         style={{
-                            background: `radial-gradient(circle at center, ${card.coverUrl === 'default' ? (card.theme === 'dark' ? '#000000' : '#FFFFFF') : (card.coverUrl?.match(/#[a-fA-F0-9]{6}/)?.[0] || card.primaryColor || '#0666EB')}, transparent 70%)`
+                            background: `radial-gradient(circle at center, ${card.coverUrl === 'default' ? (card.primaryColor || '#0666EB') : (card.coverUrl?.match(/#[a-fA-F0-9]{6}/)?.[0] || card.primaryColor || '#0666EB')}, transparent 70%)`
                         }}
                     />
 
@@ -310,36 +342,76 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
 
             <div className="w-full max-w-md relative z-10 flex flex-col min-h-screen pb-12">
 
-                {/* Fixed Top Navigation - Integrated Flow Style */}
-                <div className={`fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 transition-all duration-700 h-24 pointer-events-none ${isScrolled ? 'backdrop-blur-2xl bg-white/10 dark:bg-black/20 shadow-[0_1px_30px_rgba(0,0,0,0.03)]' : ''}`}>
-                    <div className="flex items-center justify-between p-4 px-6 h-20 pointer-events-auto">
-                        <div className="w-12 h-12" /> {/* spacer for flex balance */}
-                        <div className="flex justify-center flex-1">
-                            <img src="/logo-icon-black.svg" className="w-8 h-8 object-contain dark:hidden opacity-80" alt="KlikNode" />
-                            <img src="/logo-icon-white.svg" className="w-8 h-8 object-contain hidden dark:block opacity-80" alt="KlikNode" />
+                {/* Corporate Brand Header Banner (if B2B / Branded) or Fixed Top Navigation */}
+                {hasCorporateBanner ? (
+                    <div
+                        className="h-48 w-full relative flex flex-col items-center justify-start pt-8 transition-colors duration-500"
+                        style={{
+                            background: card.coverUrl && card.coverUrl.startsWith('linear-gradient')
+                                ? card.coverUrl
+                                : card.primaryColor || '#0666EB'
+                        }}
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/10 pointer-events-none" />
+                        <div className="relative z-20 flex items-center justify-between w-full px-6">
+                            <div className="w-10 h-10" />
+                            {activeCompanyLogo ? (
+                                <img
+                                    src={activeCompanyLogo}
+                                    alt={card.companyName || 'Logo Entreprise'}
+                                    className="h-9 max-w-[160px] object-contain drop-shadow-sm"
+                                />
+                            ) : (
+                                <span className="text-white font-black text-sm uppercase tracking-[0.2em] opacity-90">
+                                    {card.companyName || 'KLIKNODE'}
+                                </span>
+                            )}
+                            <button onClick={() => {
+                                if (navigator.share) {
+                                    navigator.share({
+                                        title: `${card.firstName} ${card.lastName}`,
+                                        url: window.location.href
+                                    });
+                                } else {
+                                    navigator.clipboard.writeText(window.location.href);
+                                    toast.success('Lien copié !');
+                                }
+                            }} className="flex items-center justify-center w-10 h-10 text-white/80 hover:text-white transition-opacity active:scale-95">
+                                <span className="material-symbols-outlined font-light text-2xl" translate="no">ios_share</span>
+                            </button>
                         </div>
-                        <button onClick={() => {
-                            if (navigator.share) {
-                                navigator.share({
-                                    title: `${card.firstName} ${card.lastName}`,
-                                    url: window.location.href
-                                });
-                            } else {
-                                navigator.clipboard.writeText(window.location.href);
-                                toast.success('Lien copié !');
-                            }
-                        }} className="flex items-center justify-center w-12 h-12 text-apple-textDark dark:text-white opacity-60 hover:opacity-100 transition-opacity active:scale-95">
-                            <span className="material-symbols-outlined font-light text-2xl" translate="no">ios_share</span>
-                        </button>
                     </div>
-                </div>
+                ) : (
+                    <div className={`fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 transition-all duration-700 h-24 pointer-events-none ${isScrolled ? 'backdrop-blur-2xl bg-white/10 dark:bg-black/20 shadow-[0_1px_30px_rgba(0,0,0,0.03)]' : ''}`}>
+                        <div className="flex items-center justify-between p-4 px-6 h-20 pointer-events-auto">
+                            <div className="w-12 h-12" /> {/* spacer for flex balance */}
+                            <div className="flex justify-center flex-1">
+                                <img src="/logo-icon-black.svg" className="w-8 h-8 object-contain dark:hidden opacity-80" alt="KlikNode" />
+                                <img src="/logo-icon-white.svg" className="w-8 h-8 object-contain hidden dark:block opacity-80" alt="KlikNode" />
+                            </div>
+                            <button onClick={() => {
+                                if (navigator.share) {
+                                    navigator.share({
+                                        title: `${card.firstName} ${card.lastName}`,
+                                        url: window.location.href
+                                    });
+                                } else {
+                                    navigator.clipboard.writeText(window.location.href);
+                                    toast.success('Lien copié !');
+                                }
+                            }} className="flex items-center justify-center w-12 h-12 text-apple-textDark dark:text-white opacity-60 hover:opacity-100 transition-opacity active:scale-95">
+                                <span className="material-symbols-outlined font-light text-2xl" translate="no">ios_share</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Profile Header (Centralized Content) */}
-                <div className="pt-24 pb-8 flex flex-col items-center px-6">
+                <div className={`${hasCorporateBanner ? '-mt-20' : 'pt-24'} pb-8 flex flex-col items-center px-6 relative z-20`}>
                     {/* Squircle Avatar with Border */}
                     <div className="relative group">
                         <div className="absolute inset-0 bg-gradient-to-tr from-gray-200 to-white dark:from-gray-800 dark:to-gray-700 rounded-[2.8rem] blur-xl opacity-20 group-hover:opacity-40 transition-opacity" />
-                        <div className="relative h-44 w-44 rounded-[2.5rem] bg-white dark:bg-[#1C1C1E] p-2 shadow-2xl border border-white/50 dark:border-white/10 overflow-hidden">
+                        <div className="relative h-40 w-40 rounded-[2.5rem] bg-white dark:bg-[#1C1C1E] p-2 shadow-2xl border border-white/50 dark:border-white/10 overflow-hidden">
                             {card.avatarUrl ? (
                                 <div
                                     className="h-full w-full rounded-[2rem] bg-cover bg-center"
@@ -356,9 +428,11 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                     </div>
 
                     {/* Identity Area */}
-                    <div className="mt-8 text-center space-y-2">
-                        <h1 className="text-4xl font-extrabold tracking-tight text-apple-textDark dark:text-white">{card.firstName} {card.lastName}</h1>
-                        <p className="text-apple-secondary dark:text-gray-400 font-bold text-lg">{card.jobTitle || 'Digital Artisan'}</p>
+                    <div className="mt-6 text-center space-y-2">
+                        <h1 className="text-3xl font-extrabold tracking-tight text-apple-textDark dark:text-white">{card.firstName} {card.lastName}</h1>
+                        <p className="text-apple-secondary dark:text-gray-400 font-bold text-xs uppercase tracking-widest">
+                            {card.jobTitle || 'Collaborateur'}{card.companyName ? ` @ ${card.companyName}` : ''}
+                        </p>
 
                         {(card.city || card.country) && (
                             <div className="flex items-center justify-center gap-1.5 text-apple-secondary/60 dark:text-gray-500 text-sm py-1 font-bold">

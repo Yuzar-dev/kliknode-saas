@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import toast from 'react-hot-toast';
-import { v4 as uuidv4 } from 'uuid';
 import CardPreview, { PLATFORM_ICONS } from '@/components/user/CardPreview';
 
 interface SocialLink {
@@ -16,11 +15,25 @@ interface SocialLink {
     order: number;
 }
 
+interface CompanyBrandingData {
+    companyId?: string;
+    companyName?: string;
+    logoLightUrl?: string;
+    logoDarkUrl?: string;
+    primaryColor?: string;
+    fontFamily?: string;
+    lockPhoto?: boolean;
+    lockJobTitle?: boolean;
+    lockSocialLinks?: boolean;
+    forceLogo?: boolean;
+}
+
 interface CardData {
     firstName: string; lastName: string; jobTitle: string; companyName: string;
     bio: string; email: string; phoneMobile: string;
     city: string; country: string;
     avatarUrl: string; coverUrl: string; primaryColor: string;
+    companyBranding?: CompanyBrandingData | null;
 }
 
 // Brand colors for icon background tint
@@ -70,6 +83,7 @@ const formatUrl = (url: string, platform?: string) => {
 export default function LinksPage() {
     const [links, setLinks] = useState<SocialLink[]>([]);
     const [card, setCard] = useState<CardData | null>(null);
+    const [companyBranding, setCompanyBranding] = useState<CompanyBrandingData | null>(null);
     const [loading, setLoading] = useState(true);
     const [adding, setAdding] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -83,36 +97,28 @@ export default function LinksPage() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const supabase = createClient();
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            const { data: cardData, error } = await supabase
-                .from('cards')
-                .select('*')
-                .eq('user_id', user.id)
-                .single();
-
-            if (error && error.code !== 'PGRST116') throw error;
-
-            if (cardData) {
-                setLinks(cardData.social_links || []);
+            const response = await apiClient.get('/api/user/card');
+            if (response.data?.success && response.data?.data) {
+                const cardData = response.data.data;
+                const branding: CompanyBrandingData | null = cardData.companyBranding || null;
+                setCompanyBranding(branding);
+                setLinks(Array.isArray(cardData.socialLinks) ? cardData.socialLinks : []);
                 setCard({
-                    firstName: cardData.first_name || '',
-                    lastName: cardData.last_name || '',
-                    jobTitle: cardData.job_title || '',
-                    companyName: cardData.company_name || '',
+                    firstName: cardData.firstName || '',
+                    lastName: cardData.lastName || '',
+                    jobTitle: cardData.jobTitle || '',
+                    companyName: branding?.companyName || cardData.companyName || '',
                     bio: cardData.bio || '',
                     email: cardData.email || '',
-                    phoneMobile: cardData.phone_mobile || '',
+                    phoneMobile: cardData.phoneMobile || '',
                     city: cardData.city || '',
                     country: cardData.country || '',
-                    avatarUrl: cardData.avatar_url || '',
-                    coverUrl: cardData.cover_url || '',
-                    primaryColor: cardData.primary_color || '#0666EB',
+                    avatarUrl: cardData.avatarUrl || '',
+                    coverUrl: cardData.coverUrl || '',
+                    primaryColor: branding?.primaryColor || cardData.primaryColor || '#0666EB',
+                    companyBranding: branding,
                 });
             } else {
-                // If no card yet, set empty links
                 setLinks([]);
             }
         } catch (e: any) {
@@ -124,29 +130,14 @@ export default function LinksPage() {
     };
 
     const saveLinksToDB = async (newLinks: SocialLink[]) => {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error("Non authentifié");
-
-        const { data: existingCard } = await supabase
-            .from('cards')
-            .select('id, public_slug')
-            .eq('user_id', user.id)
-            .maybeSingle();
-
-        const { error } = await supabase
-            .from('cards')
-            .upsert({
-                id: existingCard?.id || undefined,
-                user_id: user.id,
-                public_slug: existingCard?.public_slug || user.id,
-                social_links: newLinks,
-                updated_at: new Date().toISOString()
-            }, { onConflict: 'user_id' });
-
-        if (error) {
-            console.error("Supabase upsert error:", error);
-            throw error;
+        if (companyBranding?.lockSocialLinks) {
+            throw new Error('Les réseaux sociaux sont verrouillés par votre entreprise (Master Lock)');
+        }
+        const res = await apiClient.put('/api/user/card', {
+            socialLinks: newLinks,
+        });
+        if (!res.data?.success) {
+            throw new Error(res.data?.error?.message || 'Erreur lors de la sauvegarde');
         }
     };
 
@@ -219,8 +210,18 @@ export default function LinksPage() {
                     <p className="text-apple-secondary dark:text-gray-400 font-bold text-sm mt-2">Gérez les liens affichés sur votre profil public.</p>
                 </div>
 
+                {companyBranding?.lockSocialLinks && (
+                    <div className="mb-8 p-5 rounded-[1.8rem] bg-amber-50 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-800/40 flex items-center gap-4 text-amber-800 dark:text-amber-300 shadow-sm">
+                        <span className="material-symbols-outlined text-2xl shrink-0" translate="no">lock</span>
+                        <div>
+                            <p className="text-xs font-black uppercase tracking-widest">Master Lock Actif ({companyBranding.companyName})</p>
+                            <p className="text-sm font-bold mt-0.5">Les réseaux sociaux sont gérés et verrouillés par l&apos;administrateur de votre entreprise.</p>
+                        </div>
+                    </div>
+                )}
+
                 {/* Add new link */}
-                <div className="klik-glass p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] mb-8 border border-white/60 dark:border-white/5 shadow-lg relative z-20 group">
+                <div className={`klik-glass p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] mb-8 border border-white/60 dark:border-white/5 shadow-lg relative z-20 group ${companyBranding?.lockSocialLinks ? 'opacity-60 pointer-events-none' : ''}`}>
                     <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 dark:bg-blue-400/5 blur-3xl opacity-30 -mr-16 -mt-16 group-hover:opacity-50 transition-all duration-700" />
 
                     <h3 className="text-[10px] md:text-xs font-black uppercase tracking-[0.25em] text-apple-secondary dark:text-gray-500 mb-6 md:mb-8 px-1 flex items-center gap-2">
@@ -391,6 +392,10 @@ export default function LinksPage() {
                             coverUrl={card?.coverUrl}
                             primaryColor={card?.primaryColor}
                             socialLinks={links}
+                            companyLogoLightUrl={companyBranding?.logoLightUrl}
+                            companyLogoDarkUrl={companyBranding?.logoDarkUrl}
+                            fontFamily={companyBranding?.fontFamily}
+                            forceLogo={companyBranding?.forceLogo}
                             scale={0.8}
                         />
                     </div>
@@ -432,6 +437,10 @@ export default function LinksPage() {
                             coverUrl={card?.coverUrl}
                             primaryColor={card?.primaryColor}
                             socialLinks={links}
+                            companyLogoLightUrl={companyBranding?.logoLightUrl}
+                            companyLogoDarkUrl={companyBranding?.logoDarkUrl}
+                            fontFamily={companyBranding?.fontFamily}
+                            forceLogo={companyBranding?.forceLogo}
                             scale={0.95}
                         />
                     </div>

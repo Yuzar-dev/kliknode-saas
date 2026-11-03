@@ -2,9 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { apiClient } from '@/lib/api-client';
+import { useAuthStore } from '@/store/auth-store';
+import CardPreview from '@/components/user/CardPreview';
 import toast from 'react-hot-toast';
 
 export default function BrandingPage() {
+    const { user } = useAuthStore();
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -365,91 +368,23 @@ export default function BrandingPage() {
 
                     {/* Mobile Preview */}
                     <div className="w-full lg:w-2/5 flex flex-col items-center">
-                        <div className="sticky top-28 w-full max-w-[340px]">
-                            <h3 className="text-[11px] font-black text-apple-secondary uppercase tracking-[0.25em] text-center mb-8">Aperçu Mobile</h3>
+                        <div className="sticky top-28 w-full flex flex-col items-center">
+                            <h3 className="text-[11px] font-black text-apple-secondary uppercase tracking-[0.25em] text-center mb-6">Aperçu Mobile Unifié (Collaborateurs)</h3>
 
-                            <div className="relative mx-auto w-full aspect-[9/19] bg-[#1C1C1E] rounded-[3.5rem] shadow-2xl border-[12px] border-[#1C1C1E] overflow-hidden ring-1 ring-white/10">
-                                {/* Notch */}
-                                <div className="absolute top-0 left-1/2 -translate-x-1/2 h-7 w-36 bg-[#1C1C1E] z-30 rounded-b-3xl"></div>
-
-                                <div className="bg-white h-full w-full overflow-hidden flex flex-col relative transition-all duration-300" style={{ fontFamily: branding.fontFamily || 'Inter' }}>
-                                    {/* Card Header Background */}
-                                    <div className="h-40 transition-colors duration-500 relative" style={{ backgroundColor: previewColor }}>
-                                        <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent"></div>
-                                        <div className="absolute top-12 left-0 right-0 px-6 flex justify-between items-center text-white z-20">
-                                            <span className="material-symbols-outlined text-2xl">menu</span>
-                                            {branding.logoDarkUrl || branding.logoLightUrl ? (
-                                                <img
-                                                    src={branding.logoDarkUrl || branding.logoLightUrl}
-                                                    alt="Logo"
-                                                    className="h-6 max-w-[100px] object-contain"
-                                                />
-                                            ) : (
-                                                <span className="text-sm font-bold tracking-tight">Profil</span>
-                                            )}
-                                            <span className="material-symbols-outlined text-2xl">notifications</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Profile Content */}
-                                    <div className="-mt-16 px-6 flex flex-col items-center relative z-20">
-                                        <div className="h-28 w-28 rounded-[2rem] bg-white p-1 shadow-2xl mb-4 border border-gray-100">
-                                            <div className="h-full w-full rounded-[1.8rem] bg-gray-100 flex items-center justify-center text-gray-400">
-                                                <span className="material-symbols-outlined text-5xl">person</span>
-                                            </div>
-                                        </div>
-                                        <h2 className="text-2xl font-black text-gray-900 tracking-tight">David Miller</h2>
-                                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-1 mb-6">Directeur Produit @ CorpTech</p>
-
-                                        {/* Action Buttons */}
-                                        <div className="w-full grid grid-cols-2 gap-4 mb-8">
-                                            <button
-                                                className="text-white h-12 rounded-xl text-xs font-black uppercase tracking-widest shadow-xl transition-all duration-300 flex items-center justify-center"
-                                                style={{ backgroundColor: previewColor, boxShadow: `0 8px 24px -6px ${previewColor}80` }}
-                                            >
-                                                Contact
-                                            </button>
-                                            <button className="bg-white border-2 border-gray-200 text-gray-800 h-12 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center">
-                                                Message
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Links List Preview */}
-                                    <div className="flex-1 bg-gray-50 px-6 py-4 space-y-4 overflow-hidden rounded-t-[2rem] border-t border-gray-100">
-                                        {[1, 2, 3].map((i) => (
-                                            <div key={i} className="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center space-x-4">
-                                                <div
-                                                    className="h-10 w-10 rounded-xl flex items-center justify-center transition-all"
-                                                    style={{ backgroundColor: `${previewColor}1A`, color: previewColor }}
-                                                >
-                                                    <span className="material-symbols-outlined text-xl">{i === 1 ? 'badge' : i === 2 ? 'link' : 'business'}</span>
-                                                </div>
-                                                <div className="flex-1">
-                                                    <div className="h-2.5 w-24 bg-gray-200 rounded-full mb-2"></div>
-                                                    <div className="h-2 w-16 bg-gray-100 rounded-full"></div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {/* Bottom Nav */}
-                                    <div className="h-20 bg-white/80 backdrop-blur-xl border-t border-gray-100 flex justify-around items-center px-6 pb-4 absolute bottom-0 w-full z-30">
-                                        <div className="flex flex-col items-center" style={{ color: previewColor }}>
-                                            <span className="material-symbols-outlined text-2xl">home</span>
-                                            <span className="text-[9px] font-black uppercase tracking-widest mt-1">Accueil</span>
-                                        </div>
-                                        <div className="flex flex-col items-center text-gray-300">
-                                            <span className="material-symbols-outlined text-2xl">search</span>
-                                        </div>
-                                        <div className="flex flex-col items-center text-gray-300">
-                                            <span className="material-symbols-outlined text-2xl">person</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Home Indicator */}
-                                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1.5 bg-black rounded-full z-40"></div>
-                                </div>
+                            <div className="flex justify-center w-full" style={{ height: 740, overflow: 'hidden' }}>
+                                <CardPreview
+                                    firstName={user?.firstName || 'Youssef'}
+                                    lastName={user?.lastName || 'RHANIME'}
+                                    jobTitle="CEO"
+                                    companyName={(user as any)?.companyName || 'Entreprise'}
+                                    email={user?.email || 'contact@entreprise.com'}
+                                    primaryColor={previewColor}
+                                    companyLogoLightUrl={branding.logoLightUrl}
+                                    companyLogoDarkUrl={branding.logoDarkUrl}
+                                    fontFamily={branding.fontFamily}
+                                    forceLogo={branding.forceLogo}
+                                    scale={0.86}
+                                />
                             </div>
                         </div>
                     </div>

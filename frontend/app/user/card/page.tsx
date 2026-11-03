@@ -1,11 +1,23 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import toast from 'react-hot-toast';
-import { v4 as uuidv4 } from 'uuid';
 import CardPreview, { COVER_PRESETS } from '@/components/user/CardPreview';
 import ProFeatureGuard from '@/components/user/ProFeatureGuard';
+
+interface CompanyBrandingData {
+    companyId?: string;
+    companyName?: string;
+    logoLightUrl?: string;
+    logoDarkUrl?: string;
+    primaryColor?: string;
+    fontFamily?: string;
+    lockPhoto?: boolean;
+    lockJobTitle?: boolean;
+    lockSocialLinks?: boolean;
+    forceLogo?: boolean;
+}
 
 interface CardData {
     id: string;
@@ -22,6 +34,7 @@ interface CardData {
     socialLinks: any[];
     publicSlug?: string;
     leadGenActive: boolean;
+    companyBranding?: CompanyBrandingData | null;
 }
 
 const COLOR_PRESETS = [
@@ -40,6 +53,7 @@ const formatUrl = (url: string) => {
 export default function CardEditorPage() {
     const [card, setCard] = useState<CardData | null>(null);
     const [form, setForm] = useState<Partial<CardData>>({});
+    const [companyBranding, setCompanyBranding] = useState<CompanyBrandingData | null>(null);
     const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'identity' | 'style' | 'pro'>('identity');
@@ -51,80 +65,81 @@ export default function CardEditorPage() {
     const loadCard = async () => {
         setLoading(true);
         try {
-            const supabase = createClient();
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+            const response = await apiClient.get('/api/user/card');
+            if (response.data?.success && response.data?.data) {
+                const data = response.data.data;
+                const branding: CompanyBrandingData | null = data.companyBranding || null;
+                setCompanyBranding(branding);
 
-            const { data, error } = await supabase.from('cards').select('*').eq('user_id', user.id).single();
-            if (error && error.code !== 'PGRST116') throw error;
-
-            if (data) {
-                const mappedData = {
+                const mappedData: CardData = {
                     id: data.id,
-                    firstName: data.first_name || '', lastName: data.last_name || '',
-                    jobTitle: data.job_title || '', companyName: data.company_name || '',
-                    bio: data.bio || '', email: data.email || '',
-                    phoneMobile: data.phone_mobile || '', phoneOffice: data.phone_office || '',
-                    city: data.city || '', country: data.country || '',
+                    firstName: data.firstName || '',
+                    lastName: data.lastName || '',
+                    jobTitle: data.jobTitle || '',
+                    companyName: branding?.companyName || data.companyName || '',
+                    bio: data.bio || '',
+                    email: data.email || '',
+                    phoneMobile: data.phoneMobile || '',
+                    phoneOffice: data.phoneOffice || '',
+                    city: data.city || '',
+                    country: data.country || '',
                     website: data.website || '',
-                    avatarUrl: data.avatar_url || '', coverUrl: data.cover_url || '',
-                    primaryColor: data.primary_color || '#0666EB',
+                    avatarUrl: data.avatarUrl || '',
+                    coverUrl: data.coverUrl || '',
+                    primaryColor: branding?.primaryColor || data.primaryColor || '#0666EB',
                     theme: data.theme || 'light',
-                    bioVisible: data.bio_visible !== false, // Default to true
-                    socialLinks: data.social_links || [],
-                    publicSlug: data.public_slug || user.id, // Fallback to user.id for slug
-                    leadGenActive: data.lead_gen_active !== false,
+                    bioVisible: data.bioVisible !== false,
+                    socialLinks: Array.isArray(data.socialLinks) ? data.socialLinks : [],
+                    publicSlug: data.publicSlug || data.userId || data.id,
+                    leadGenActive: data.leadGenActive !== false,
+                    companyBranding: branding,
                 };
-                setCard(mappedData as any);
+                setCard(mappedData);
                 setForm(mappedData);
-            } else {
-                // If no card exists yet, pull the basic details from user
-                const { data: userData } = await supabase.from('users').select('first_name, last_name, email').eq('id', user.id).single();
-                if (userData) {
-                    setForm({
-                        firstName: userData.first_name || '', lastName: userData.last_name || '', email: userData.email || '', primaryColor: '#0666EB', theme: 'light', bioVisible: true, leadGenActive: true
-                    });
-                }
             }
         } catch (e: any) {
             console.error(e);
-            toast.error('Erreur lors du chargement');
+            toast.error('Erreur lors du chargement de votre carte');
         } finally { setLoading(false); }
     };
 
     const handleSave = async () => {
         setSaving(true);
         try {
-            const supabase = createClient();
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('Non authentifié');
-
             const formattedWebsite = formatUrl(form.website || '');
 
             const updatePayload = {
-                id: card?.id || uuidv4(),
-                user_id: user.id,
-                first_name: form.firstName, last_name: form.lastName,
-                job_title: form.jobTitle, company_name: form.companyName,
-                bio: form.bio, phone_mobile: form.phoneMobile,
-                phone_office: form.phoneOffice, city: form.city, country: form.country,
+                firstName: form.firstName,
+                lastName: form.lastName,
+                jobTitle: form.jobTitle,
+                companyName: form.companyName,
+                bio: form.bio,
+                email: form.email,
+                phoneMobile: form.phoneMobile,
+                phoneOffice: form.phoneOffice,
+                city: form.city,
+                country: form.country,
                 website: formattedWebsite,
-                cover_url: form.coverUrl, primary_color: form.primaryColor, theme: form.theme,
-                bio_visible: form.bioVisible,
-                avatar_url: form.avatarUrl,
-                public_slug: card?.publicSlug || user.id, // Make sure public_slug is saved during upsert
-                lead_gen_active: form.leadGenActive !== false,
-                updated_at: new Date().toISOString(),
+                coverUrl: form.coverUrl,
+                primaryColor: form.primaryColor,
+                theme: form.theme,
+                bioVisible: form.bioVisible,
+                avatarUrl: form.avatarUrl,
+                leadGenActive: form.leadGenActive !== false,
             };
 
-            const { error } = await supabase.from('cards').upsert(updatePayload, { onConflict: 'user_id' });
-            if (error) throw error;
+            const res = await apiClient.put('/api/user/card', updatePayload);
+            if (!res.data?.success) {
+                throw new Error(res.data?.error?.message || 'Erreur lors de la sauvegarde');
+            }
 
-            if (!card?.socialLinks?.length) {
+            const savedData = res.data.data;
+
+            if (!card?.socialLinks?.length && !companyBranding?.lockSocialLinks) {
                 toast((t) => (
                     <div className="flex flex-col gap-2">
                         <span className="font-bold">Carte sauvegardée ! 🎉</span>
-                        <span className="text-sm">N'oubliez pas d'ajouter vos réseaux sociaux.</span>
+                        <span className="text-sm">N&apos;oubliez pas d&apos;ajouter vos réseaux sociaux.</span>
                         <a href="/user/links" onClick={() => toast.dismiss(t.id)} className="bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg text-center font-bold mt-1 hover:bg-blue-600 transition-colors">
                             Ajouter mes liens
                         </a>
@@ -133,41 +148,36 @@ export default function CardEditorPage() {
             } else {
                 toast.success('Carte sauvegardée !');
             }
-            setCard({ ...form, website: formattedWebsite } as any);
+            setCard(prev => ({ ...(prev as any), ...form, ...savedData, website: formattedWebsite }));
         } catch (err: any) {
-            toast.error(err.message || 'Erreur');
+            toast.error(err.response?.data?.error?.message || err.message || 'Erreur');
         } finally { setSaving(false); }
     };
 
     const handleAvatarUpload = async (file: File) => {
-        const localUrl = URL.createObjectURL(file);
-        setForm(f => ({ ...f, avatarUrl: localUrl }));
+        if (companyBranding?.lockPhoto) {
+            toast.error('La photo de profil est verrouillée par votre entreprise (Master Lock)');
+            return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+            toast.error('La photo ne doit pas dépasser 2 Mo');
+            return;
+        }
         setUploadingAvatar(true);
         try {
-            const supabase = createClient();
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('Non authentifié');
+            const dataUrl = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
 
-            const fileExt = file.name.split('.').pop() || 'png';
-            const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-            const filePath = `${fileName}`;
-
-            const { error: uploadError } = await supabase.storage
-                .from('avatars')
-                .upload(filePath, file, { upsert: true });
-
-            if (uploadError) throw uploadError;
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('avatars')
-                .getPublicUrl(filePath);
-
-            setForm(f => ({ ...f, avatarUrl: publicUrl }));
-            await supabase.from('cards').upsert({ id: card?.id || uuidv4(), user_id: user.id, avatar_url: publicUrl, public_slug: card?.publicSlug || user.id, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+            setForm(f => ({ ...f, avatarUrl: dataUrl }));
+            await apiClient.post('/api/user/card/avatar', { avatarUrl: dataUrl });
             toast.success('Photo mise à jour !');
         } catch (e: any) {
             console.error(e);
-            toast.error('Erreur upload — URL locale conservée');
+            toast.error(e.response?.data?.error?.message || 'Erreur lors de la mise à jour de la photo');
         } finally { setUploadingAvatar(false); }
     };
 
@@ -190,6 +200,23 @@ export default function CardEditorPage() {
                         <h1 className="text-3xl md:text-4xl font-black text-apple-textDark dark:text-white tracking-tight">Ma Carte</h1>
                         <p className="text-apple-secondary dark:text-gray-400 font-bold text-sm mt-2">Personnalisez votre identité numérique premium</p>
                     </div>
+                    {companyBranding?.companyName && (
+                        <div className="flex items-center gap-3 px-5 py-3 rounded-2xl klik-glass border border-white/60 dark:border-white/10 shadow-sm">
+                            {companyBranding.logoLightUrl || companyBranding.logoDarkUrl ? (
+                                <img
+                                    src={companyBranding.logoLightUrl || companyBranding.logoDarkUrl}
+                                    alt={companyBranding.companyName}
+                                    className="h-6 max-w-[90px] object-contain"
+                                />
+                            ) : (
+                                <span className="material-symbols-outlined text-lg" style={{ color: companyBranding.primaryColor || '#0666EB' }}>apartment</span>
+                            )}
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-apple-secondary">Identité Entreprise</p>
+                                <p className="text-xs font-black text-apple-textDark dark:text-white">{companyBranding.companyName}</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Tabs - Titanium Style */}
@@ -241,32 +268,38 @@ export default function CardEditorPage() {
                                     )}
                                 </div>
                                 <div className="flex flex-col gap-3 w-full sm:w-auto">
-                                    <button
-                                        onClick={() => avatarInputRef.current?.click()}
-                                        className="flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl text-sm font-bold bg-white dark:bg-white/5 hover:bg-gray-50 dark:hover:bg-white/10 transition-all border border-gray-100 dark:border-white/10 text-apple-textDark dark:text-white shadow-sm active:scale-95"
-                                    >
-                                        <span className="material-symbols-outlined text-[20px] font-light" translate="no">photo_camera</span>
-                                        Charger une image
-                                    </button>
-                                    {form.avatarUrl && (
-                                        <button
-                                            onClick={async () => {
-                                                set('avatarUrl', '');
-                                                if (card?.id) {
-                                                    try {
-                                                        const supabase = createClient();
-                                                        await supabase.from('cards').update({ avatar_url: null }).eq('id', card.id);
-                                                        toast.success('Photo supprimée');
-                                                    } catch (e) {
-                                                        console.error(e);
-                                                    }
-                                                }
-                                            }}
-                                            className="flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all border border-red-50 dark:border-red-900/10 active:scale-95"
-                                        >
-                                            <span className="material-symbols-outlined text-[20px] font-light" translate="no">delete</span>
-                                            Supprimer
-                                        </button>
+                                    {companyBranding?.lockPhoto ? (
+                                        <div className="flex items-center gap-2.5 px-5 py-3 rounded-2xl text-xs font-bold bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 text-amber-700 dark:text-amber-300">
+                                            <span className="material-symbols-outlined text-[18px]" translate="no">lock</span>
+                                            Photo verrouillée par votre entreprise (Master Lock)
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <button
+                                                onClick={() => avatarInputRef.current?.click()}
+                                                className="flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl text-sm font-bold bg-white dark:bg-white/5 hover:bg-gray-50 dark:hover:bg-white/10 transition-all border border-gray-100 dark:border-white/10 text-apple-textDark dark:text-white shadow-sm active:scale-95"
+                                            >
+                                                <span className="material-symbols-outlined text-[20px] font-light" translate="no">photo_camera</span>
+                                                Charger une image
+                                            </button>
+                                            {form.avatarUrl && (
+                                                <button
+                                                    onClick={async () => {
+                                                        set('avatarUrl', '');
+                                                        try {
+                                                            await apiClient.post('/api/user/card/avatar', { avatarUrl: null });
+                                                            toast.success('Photo supprimée');
+                                                        } catch (e) {
+                                                            console.error(e);
+                                                        }
+                                                    }}
+                                                    className="flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all border border-red-50 dark:border-red-900/10 active:scale-95"
+                                                >
+                                                    <span className="material-symbols-outlined text-[20px] font-light" translate="no">delete</span>
+                                                    Supprimer
+                                                </button>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                                 <input
@@ -274,6 +307,7 @@ export default function CardEditorPage() {
                                     type="file"
                                     accept="image/*"
                                     className="hidden"
+                                    disabled={Boolean(companyBranding?.lockPhoto)}
                                     onChange={e => e.target.files?.[0] && handleAvatarUpload(e.target.files[0])}
                                 />
                             </div>
@@ -284,18 +318,31 @@ export default function CardEditorPage() {
                             <h3 className="text-[10px] md:text-xs font-black uppercase tracking-[0.25em] text-apple-secondary dark:text-gray-500 mb-8 md:mb-10 px-1">Informations de base</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-x-10 md:gap-y-8">
                                 {[
-                                    { key: 'firstName', label: 'Prénom *' },
-                                    { key: 'lastName', label: 'Nom *' },
-                                    { key: 'jobTitle', label: 'Fonction' },
-                                    { key: 'companyName', label: 'Entreprise' },
+                                    { key: 'firstName', label: 'Prénom *', locked: false },
+                                    { key: 'lastName', label: 'Nom *', locked: false },
+                                    { key: 'jobTitle', label: 'Fonction', locked: Boolean(companyBranding?.lockJobTitle) },
+                                    { key: 'companyName', label: 'Entreprise', locked: Boolean(companyBranding?.companyName) },
                                 ].map(f => (
                                     <div key={f.key} className="space-y-3 group/input">
-                                        <label className="block text-[10px] md:text-[11px] font-black text-apple-secondary dark:text-gray-500 uppercase tracking-widest ml-1 group-focus-within/input:text-apple-textDark dark:group-focus-within/input:text-white transition-colors">{f.label}</label>
+                                        <div className="flex items-center justify-between ml-1">
+                                            <label className="block text-[10px] md:text-[11px] font-black text-apple-secondary dark:text-gray-500 uppercase tracking-widest group-focus-within/input:text-apple-textDark dark:group-focus-within/input:text-white transition-colors">{f.label}</label>
+                                            {f.locked && (
+                                                <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">
+                                                    <span className="material-symbols-outlined text-[13px]" translate="no">lock</span>
+                                                    Master Lock
+                                                </span>
+                                            )}
+                                        </div>
                                         <input
                                             type="text"
+                                            disabled={f.locked}
                                             value={(form as any)[f.key] || ''}
-                                            onChange={e => set(f.key as any, e.target.value)}
-                                            className="w-full rounded-[1.2rem] border border-gray-100 dark:border-white/5 bg-white/50 dark:bg-black/20 px-5 py-3.5 md:py-4 text-base text-apple-textDark dark:text-white focus:outline-none focus:ring-1 focus:ring-apple-bgLight dark:focus:ring-white/10 focus:bg-white dark:focus:bg-black/40 transition-all font-medium placeholder:text-gray-300 dark:placeholder:text-gray-600"
+                                            onChange={e => !f.locked && set(f.key as any, e.target.value)}
+                                            className={`w-full rounded-[1.2rem] border border-gray-100 dark:border-white/5 px-5 py-3.5 md:py-4 text-base text-apple-textDark dark:text-white focus:outline-none focus:ring-1 focus:ring-apple-bgLight dark:focus:ring-white/10 transition-all font-medium placeholder:text-gray-300 dark:placeholder:text-gray-600 ${
+                                                f.locked
+                                                    ? 'bg-gray-100/80 dark:bg-white/5 opacity-70 cursor-not-allowed'
+                                                    : 'bg-white/50 dark:bg-black/20 focus:bg-white dark:focus:bg-black/40'
+                                            }`}
                                         />
                                     </div>
                                 ))}
@@ -377,13 +424,22 @@ export default function CardEditorPage() {
 
                         {/* Accent Color */}
                         <div className="klik-glass p-6 md:p-10 rounded-[2rem] md:rounded-[2.5rem] border border-white/60 dark:border-white/5 shadow-lg">
-                            <h3 className="text-[10px] md:text-xs font-black uppercase tracking-[0.25em] text-apple-secondary dark:text-gray-500 mb-8 md:mb-10 px-1">Couleur d'accentuation</h3>
-                            <div className="flex flex-wrap items-center gap-4 md:gap-6">
+                            <div className="flex items-center justify-between mb-8 md:mb-10 px-1">
+                                <h3 className="text-[10px] md:text-xs font-black uppercase tracking-[0.25em] text-apple-secondary dark:text-gray-500">Couleur d&apos;accentuation</h3>
+                                {companyBranding?.primaryColor && (
+                                    <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">
+                                        <span className="material-symbols-outlined text-[14px]" translate="no">lock</span>
+                                        Identité Visuelle {companyBranding.companyName}
+                                    </span>
+                                )}
+                            </div>
+                            <div className={`flex flex-wrap items-center gap-4 md:gap-6 ${companyBranding?.primaryColor ? 'opacity-70 pointer-events-none' : ''}`}>
                                 <div className="grid grid-cols-4 sm:flex sm:flex-wrap items-center gap-4 md:gap-6 w-full sm:w-auto">
                                     {COLOR_PRESETS.map(c => (
                                         <button
                                             key={c}
-                                            onClick={() => set('primaryColor', c)}
+                                            disabled={Boolean(companyBranding?.primaryColor)}
+                                            onClick={() => !companyBranding?.primaryColor && set('primaryColor', c)}
                                             className={`w-12 h-12 md:w-14 md:h-14 rounded-full transition-all duration-500 shadow-sm ${form.primaryColor === c ? 'ring-4 ring-[#1C1C1E] dark:ring-white ring-offset-4 md:ring-offset-8 ring-offset-apple-bgLight dark:ring-offset-black scale-110 shadow-2xl' : 'hover:scale-110'
                                                 }`}
                                             style={{ background: c }}
@@ -394,8 +450,9 @@ export default function CardEditorPage() {
                                     <span className="text-[10px] md:text-[11px] font-black text-apple-secondary dark:text-gray-500 uppercase tracking-widest">Couleur Perso</span>
                                     <input
                                         type="color"
+                                        disabled={Boolean(companyBranding?.primaryColor)}
                                         value={form.primaryColor || '#4B4B4C'}
-                                        onChange={e => set('primaryColor', e.target.value)}
+                                        onChange={e => !companyBranding?.primaryColor && set('primaryColor', e.target.value)}
                                         className="w-10 h-10 rounded-full cursor-pointer bg-transparent border-none p-0 overflow-hidden shadow-sm shrink-0"
                                     />
                                 </div>
@@ -564,6 +621,10 @@ export default function CardEditorPage() {
                             primaryColor={form.primaryColor}
                             bioVisible={form.bioVisible}
                             socialLinks={card?.socialLinks || []}
+                            companyLogoLightUrl={companyBranding?.logoLightUrl}
+                            companyLogoDarkUrl={companyBranding?.logoDarkUrl}
+                            fontFamily={companyBranding?.fontFamily}
+                            forceLogo={companyBranding?.forceLogo}
                             scale={0.8}
                         />
                     </div>
@@ -616,6 +677,10 @@ export default function CardEditorPage() {
                             primaryColor={form.primaryColor}
                             bioVisible={form.bioVisible}
                             socialLinks={card?.socialLinks || []}
+                            companyLogoLightUrl={companyBranding?.logoLightUrl}
+                            companyLogoDarkUrl={companyBranding?.logoDarkUrl}
+                            fontFamily={companyBranding?.fontFamily}
+                            forceLogo={companyBranding?.forceLogo}
                             scale={0.95}
                         />
                     </div>

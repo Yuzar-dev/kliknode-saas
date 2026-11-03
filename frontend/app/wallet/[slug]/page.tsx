@@ -40,7 +40,29 @@ export default function WalletPassPage() {
         if (!slug) return;
         const loadWalletCard = async () => {
             try {
-                // 1. Lecture directe Supabase (fonctionne en prod Vercel sur iPhone 4G/5G et en local)
+                // 1. Lecture prioritaire via l'API publique (inclut companyBranding & primaryColor)
+                const res = await apiClient.get(`/api/public/card/${encodeURIComponent(slug)}`);
+                if (res.data?.success && res.data?.data) {
+                    const d = res.data.data;
+                    setCard({
+                        id: d.id,
+                        firstName: d.firstName,
+                        lastName: d.lastName,
+                        jobTitle: d.jobTitle,
+                        companyName: d.companyBranding?.companyName || d.companyName,
+                        email: d.email,
+                        phoneMobile: d.phoneMobile,
+                        avatarUrl: d.avatarUrl,
+                        primaryColor: d.companyBranding?.primaryColor || d.primaryColor,
+                        publicSlug: d.publicSlug || d.userId || d.id,
+                    });
+                    setLoading(false);
+                    return;
+                }
+            } catch {}
+
+            try {
+                // 2. Fallback directe Supabase
                 const supabase = createClient();
                 const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(slug);
                 let query = supabase.from('cards').select('*');
@@ -63,16 +85,6 @@ export default function WalletPassPage() {
                         primaryColor: data.primary_color,
                         publicSlug: data.public_slug || data.user_id,
                     });
-                    setLoading(false);
-                    return;
-                }
-            } catch {}
-
-            // 2. Fallback via API Backend Express
-            try {
-                const res = await apiClient.get(`/api/p/${slug}`);
-                if (res.data?.success && res.data?.data) {
-                    setCard(res.data.data);
                 }
             } catch (err) {
                 console.warn('Wallet fetch fallback error:', err);

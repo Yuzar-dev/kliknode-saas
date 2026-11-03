@@ -73,10 +73,10 @@ export default async function EmployeeJoinPage({
                                 Créer mon compte
                             </Link>
                             
-                            <Link href="/login"
+                            <Link href={`/login?card_id=${encodeURIComponent(card_id)}&company_id=${encodeURIComponent(company_id)}`}
                                 className="w-full h-14 bg-white/50 text-slate-700 flex items-center justify-center gap-2 rounded-[1.2rem] border border-slate-200 hover:bg-white transition-all active:scale-95 font-bold"
                             >
-                                J'ai déjà un compte
+                                J&apos;ai déjà un compte (Activer ma carte)
                             </Link>
                         </div>
                     </div>

@@ -95,6 +95,19 @@ export const updateBranding = async (req: Request, res: Response) => {
             }
         });
 
+        // Répercuter immédiatement la couleur primaire de l'entreprise sur toutes les cartes des collaborateurs
+        if (primaryColor) {
+            await prisma.card.updateMany({
+                where: {
+                    OR: [
+                        { companyId },
+                        { user: { companyId } }
+                    ]
+                },
+                data: { primaryColor }
+            }).catch(() => {});
+        }
+
         res.json({
             success: true,
             data: branding

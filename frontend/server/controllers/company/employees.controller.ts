@@ -147,7 +147,10 @@ export const createEmployee = async (req: Request, res: Response) => {
             return;
         }
 
-        const company = await prisma.company.findUnique({ where: { id: companyId } });
+        const company = await prisma.company.findUnique({
+            where: { id: companyId },
+            include: { branding: true }
+        });
         const rawPassword = password || 'Kliknode2026!';
         const passwordHash = await bcrypt.hash(rawPassword, 10);
         const publicSlug = generateSlug(firstName, lastName);
@@ -171,6 +174,7 @@ export const createEmployee = async (req: Request, res: Response) => {
                         phoneMobile: phone || null,
                         jobTitle: jobTitle || 'Collaborateur',
                         companyName: company?.name || '',
+                        primaryColor: company?.branding?.primaryColor || '#0666EB',
                         publicSlug,
                         isPublic: true,
                     }

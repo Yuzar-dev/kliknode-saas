@@ -31,6 +31,10 @@ interface CardPreviewProps {
     socialLinks?: SocialLink[];
     bioVisible?: boolean;
     scale?: number;
+    companyLogoLightUrl?: string;
+    companyLogoDarkUrl?: string;
+    fontFamily?: string;
+    forceLogo?: boolean;
 }
 
 // Platform → Material Symbol icon mapping
@@ -99,8 +103,14 @@ export default function CardPreview({
     socialLinks = [],
     bioVisible = true,
     scale = 1,
+    companyLogoLightUrl,
+    companyLogoDarkUrl,
+    fontFamily,
+    forceLogo,
 }: CardPreviewProps) {
     const socialLinksToDisplay = socialLinks.filter(l => l.isActive !== false);
+    const activeCompanyLogo = companyLogoDarkUrl || companyLogoLightUrl;
+    const hasCorporateBanner = Boolean(activeCompanyLogo || forceLogo || companyName);
 
     return (
         <div
@@ -109,7 +119,7 @@ export default function CardPreview({
                 minHeight: 844,
                 transform: `scale(${scale})`,
                 transformOrigin: 'top center',
-                fontFamily: "'Poppins', -apple-system, sans-serif",
+                fontFamily: fontFamily ? `'${fontFamily}', 'Poppins', -apple-system, sans-serif` : "'Poppins', -apple-system, sans-serif",
                 borderRadius: 48,
                 overflowY: 'auto',
                 overflowX: 'hidden',
@@ -136,14 +146,14 @@ export default function CardPreview({
                     <div
                         className="absolute -top-[15%] -left-[10%] w-[120%] h-[70%] blur-[100px] opacity-[0.25]"
                         style={{
-                            background: `radial-gradient(circle at 25% 25%, ${coverUrl === 'default' ? 'var(--tw-gradient-stops)' : (coverUrl?.match(/#[a-fA-F0-9]{6}/)?.[0] || primaryColor || '#0666EB')}, transparent 80%)`
+                            background: `radial-gradient(circle at 25% 25%, ${coverUrl === 'default' ? (primaryColor || '#0666EB') : (coverUrl?.match(/#[a-fA-F0-9]{6}/)?.[0] || primaryColor || '#0666EB')}, transparent 80%)`
                         }}
                     />
                     {/* Secondary Balanced Glow (Bottom Right hint) */}
                     <div
                         className="absolute -bottom-[10%] -right-[10%] w-[70%] h-[40%] blur-[80px] opacity-[0.1]"
                         style={{
-                            background: `radial-gradient(circle at center, ${coverUrl === 'default' ? 'var(--tw-gradient-stops)' : (coverUrl?.match(/#[a-fA-F0-9]{6}/)?.[0] || primaryColor || '#0666EB')}, transparent 70%)`
+                            background: `radial-gradient(circle at center, ${coverUrl === 'default' ? (primaryColor || '#0666EB') : (coverUrl?.match(/#[a-fA-F0-9]{6}/)?.[0] || primaryColor || '#0666EB')}, transparent 70%)`
                         }}
                     />
                     {/* Top Fade Glow (Apple Surface effect) */}
@@ -156,12 +166,52 @@ export default function CardPreview({
             <div className="absolute bottom-[-5%] right-[-10%] w-[300px] h-[300px] bg-white opacity-20 dark:opacity-5 blur-[100px] rounded-full pointer-events-none" />
 
             <div className="relative z-10 flex flex-col min-h-full pb-32">
+                {/* Corporate Brand Header Banner (if B2B / Branded) or Top Bar */}
+                {hasCorporateBanner ? (
+                    <div
+                        className="h-44 w-full relative flex flex-col items-center justify-start pt-10 transition-colors duration-500"
+                        style={{
+                            background: coverUrl && coverUrl.startsWith('linear-gradient')
+                                ? coverUrl
+                                : primaryColor || '#0666EB'
+                        }}
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/10 pointer-events-none" />
+                        <div className="relative z-20 flex items-center justify-between w-full px-6">
+                            <div className="w-8 h-8" />
+                            {activeCompanyLogo ? (
+                                <img
+                                    src={activeCompanyLogo}
+                                    alt={companyName || 'Logo Entreprise'}
+                                    className="h-8 max-w-[140px] object-contain drop-shadow-sm"
+                                />
+                            ) : (
+                                <span className="text-white font-black text-xs uppercase tracking-[0.2em] opacity-90">
+                                    {companyName || 'KLIKNODE'}
+                                </span>
+                            )}
+                            <div className="w-8 h-8 flex items-center justify-center text-white/80">
+                                <span className="material-symbols-outlined text-[18px]" translate="no">ios_share</span>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="pt-6 px-6 flex items-center justify-between">
+                        <div className="w-8 h-8" />
+                        <img src="/logo-icon-black.svg" className="w-6 h-6 object-contain dark:hidden opacity-80" alt="KlikNode" />
+                        <img src="/logo-icon-white.svg" className="w-6 h-6 object-contain hidden dark:block opacity-80" alt="KlikNode" />
+                        <div className="w-8 h-8 flex items-center justify-center text-[#1D1D1F]/60 dark:text-white/60">
+                            <span className="material-symbols-outlined text-[18px]" translate="no">ios_share</span>
+                        </div>
+                    </div>
+                )}
+
                 {/* Profile Header (Centralized Content) */}
-                <div className="pt-20 pb-8 flex flex-col items-center px-6">
+                <div className={`${hasCorporateBanner ? '-mt-16' : 'pt-8'} pb-8 flex flex-col items-center px-6 relative z-20`}>
                     {/* Squircle Avatar with Border */}
                     <div className="relative group">
                         <div className="absolute inset-0 bg-gradient-to-tr from-gray-200 dark:from-gray-800 to-white dark:to-gray-700 rounded-[2.8rem] blur-xl opacity-20 dark:opacity-40" />
-                        <div className="relative h-40 w-40 rounded-[2.5rem] bg-white dark:bg-[#1C1C1E] p-2 shadow-2xl border border-white/50 dark:border-white/10">
+                        <div className="relative h-36 w-36 rounded-[2.5rem] bg-white dark:bg-[#1C1C1E] p-2 shadow-2xl border border-white/50 dark:border-white/10">
                             {avatarUrl ? (
                                 <img
                                     src={avatarUrl}
@@ -179,9 +229,11 @@ export default function CardPreview({
                     </div>
 
                     {/* Identity Area */}
-                    <div className="mt-8 text-center space-y-1.5">
-                        <h1 className="text-3xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-white">{firstName} {lastName}</h1>
-                        <p className="text-[#86868B] dark:text-gray-400 font-bold text-base">{jobTitle || 'Digital Artisan'}</p>
+                    <div className="mt-6 text-center space-y-1.5">
+                        <h1 className="text-2xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-white">{firstName} {lastName}</h1>
+                        <p className="text-[#86868B] dark:text-gray-400 font-bold text-xs uppercase tracking-widest">
+                            {jobTitle || 'Collaborateur'}{companyName ? ` @ ${companyName}` : ''}
+                        </p>
 
                         {(city || country) && (
                             <div className="flex items-center justify-center gap-1.5 text-[#86868B]/60 dark:text-gray-500 text-xs py-1 font-bold">
