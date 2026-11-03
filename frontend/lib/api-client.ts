@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { api } from './api-config';
+import { api, getBaseUrl } from './api-config';
 
 // Create axios instance
 const axiosInstance: AxiosInstance = axios.create({
@@ -10,9 +10,10 @@ const axiosInstance: AxiosInstance = axios.create({
     },
 });
 
-// Request interceptor - Add auth token
+// Request interceptor - Add auth token & resolve baseURL dynamically in browser
 axiosInstance.interceptors.request.use(
     (config) => {
+        config.baseURL = getBaseUrl();
         const token = localStorage.getItem('accessToken');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
@@ -52,7 +53,7 @@ axiosInstance.interceptors.response.use(
                     return new Promise(() => { });
                 }
 
-                const response = await axios.post(`${api.baseURL}/api/auth/refresh-token`, {
+                const response = await axios.post(`${getBaseUrl()}/api/auth/refresh-token`, {
                     refreshToken,
                 });
 

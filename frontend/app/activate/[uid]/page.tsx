@@ -11,11 +11,14 @@ export default async function ActivatePage({
     const uid = decodeURIComponent(encodedUid);
     const headersList = await headers();
     const host = headersList.get('host') || '';
+    const proto = headersList.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
     const isNfcDomain = host.includes('k.kliknode.com');
     const appUrl = isNfcDomain ? 'https://app.kliknode.com' : '';
 
     // 1. Priorité au backend Express (Prisma Direct) pour éviter tout blocage réseau Supabase
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    const backendUrl = (host.includes('localhost') || host.includes('127.0.0.1'))
+        ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')
+        : `${proto}://${host}`;
     let backendPayload: any = null;
     try {
         const res = await fetch(`${backendUrl}/api/public/activate/${encodeURIComponent(uid)}`, {

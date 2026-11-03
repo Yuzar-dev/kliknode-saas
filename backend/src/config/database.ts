@@ -39,105 +39,85 @@ export const ensureCleanDatabase = async (): Promise<void> => {
 
     cleanupRunningPromise = (async () => {
         try {
-            const adminEmail = 'you.rhanime@gmail.com';
-
-            // Vérifier si le nettoyage initial a déjà été exécuté sur Supabase
-            const checkRows = await prisma.$queryRawUnsafe<Array<{
-                id: string;
-                email: string;
-                encrypted_password: string | null;
-                done: string | null;
-            }>>(
-                `SELECT id, email, encrypted_password, raw_user_meta_data->>'prod_cleanup_v2' as done
-                 FROM auth.users
-                 WHERE lower(email) = 'you.rhanime@gmail.com'
-                 LIMIT 1`
-            ).catch(() => []);
-
-            if (checkRows.length > 0 && checkRows[0].done === 'done') {
-                cleanupCompletedInMemory = true;
-                return;
-            }
-
-            logger.info('🧹 Executing one-time production cleanup (keeping only you.rhanime@gmail.com as ADMIN)...');
-
-            // 1. Purge de toutes les tables enfants et stocks
-            await prisma.linkClick.deleteMany({});
-            await prisma.lead.deleteMany({});
-            await prisma.contactLead.deleteMany({});
-            await prisma.cardScan.deleteMany({});
-            await prisma.physicalCard.deleteMany({});
-            await prisma.inventory.deleteMany({});
-            await prisma.hardwareOrder.deleteMany({});
-            await prisma.transaction.deleteMany({});
-            await prisma.subscription.deleteMany({});
-            await prisma.companyInvitation.deleteMany({});
-            await prisma.companyBranding.deleteMany({});
-            await prisma.userDepartment.deleteMany({});
-            await prisma.department.deleteMany({});
-            await prisma.auditLog.deleteMany({});
-            await prisma.refreshToken.deleteMany({});
-            await prisma.passwordReset.deleteMany({});
-
-            // 2. S'assurer que you.rhanime@gmail.com existe dans public.users avec le rôle ADMIN (SuperAdmin)
-            let superAdmin = await prisma.user.findFirst({
-                where: { email: { equals: adminEmail, mode: 'insensitive' } }
-            });
-
-            if (superAdmin) {
-                superAdmin = await prisma.user.update({
-                    where: { id: superAdmin.id },
-                    data: {
-                        role: 'ADMIN',
-                        companyId: null,
-                        isActive: true,
-                        deletedAt: null,
-                        ...(checkRows[0]?.encrypted_password ? { passwordHash: checkRows[0].encrypted_password } : {}),
-                    }
-                });
-            } else if (checkRows.length > 0) {
-                superAdmin = await prisma.user.create({
-                    data: {
-                        id: checkRows[0].id,
-                        email: adminEmail,
-                        passwordHash: checkRows[0].encrypted_password || '$2a$10$CwTycUXWue0Thq9StjUM0uJ8D0R6V5O2b1H/b2nJ5V8K1W6Y9Z0aG',
-                        firstName: 'Youssef',
-                        lastName: 'Rhanime',
-                        role: 'ADMIN',
-                        isActive: true,
-                    }
-                });
-            }
-
-            if (superAdmin) {
-                await prisma.card.deleteMany({
-                    where: { userId: { not: superAdmin.id } }
-                });
-                await prisma.card.updateMany({
-                    where: { userId: superAdmin.id },
-                    data: { companyId: null }
-                });
-                await prisma.user.deleteMany({
-                    where: { id: { not: superAdmin.id } }
-                });
-            }
-
-            // 3. Supprimer toutes les entreprises existantes (Tesla, Marjane, Yuzarprod, etc.)
-            await prisma.company.deleteMany({});
-
-            // 4. Nettoyer auth.users sur Supabase pour ne garder QUE you.rhanime@gmail.com et poser le verrou prod_cleanup_v2
             await prisma.$executeRawUnsafe(`
-                DELETE FROM auth.users WHERE lower(email) <> 'you.rhanime@gmail.com';
-            `);
-            await prisma.$executeRawUnsafe(`
-                UPDATE auth.users
-                SET raw_user_meta_data = COALESCE(raw_user_meta_data, '{}'::jsonb) || '{"role":"ADMIN","prod_cleanup_v2":"done"}'::jsonb,
-                    email_confirmed_at = COALESCE(email_confirmed_at, NOW())
-                WHERE lower(email) = 'you.rhanime@gmail.com';
+                DO $$
+                DECLARE
+                    v_uid uuid;
+                    v_pwd text;
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1 FROM auth.users
+                        WHERE lower(email) = 'you.rhanime@gmail.com'
+                          AND raw_user_meta_data->>'prod_cleanup_v2' = 'done'
+                    ) THEN
+                        RETURN;
+                    END IF;
+
+                    SELECT id, encrypted_password INTO v_uid, v_pwd
+                    FROM auth.users
+                    WHERE lower(email) = 'you.rhanime@gmail.com'
+                    LIMIT 1;
+
+                    IF v_uid IS NULL THEN
+                        v_uid := '75adc562-79a2-43f3-974e-6afe159d433e'::uuid;
+                    END IF;
+
+                    DELETE FROM public.link_clicks;
+                    DELETE FROM public.leads;
+                    DELETE FROM public.contact_leads;
+                    DELETE FROM public.card_scans;
+                    DELETE FROM public.physical_cards;
+                    DELETE FROM public.inventory;
+                    DELETE FROM public.hardware_orders;
+                    DELETE FROM public.transactions;
+                    DELETE FROM public.subscriptions;
+                    DELETE FROM public.company_invitations;
+                    DELETE FROM public.company_branding;
+                    DELETE FROM public.user_departments;
+                    DELETE FROM public.departments;
+                    DELETE FROM public.audit_logs;
+                    DELETE FROM public.refresh_tokens;
+                    DELETE FROM public.password_resets;
+
+                    INSERT INTO public.users (id, email, password_hash, first_name, last_name, role, company_id, is_active, is_pro, language, created_at, updated_at)
+                    VALUES (
+                        v_uid,
+                        'you.rhanime@gmail.com',
+                        COALESCE(v_pwd, '$2a$10$CwTycUXWue0Thq9StjUM0uJ8D0R6V5O2b1H/b2nJ5V8K1W6Y9Z0aG'),
+                        'Youssef',
+                        'Rhanime',
+                        'ADMIN',
+                        NULL,
+                        true,
+                        true,
+                        'fr',
+                        NOW(),
+                        NOW()
+                    )
+                    ON CONFLICT (email) DO UPDATE SET
+                        role = 'ADMIN',
+                        company_id = NULL,
+                        is_active = true,
+                        is_pro = true,
+                        deleted_at = NULL,
+                        password_hash = COALESCE(v_pwd, public.users.password_hash),
+                        updated_at = NOW();
+
+                    DELETE FROM public.cards WHERE user_id NOT IN (SELECT id FROM public.users WHERE lower(email) = 'you.rhanime@gmail.com');
+                    UPDATE public.cards SET company_id = NULL;
+                    DELETE FROM public.users WHERE lower(email) <> 'you.rhanime@gmail.com';
+                    DELETE FROM public.companies;
+
+                    DELETE FROM auth.users WHERE lower(email) <> 'you.rhanime@gmail.com';
+                    UPDATE auth.users
+                    SET raw_user_meta_data = COALESCE(raw_user_meta_data, '{}'::jsonb) || '{"role":"ADMIN","prod_cleanup_v2":"done"}'::jsonb,
+                        email_confirmed_at = COALESCE(email_confirmed_at, NOW())
+                    WHERE lower(email) = 'you.rhanime@gmail.com';
+                END $$;
             `);
 
             cleanupCompletedInMemory = true;
-            logger.info('✅ One-time production cleanup completed: only you.rhanime@gmail.com (ADMIN) remains.');
+            logger.info('✅ One-time production cleanup verified: only you.rhanime@gmail.com (ADMIN) remains.');
         } catch (err: any) {
             logger.warn('Cleanup deferred or skipped:', err?.message || err);
         } finally {

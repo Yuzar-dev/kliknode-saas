@@ -20,6 +20,7 @@ export const apiRateLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
+    validate: false,
 });
 
 /**
@@ -37,6 +38,7 @@ export const loginRateLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
+    validate: false,
 });
 
 /**
@@ -54,4 +56,5 @@ export const signupRateLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
+    validate: false,
 });

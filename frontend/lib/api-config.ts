@@ -1,16 +1,14 @@
-// API Base URL from environment variable (support localhost, 127.0.0.1 and LAN IP in dev, relative URL in prod)
-const getBaseUrl = () => {
-    if (process.env.NEXT_PUBLIC_API_URL) {
-        return process.env.NEXT_PUBLIC_API_URL;
-    }
+// API Base URL (support localhost, 127.0.0.1 and LAN IP in dev, relative URL '' in prod on Vercel)
+export const getBaseUrl = () => {
     if (typeof window !== 'undefined' && window.location.hostname) {
         const host = window.location.hostname;
         if (host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.')) {
-            return `http://${host}:4000`;
+            return process.env.NEXT_PUBLIC_API_URL || `http://${host}:4000`;
         }
+        // En production sur Vercel, le backend Express est servi sur le même domaine via /pages/api/[[...slug]].ts
         return '';
     }
-    return process.env.NODE_ENV === 'production' ? '' : 'http://localhost:4000';
+    return process.env.NODE_ENV === 'production' ? '' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000');
 };
 
 const API_BASE_URL = getBaseUrl();
