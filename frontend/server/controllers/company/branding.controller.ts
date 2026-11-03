@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../../config/database';
 
 /**
  * Récupère les paramètres de branding de l'entreprise
@@ -11,9 +9,18 @@ export const getBranding = async (req: Request, res: Response) => {
         const companyId = req.user?.companyId;
 
         if (!companyId) {
-            res.status(400).json({
-                success: false,
-                error: 'Company ID missing from user context'
+            res.json({
+                success: true,
+                data: {
+                    logoLightUrl: '',
+                    logoDarkUrl: '',
+                    primaryColor: '#2766ec',
+                    fontFamily: 'Inter',
+                    lockPhoto: false,
+                    lockJobTitle: false,
+                    lockSocialLinks: false,
+                    forceLogo: false
+                }
             });
             return;
         }

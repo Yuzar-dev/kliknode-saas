@@ -141,6 +141,10 @@ export const acceptInvitation = async (req: Request, res: Response<ApiResponse>)
 
         // Hasher le nouveau mot de passe
         const passwordHash = await hashPassword(password);
+        const isCompanyAdmin = invitation.company.adminEmail.toLowerCase() === user.email.toLowerCase();
+        const targetRole = String(user.role) === 'ADMIN'
+            ? 'ADMIN'
+            : (isCompanyAdmin ? 'MANAGER' : user.role);
 
         // Mettre à jour l'utilisateur et l'invitation
         const updatedUser = await prisma.$transaction(async (tx) => {
@@ -155,6 +159,8 @@ export const acceptInvitation = async (req: Request, res: Response<ApiResponse>)
                 where: { id: user.id },
                 data: {
                     passwordHash,
+                    companyId: invitation.companyId,
+                    role: targetRole as any,
                     isActive: true,
                     emailVerifiedAt: new Date(),
                     lastLoginAt: new Date()

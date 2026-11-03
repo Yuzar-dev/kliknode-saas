@@ -64,6 +64,17 @@ export default function CompanyLayout({ children }: { children: React.ReactNode 
         router.push('/login');
     };
 
+    useEffect(() => {
+        if (!user) return;
+        if (user.role === 'OPERATOR') {
+            router.replace('/operator');
+        }
+    }, [user, router]);
+
+    if (user?.role === 'OPERATOR') {
+        return null;
+    }
+
     return (
         <div className="min-h-screen flex bg-apple-bgLight dark:bg-black relative">
             

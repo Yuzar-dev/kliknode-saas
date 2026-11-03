@@ -316,6 +316,13 @@ export default function OperatorPage() {
         }
     };
 
+    // Cartes éligibles à l'attribution B2B : d'abord les cartes "Réservée B2B" non encore attribuées à une entreprise, puis les cartes "En stock (Vierge)"
+    const getAssignableB2BCards = () => {
+        const reservedUnassigned = cards.filter(c => c.status === 'reserved' && !c.company && !c.pairedCard);
+        const inStockUnassigned = cards.filter(c => c.status === 'in_stock' && !c.company && !c.pairedCard);
+        return [...reservedUnassigned, ...inStockUnassigned];
+    };
+
     // Quand on choisit une entreprise dans "3. Assignation B2B",
     // on pré-remplit automatiquement le nombre de cartes qu'il reste à lui attribuer (ou ce qu'elle a commandé) !
     const handleSelectCompanyForB2B = (companyId: string) => {
@@ -329,10 +336,10 @@ export default function OperatorPage() {
                     ? comp.orderedCards
                     : 5;
             setAssignQty(defaultCount);
-            // Pré-remplir automatiquement les UIDs depuis le stock disponible
-            const inStockCards = cards.filter(c => c.status === 'in_stock');
-            if (inStockCards.length > 0) {
-                const picked = inStockCards.slice(0, defaultCount).map(c => c.uid);
+            // Pré-remplir automatiquement les UIDs depuis le lot B2B non attribué ou le stock vierge disponible
+            const assignableCards = getAssignableB2BCards();
+            if (assignableCards.length > 0) {
+                const picked = assignableCards.slice(0, defaultCount).map(c => c.uid);
                 setAssignUidsText(picked.join('\n'));
             }
         }
@@ -340,13 +347,13 @@ export default function OperatorPage() {
 
     const autoFillB2BUidsFromStock = (count = assignQty) => {
         const qty = Math.max(1, Number(count) || 1);
-        const inStockCards = cards.filter(c => c.status === 'in_stock');
-        if (inStockCards.length === 0) {
-            return toast.error('Aucune carte vierge (En stock) disponible dans la liste');
+        const assignableCards = getAssignableB2BCards();
+        if (assignableCards.length === 0) {
+            return toast.error('Aucune carte disponible (En stock ou Réservée B2B non attribuée) dans la liste');
         }
-        const picked = inStockCards.slice(0, qty).map(c => c.uid);
+        const picked = assignableCards.slice(0, qty).map(c => c.uid);
         setAssignUidsText(picked.join('\n'));
-        toast.success(`${picked.length} UID(s) vierges sélectionnés depuis le stock`);
+        toast.success(`${picked.length} UID(s) sélectionnés depuis le stock / lot B2B`);
     };
 
     const handleBatchAssign = async () => {
@@ -441,7 +448,7 @@ export default function OperatorPage() {
                     </div>
                     <div className="flex items-center gap-4">
                         <button
-                            onClick={() => router.push('/admin/guides')}
+                            onClick={() => router.push('/operator/guides')}
                             className="px-4 py-2 rounded-full text-xs font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 transition-all flex items-center gap-2 cursor-pointer"
                         >
                             <span className="material-symbols-outlined text-[16px]" translate="no">menu_book</span>

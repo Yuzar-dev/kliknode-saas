@@ -519,12 +519,14 @@ export const assignBatchToCompany = async (req: Request, res: Response<ApiRespon
             : [];
 
         // Si l'opérateur a simplement indiqué un nombre de cartes (ex: 6) sans saisir d'UIDs manuellement,
-        // on pioche automatiquement ce nombre de cartes vierges (`in_stock`) dans le stock !
+        // on pioche d'abord les cartes réservées B2B non encore assignées, puis les cartes vierges (`in_stock`) !
         if (targetUids.length === 0 && Number(quantity) > 0) {
             const qtyToPick = Math.max(1, Number(quantity));
-            const availableCards = await prisma.physicalCard.findMany({
+            const reservedUnassigned = await prisma.physicalCard.findMany({
                 where: {
-                    status: 'in_stock',
+                    status: 'reserved',
+                    companyId: null,
+                    pairedCardId: null,
                     ...(warehouse && warehouse !== 'all' ? { warehouse } : {})
                 },
                 orderBy: { createdAt: 'desc' },
@@ -532,10 +534,27 @@ export const assignBatchToCompany = async (req: Request, res: Response<ApiRespon
                 select: { uid: true }
             });
 
+            const remainingNeeded = qtyToPick - reservedUnassigned.length;
+            const inStockUnassigned = remainingNeeded > 0
+                ? await prisma.physicalCard.findMany({
+                    where: {
+                        status: 'in_stock',
+                        companyId: null,
+                        pairedCardId: null,
+                        ...(warehouse && warehouse !== 'all' ? { warehouse } : {})
+                    },
+                    orderBy: { createdAt: 'desc' },
+                    take: remainingNeeded,
+                    select: { uid: true }
+                })
+                : [];
+
+            const availableCards = [...reservedUnassigned, ...inStockUnassigned];
+
             if (availableCards.length === 0) {
                 return res.status(400).json({
                     success: false,
-                    error: { code: 'NO_STOCK', message: 'Aucune carte vierge disponible en stock' },
+                    error: { code: 'NO_STOCK', message: 'Aucune carte disponible en stock ou en lot B2B non attribué' },
                 });
             }
             targetUids = availableCards.map(c => c.uid);

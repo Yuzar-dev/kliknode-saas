@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { AdminButton } from '@/components/ui/AdminButton';
+import { useAuthStore } from '@/store/auth-store';
 import apiClient from '@/lib/api-client';
 import toast from 'react-hot-toast';
 import { QRCodeSVG } from 'qrcode.react';
@@ -31,6 +32,9 @@ function generateAutoUid(prefix = '04'): string {
 
 export default function AdminGuidesPage() {
     const router = useRouter();
+    const pathname = usePathname();
+    const { user, logout } = useAuthStore();
+    const isOperatorView = pathname?.startsWith('/operator') || (user && user.role !== 'ADMIN');
     const [activeTab, setActiveTab] = useState<GuideTab>('nfc-tools');
 
     // État du générateur interactif NFC Tools (Guide 3)
@@ -142,14 +146,13 @@ export default function AdminGuidesPage() {
         img.src = 'data:image/svg+xml;base64,' + svg64;
     };
 
-    return (
-        <AdminLayout>
+    const guidesContent = (
             <div className="flex flex-col gap-8 animate-in fade-in duration-300">
                 {/* En-tête de la page */}
                 <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
                     <div>
                         <nav className="flex items-center gap-2 text-[10px] font-bold text-apple-secondary uppercase tracking-[0.2em] mb-3">
-                            <span className="opacity-40">Système & Sécurité</span>
+                            <span className="opacity-40">{isOperatorView ? 'Escale Opérateur' : 'Système & Sécurité'}</span>
                             <span className="opacity-20">/</span>
                             <span className="text-apple-textDark dark:text-white">Centre de Documentation & Guides</span>
                         </nav>
@@ -167,17 +170,19 @@ export default function AdminGuidesPage() {
                             variant="primary"
                             className="px-5 py-2.5 rounded-full flex items-center gap-2 text-xs"
                         >
-                            <span className="material-symbols-outlined text-[18px]" translate="no">contactless</span>
-                            Ouvrir Escale Opérateur
+                            <span className="material-symbols-outlined text-[18px]" translate="no">{isOperatorView ? 'arrow_back' : 'contactless'}</span>
+                            {isOperatorView ? 'Retour Escale Opérateur' : 'Ouvrir Escale Opérateur'}
                         </AdminButton>
-                        <AdminButton
-                            onClick={() => router.push('/admin/inventory')}
-                            variant="secondary"
-                            className="px-5 py-2.5 rounded-full flex items-center gap-2 text-xs"
-                        >
-                            <span className="material-symbols-outlined text-[18px]" translate="no">inventory_2</span>
-                            Gestion des Stocks
-                        </AdminButton>
+                        {!isOperatorView && user?.role === 'ADMIN' && (
+                            <AdminButton
+                                onClick={() => router.push('/admin/inventory')}
+                                variant="secondary"
+                                className="px-5 py-2.5 rounded-full flex items-center gap-2 text-xs"
+                            >
+                                <span className="material-symbols-outlined text-[18px]" translate="no">inventory_2</span>
+                                Gestion des Stocks
+                            </AdminButton>
+                        )}
                     </div>
                 </div>
 
@@ -1089,6 +1094,53 @@ export default function AdminGuidesPage() {
                     </div>
                 )}
             </div>
+    );
+
+    if (isOperatorView) {
+        return (
+            <div className="min-h-screen bg-[#F5F5F7] dark:bg-black font-display text-apple-textDark dark:text-white">
+                <header className="sticky top-0 z-30 px-8 h-20 flex items-center justify-between backdrop-blur-3xl bg-white/60 dark:bg-black/40 border-b border-white/60 dark:border-white/5 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center">
+                            <img src="/logo-icon-black.svg" alt="KlikNode" className="h-[32px] w-auto dark:hidden shrink-0" />
+                            <img src="/logo-icon-white.svg" alt="KlikNode" className="h-[32px] w-auto hidden dark:block shrink-0" />
+                        </div>
+                        <div className="flex flex-col justify-center">
+                            <span className="font-black text-[22px] tracking-tight leading-[0.9] text-apple-textDark dark:text-white">KlikNode</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400 mt-1 leading-none">Escale Opérateur · Guides &amp; NFC Tools</span>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => router.push('/operator')}
+                            className="px-4 py-2 rounded-full text-xs font-bold bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-all flex items-center gap-2 cursor-pointer"
+                        >
+                            <span className="material-symbols-outlined text-[16px]" translate="no">arrow_back</span>
+                            Retour Escale Opérateur
+                        </button>
+                        <div className="flex flex-col items-end">
+                            <span className="text-[11px] font-black text-apple-textDark dark:text-white">{user?.firstName} {user?.lastName}</span>
+                            <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Opérateur Stock</span>
+                        </div>
+                        <button
+                            onClick={() => { logout(); router.push('/login'); }}
+                            title="Déconnexion"
+                            className="w-10 h-10 rounded-full flex items-center justify-center text-apple-secondary hover:text-red-500 bg-white/40 dark:bg-white/5 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all active:scale-95 cursor-pointer"
+                        >
+                            <span className="material-symbols-outlined text-[20px] font-light" translate="no">logout</span>
+                        </button>
+                    </div>
+                </header>
+                <div className="max-w-7xl mx-auto p-8">
+                    {guidesContent}
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <AdminLayout>
+            {guidesContent}
         </AdminLayout>
     );
 }

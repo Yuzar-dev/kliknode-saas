@@ -70,6 +70,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         router.push('/login');
     };
 
+    // Sécurité RBAC stricte : empêcher tout compte non-ADMIN (ex: OPERATOR, MANAGER, USER) d'accéder à l'interface Super Admin
+    useEffect(() => {
+        if (!user) return;
+        if (user.role !== 'ADMIN') {
+            if (user.role === 'OPERATOR') {
+                router.replace(pathname === '/admin/guides' ? '/operator/guides' : '/operator');
+            } else if (user.role === 'MANAGER') {
+                router.replace('/company');
+            } else {
+                router.replace('/user');
+            }
+        }
+    }, [user, pathname, router]);
+
+    if (user && user.role !== 'ADMIN') {
+        return null;
+    }
+
     return (
         <div className="min-h-screen flex bg-apple-bgLight dark:bg-black relative">
             <Toaster position="top-right" />

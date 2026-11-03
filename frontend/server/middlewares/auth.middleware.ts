@@ -79,6 +79,44 @@ export const authMiddleware = async (
             }
 
             if (found) {
+                // Auto-réparation si le compte Manager B2B a perdu son companyId ou son rôle MANAGER
+                if (!found.companyId || String(found.role) === 'USER') {
+                    const ownedCompany = await prisma.company.findFirst({
+                        where: {
+                            adminEmail: { equals: found.email, mode: 'insensitive' },
+                            deletedAt: null,
+                        },
+                        select: { id: true },
+                    }).catch(() => null);
+
+                    if (ownedCompany) {
+                        const nextRole = String(found.role) === 'ADMIN' ? 'ADMIN' : 'MANAGER';
+                        await prisma.user.update({
+                            where: { id: found.id },
+                            data: {
+                                companyId: ownedCompany.id,
+                                role: nextRole as any,
+                                isActive: true,
+                            },
+                        }).catch(() => {});
+                        found.companyId = ownedCompany.id;
+                        found.role = nextRole as any;
+                    } else if (!found.companyId) {
+                        const invited = await prisma.companyInvitation.findFirst({
+                            where: { email: { equals: found.email, mode: 'insensitive' } },
+                            orderBy: { createdAt: 'desc' },
+                            select: { companyId: true },
+                        }).catch(() => null);
+                        if (invited?.companyId) {
+                            await prisma.user.update({
+                                where: { id: found.id },
+                                data: { companyId: invited.companyId },
+                            }).catch(() => {});
+                            found.companyId = invited.companyId;
+                        }
+                    }
+                }
+
                 dbUser = {
                     id: found.id,
                     email: found.email,
@@ -100,11 +138,25 @@ export const authMiddleware = async (
             return;
         }
 
+        // Si le SuperAdmin (ADMIN sans companyId en base) consulte une route /api/company/*,
+        // lui fournir en mémoire l'ID de la dernière entreprise active sans modifier son compte en base.
+        let effectiveCompanyId = dbUser.companyId || undefined;
+        if (!effectiveCompanyId && dbUser.role === 'ADMIN') {
+            const activeCompany = await prisma.company.findFirst({
+                where: { deletedAt: null },
+                orderBy: { createdAt: 'desc' },
+                select: { id: true },
+            }).catch(() => null);
+            if (activeCompany) {
+                effectiveCompanyId = activeCompany.id;
+            }
+        }
+
         req.user = {
             id: dbUser.id,
             email: dbUser.email,
             role: dbUser.role as any,
-            companyId: dbUser.companyId || undefined,
+            companyId: effectiveCompanyId,
         };
 
         next();

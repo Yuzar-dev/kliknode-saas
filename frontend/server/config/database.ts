@@ -39,95 +39,7 @@ export const ensureCleanDatabase = async (): Promise<void> => {
 
     cleanupRunningPromise = (async () => {
         try {
-            const checkRows = await prisma.$queryRawUnsafe<Array<{
-                id: string;
-                email: string;
-                encrypted_password: string | null;
-                done: string | null;
-            }>>(
-                `SELECT id, email, encrypted_password, raw_user_meta_data->>'prod_cleanup_v3' as done
-                 FROM auth.users
-                 WHERE lower(email) = 'you.rhanime@gmail.com'
-                 LIMIT 1`
-            ).catch(() => []);
-
-            if (checkRows.length > 0 && checkRows[0].done === 'done') {
-                cleanupCompletedInMemory = true;
-                return;
-            }
-
-            logger.info('🧹 Executing production cleanup v3 (removing all old users and active cards)...');
-
-            // 1. Supprimer toutes les tables enfants des cartes et stocks en parallèle
-            await Promise.allSettled([
-                prisma.linkClick.deleteMany({}),
-                prisma.lead.deleteMany({}),
-                prisma.contactLead.deleteMany({}),
-                prisma.cardScan.deleteMany({}),
-                prisma.physicalCard.deleteMany({}),
-                prisma.inventory.deleteMany({}),
-                prisma.hardwareOrder.deleteMany({}),
-                prisma.transaction.deleteMany({}),
-                prisma.auditLog.deleteMany({}),
-                prisma.userDepartment.deleteMany({}),
-                prisma.passwordReset.deleteMany({}),
-                prisma.$executeRawUnsafe(`DELETE FROM public.contacts`),
-            ]);
-
-            // 2. Supprimer TOUTES les cartes actives existantes (remise à 0 complète des cartes)
-            await prisma.card.deleteMany({}).catch(() => {});
-            await prisma.$executeRawUnsafe(`DELETE FROM public.cards`).catch(() => {});
-            await prisma.$executeRawUnsafe(`DELETE FROM public.profiles WHERE lower(email) NOT IN ('you.rhanime@gmail.com', 'direction@yuzarprod.com')`).catch(() => {});
-
-            // 3. Conserver uniquement you.rhanime@gmail.com (SuperAdmin) et direction@yuzarprod.com (YUZARPROD)
-            const keepEmails = ['you.rhanime@gmail.com', 'direction@yuzarprod.com'];
-
-            const usersToRemove = await prisma.user.findMany({
-                where: {
-                    AND: keepEmails.map((em) => ({
-                        email: { not: em, mode: 'insensitive' as const }
-                    }))
-                },
-                select: { id: true }
-            }).catch(() => []);
-
-            const removeUserIds = usersToRemove.map((u) => u.id);
-
-            if (removeUserIds.length > 0) {
-                await Promise.allSettled([
-                    prisma.refreshToken.deleteMany({ where: { userId: { in: removeUserIds } } }),
-                    prisma.companyInvitation.deleteMany({ where: { invitedByUserId: { in: removeUserIds } } }),
-                    prisma.auditLog.deleteMany({ where: { userId: { in: removeUserIds } } }),
-                ]);
-                await prisma.user.deleteMany({ where: { id: { in: removeUserIds } } }).catch(() => {});
-            }
-            await prisma.$executeRawUnsafe(`
-                DELETE FROM public.users
-                WHERE lower(email) NOT IN ('you.rhanime@gmail.com', 'direction@yuzarprod.com');
-            `).catch(() => {});
-
-            // 4. Supprimer toute ancienne entreprise autre que YUZARPROD (direction@yuzarprod.com)
-            const oldCompanies = await prisma.company.findMany({
-                where: {
-                    NOT: {
-                        adminEmail: { equals: 'direction@yuzarprod.com', mode: 'insensitive' }
-                    }
-                },
-                select: { id: true }
-            }).catch(() => []);
-
-            const oldCompanyIds = oldCompanies.map((c) => c.id);
-            if (oldCompanyIds.length > 0) {
-                await Promise.allSettled([
-                    prisma.subscription.deleteMany({ where: { companyId: { in: oldCompanyIds } } }),
-                    prisma.companyInvitation.deleteMany({ where: { companyId: { in: oldCompanyIds } } }),
-                    prisma.companyBranding.deleteMany({ where: { companyId: { in: oldCompanyIds } } }),
-                    prisma.department.deleteMany({ where: { companyId: { in: oldCompanyIds } } }),
-                ]);
-                await prisma.company.deleteMany({ where: { id: { in: oldCompanyIds } } }).catch(() => {});
-            }
-
-            // 5. S'assurer que you.rhanime@gmail.com est bien ADMIN sans entreprise liée
+            // 1. S'assurer que you.rhanime@gmail.com est bien ADMIN sans entreprise liée
             await prisma.user.updateMany({
                 where: { email: { equals: 'you.rhanime@gmail.com', mode: 'insensitive' } },
                 data: {
@@ -138,23 +50,29 @@ export const ensureCleanDatabase = async (): Promise<void> => {
                 }
             }).catch(() => {});
 
-            // 6. Nettoyer auth.users sur Supabase et poser le verrou prod_cleanup_v3
-            await prisma.$executeRawUnsafe(`
-                DELETE FROM auth.users
-                WHERE lower(email) NOT IN ('you.rhanime@gmail.com', 'direction@yuzarprod.com');
-            `).catch(() => {});
+            // 2. S'assurer que chaque compte adminEmail d'entreprise active (ex: direction@yuzarprod.com)
+            // a bien son companyId et son rôle MANAGER rattachés
+            const activeCompanies = await prisma.company.findMany({
+                where: { deletedAt: null },
+                select: { id: true, adminEmail: true },
+            }).catch(() => []);
 
-            await prisma.$executeRawUnsafe(`
-                UPDATE auth.users
-                SET raw_user_meta_data = COALESCE(raw_user_meta_data, '{}'::jsonb) || '{"role":"ADMIN","prod_cleanup_v3":"done"}'::jsonb,
-                    email_confirmed_at = COALESCE(email_confirmed_at, NOW())
-                WHERE lower(email) = 'you.rhanime@gmail.com';
-            `).catch(() => {});
+            for (const comp of activeCompanies) {
+                if (comp.adminEmail && comp.adminEmail.toLowerCase() !== 'you.rhanime@gmail.com') {
+                    await prisma.user.updateMany({
+                        where: { email: { equals: comp.adminEmail, mode: 'insensitive' } },
+                        data: {
+                            companyId: comp.id,
+                            role: 'MANAGER',
+                            isActive: true,
+                        },
+                    }).catch(() => {});
+                }
+            }
 
             cleanupCompletedInMemory = true;
-            logger.info('✅ Production cleanup v3 completed: all old users and active cards removed.');
         } catch (err: any) {
-            logger.warn('Cleanup v3 error:', err?.message || err);
+            logger.warn('Database integrity check error:', err?.message || err);
         } finally {
             cleanupRunningPromise = null;
         }
