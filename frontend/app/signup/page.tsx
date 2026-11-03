@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthStore } from '@/store/auth-store';
 import { createClient } from '@/utils/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import toast from 'react-hot-toast';
 
 // Validation schema
@@ -42,42 +43,52 @@ function SignupContent() {
         resolver: zodResolver(signupSchema),
     });
 
+    const login = useAuthStore(state => state.login);
+
     const onSubmit = async (data: SignupFormData) => {
         setIsLoading(true);
         try {
-            const supabase = createClient();
-            const { data: authData, error: authError } = await supabase.auth.signUp({
+            const response = await apiClient.post('/api/auth/register', {
+                firstName: data.firstName,
+                lastName: data.lastName,
                 email: data.email,
                 password: data.password,
-                options: {
-                    data: {
-                        first_name: data.firstName,
-                        last_name: data.lastName,
-                        card_id: cardId,
-                    }
-                }
+                cardUid: cardId || undefined,
             });
 
-            if (authError) throw authError;
-            if (!authData.user) throw new Error("Erreur de création d'utilisateur");
+            if (response.data.success) {
+                const { user: userData, tokens } = response.data.data;
 
-            const userId = authData.user.id;
-            if (cardId) {
-                await supabase.from('cards').update({
-                    status: 'ACTIVE',
-                    assigned_user_id: userId
-                }).eq('uid', cardId).eq('status', 'UNASSIGNED');
-            }
+                login({
+                    id: userData.id,
+                    email: userData.email || '',
+                    firstName: userData.firstName || null,
+                    lastName: userData.lastName || null,
+                    role: userData.role || 'USER',
+                    companyId: userData.companyId || null,
+                    avatarUrl: null,
+                    isActive: true,
+                    isPro: false,
+                }, {
+                    accessToken: tokens.accessToken,
+                    refreshToken: tokens.refreshToken,
+                });
 
-            if (!authData.session) {
-                toast.success("Compte créé ! Veuillez confirmer votre email.");
-                router.push('/login');
-            } else {
+                try {
+                    const supabase = createClient();
+                    await supabase.auth.signInWithPassword({
+                        email: data.email,
+                        password: data.password,
+                    });
+                } catch {
+                    // Non bloquant
+                }
+
                 toast.success(`Bienvenue ${data.firstName} !`);
                 router.push('/user/card');
             }
         } catch (error: any) {
-            toast.error(error.message || 'Erreur lors de la création du compte.');
+            toast.error(error.response?.data?.error?.message || error.message || 'Erreur lors de la création du compte.');
         } finally {
             setIsLoading(false);
         }

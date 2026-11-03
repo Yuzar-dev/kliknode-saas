@@ -70,38 +70,7 @@ export default function JoinCompanyPage() {
     setIsAccepting(true);
 
     try {
-      // 1. Authenticate / Create user in Supabase Auth first
-      // This ensures the middleware recognizes the session
-      if (invitationData) {
-        const supabase = createClient();
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: invitationData.user.email,
-          password: password,
-          options: {
-            data: {
-              first_name: invitationData.user.firstName,
-              last_name: invitationData.user.lastName,
-            }
-          }
-        });
-
-        // If the user already exists in Supabase Auth, signUp might throw an error or return without a session.
-        // For now, we proceed as long as it didn't throw a catastrophic error.
-        if (authError && !authError.message.includes('already registered')) {
-          throw authError;
-        }
-
-        // If user is already registered, try to sign in
-        if (authError && authError.message.includes('already registered')) {
-            const { error: signInError } = await supabase.auth.signInWithPassword({
-                email: invitationData.user.email,
-                password: password,
-            });
-            if (signInError) throw new Error("Compte existant : Mot de passe incorrect.");
-        }
-      }
-
-      // 2. Call backend to update password_hash and activate user
+      // 1. Activer le compte et définir le mot de passe via notre API Backend (qui synchronise aussi Supabase Auth)
       const response = await apiClient.post(`/api/invitations/accept/${token}`, {
         password
       });
@@ -109,25 +78,49 @@ export default function JoinCompanyPage() {
       if (response.data.success) {
         const { user, tokens } = response.data.data;
 
-        // Update auth store
-        login(user, tokens);
+        // 2. Synchroniser la session Supabase côté navigateur en tâche de fond (non bloquant)
+        if (invitationData?.user?.email) {
+          try {
+            const supabase = createClient();
+            await supabase.auth.signInWithPassword({
+              email: invitationData.user.email,
+              password,
+            });
+          } catch {
+            // Non bloquant : l'authentification principale utilise le JWT Kliknode
+          }
+        }
+
+        // 3. Mettre à jour le store Zustand + localStorage
+        login({
+          id: user.id,
+          email: user.email || '',
+          firstName: user.firstName || null,
+          lastName: user.lastName || null,
+          role: user.role || 'MANAGER',
+          companyId: user.companyId || null,
+          avatarUrl: null,
+          isActive: true,
+          isPro: true,
+        }, {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+        });
 
         toast.success(`Bienvenue chez ${invitationData?.company.name} !`);
 
-        // Redirect based on role
-        setTimeout(() => {
-          if (user.role === 'MANAGER') {
-            router.push('/company')
-          } else if (user.role === 'EMPLOYEE') {
-            router.push('/user');
-          } else {
-            router.push('/');
-          }
-        }, 1500);
+        // 4. Redirection immédiate selon le rôle
+        if (user.role === 'MANAGER') {
+          router.push('/company');
+        } else if (user.role === 'EMPLOYEE' || user.role === 'USER') {
+          router.push('/user');
+        } else {
+          router.push('/');
+        }
       }
     } catch (err: any) {
       console.error('Accept invitation error:', err);
-      const errorMessage = err.response?.data?.error?.message || 'Erreur lors de l\'acceptation de l\'invitation';
+      const errorMessage = err.response?.data?.error?.message || err.message || 'Erreur lors de l\'acceptation de l\'invitation';
       toast.error(errorMessage);
     } finally {
       setIsAccepting(false);

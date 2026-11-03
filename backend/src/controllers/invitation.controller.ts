@@ -48,8 +48,8 @@ export const verifyInvitation = async (req: Request, res: Response<ApiResponse>)
             });
         }
 
-        const user = await prisma.user.findUnique({
-            where: { email: invitation.email }
+        const user = await prisma.user.findFirst({
+            where: { email: { equals: invitation.email, mode: 'insensitive' } }
         });
 
         if (!user) {
@@ -115,7 +115,7 @@ export const acceptInvitation = async (req: Request, res: Response<ApiResponse>)
             include: { company: true }
         });
 
-        if (!invitation || invitation.acceptedAt || invitation.expiresAt < new Date()) {
+        if (!invitation || invitation.expiresAt < new Date()) {
             return res.status(400).json({
                 success: false,
                 error: {
@@ -125,8 +125,8 @@ export const acceptInvitation = async (req: Request, res: Response<ApiResponse>)
             });
         }
 
-        const user = await prisma.user.findUnique({
-            where: { email: invitation.email }
+        const user = await prisma.user.findFirst({
+            where: { email: { equals: invitation.email, mode: 'insensitive' } }
         });
 
         if (!user) {
@@ -188,7 +188,7 @@ export const acceptInvitation = async (req: Request, res: Response<ApiResponse>)
                 token: tokens.refreshToken,
                 expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 jours
             },
-        });
+        }).catch(() => {});
 
         logger.info(`User ${updatedUser.email} activated account and logged in via invitation`);
 
