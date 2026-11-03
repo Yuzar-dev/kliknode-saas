@@ -202,7 +202,7 @@ export default function LinksPage() {
     );
 
     return (
-        <div className="flex flex-col xl:flex-row gap-10 items-start min-h-screen selection:bg-slate-200 px-4 md:px-0">
+        <div className="flex flex-col xl:flex-row gap-8 xl:gap-10 items-start min-h-screen selection:bg-slate-200 w-full max-w-full min-w-0">
             {/* ─── Left: Links manager ─── */}
             <div className="flex-1 min-w-0 pb-20 relative z-10 w-full">
                 <div className="mb-10">

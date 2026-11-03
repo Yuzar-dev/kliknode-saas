@@ -91,6 +91,7 @@ export const getAdminCompanies = async (req: Request, res: Response<ApiResponse>
  */
 export const getAdminCompanyDetail = async (req: Request, res: Response<ApiResponse>) => {
     try {
+        await ensureCleanDatabase();
         const id = String(req.params.id);
 
         const company = await prisma.company.findUnique({
@@ -634,6 +635,67 @@ export const deleteAdminCompany = async (req: Request, res: Response<ApiResponse
             error: {
                 code: 'INTERNAL_ERROR',
                 message: 'Erreur lors de la suppression de l\'entreprise'
+            }
+        });
+    }
+};
+
+/**
+ * PATCH /api/admin/companies/:id
+ * Modifier les informations d'une entreprise (nom, email, téléphone, SIRET/ICE, adresse, ville, pays)
+ */
+export const updateAdminCompany = async (req: Request, res: Response<ApiResponse>) => {
+    try {
+        const id = String(req.params.id);
+        const { name, adminEmail, phone, siret, ice, address, postalCode, city, country } = req.body;
+
+        const existing = await prisma.company.findUnique({ where: { id } });
+        if (!existing) {
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Entreprise introuvable' }
+            });
+        }
+
+        const updatedName = name ? String(name).trim() : existing.name;
+
+        const updatedCompany = await prisma.company.update({
+            where: { id },
+            data: {
+                ...(updatedName ? { name: updatedName } : {}),
+                ...(adminEmail !== undefined ? { adminEmail: String(adminEmail).trim() } : {}),
+                ...(phone !== undefined ? { phone: phone || null } : {}),
+                ...(siret !== undefined ? { siret: siret || null } : {}),
+                ...(ice !== undefined ? { ice: ice || null } : {}),
+                ...(address !== undefined ? { address: address || null } : {}),
+                ...(postalCode !== undefined ? { postalCode: postalCode || null } : {}),
+                ...(city !== undefined ? { city: city || null } : {}),
+                ...(country !== undefined ? { country: country as any } : {}),
+            }
+        });
+
+        // Propager immédiatement le nouveau nom d'entreprise à toutes les cartes des collaborateurs
+        if (updatedName && updatedName !== existing.name) {
+            await prisma.card.updateMany({
+                where: { OR: [{ companyId: id }, { companyName: existing.name }] },
+                data: { companyName: updatedName },
+            }).catch(() => {});
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                company: updatedCompany,
+                message: "Profil de l'entreprise mis à jour avec succès."
+            }
+        });
+    } catch (error: any) {
+        logger.error('Update company error:', error);
+        return res.status(500).json({
+            success: false,
+            error: {
+                code: 'INTERNAL_ERROR',
+                message: "Erreur lors de la mise à jour de l'entreprise"
             }
         });
     }

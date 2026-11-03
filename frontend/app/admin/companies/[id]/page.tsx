@@ -13,6 +13,19 @@ export default function CompanyDetail() {
     const [company, setCompany] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('general');
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
+    const [editForm, setEditForm] = useState({
+        name: '',
+        adminEmail: '',
+        phone: '',
+        siret: '',
+        ice: '',
+        address: '',
+        postalCode: '',
+        city: '',
+        country: 'FR',
+    });
     const router = useRouter();
 
     const fetchCompanyData = async () => {
@@ -20,7 +33,19 @@ export default function CompanyDetail() {
         try {
             const response = await apiClient.get(`/api/admin/companies/${id}`);
             if (response.data.success) {
-                setCompany(response.data.data);
+                const c = response.data.data;
+                setCompany(c);
+                setEditForm({
+                    name: c.name || '',
+                    adminEmail: c.adminEmail || '',
+                    phone: c.phone || '',
+                    siret: c.siret || '',
+                    ice: c.ice || '',
+                    address: c.address || '',
+                    postalCode: c.postalCode || '',
+                    city: c.city || '',
+                    country: c.country || 'FR',
+                });
             }
         } catch (error) {
             console.error('Failed to fetch company detail', error);
@@ -28,6 +53,49 @@ export default function CompanyDetail() {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleSaveProfile = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editForm.name.trim()) {
+            toast.error("Le nom de l'entreprise est requis");
+            return;
+        }
+        setIsSavingEdit(true);
+        try {
+            const res = await apiClient.patch(`/api/admin/companies/${id}`, editForm);
+            if (res.data?.success) {
+                toast.success("Profil de l'entreprise mis à jour !");
+                setIsEditModalOpen(false);
+                fetchCompanyData();
+            }
+        } catch (error: any) {
+            toast.error(error.response?.data?.error?.message || "Erreur lors de la mise à jour");
+        } finally {
+            setIsSavingEdit(false);
+        }
+    };
+
+    const handleExportCompanyData = () => {
+        if (!company) return;
+        const headers = ['Prenom', 'Nom', 'Email', 'Role', 'Statut', 'Entreprise'];
+        const rows = (company.users || []).map((u: any) => [
+            `"${u.firstName || ''}"`,
+            `"${u.lastName || ''}"`,
+            `"${u.email || ''}"`,
+            `"${u.role || ''}"`,
+            `"${u.isActive ? 'Actif' : 'Inactif'}"`,
+            `"${company.name || ''}"`,
+        ].join(';'));
+        const csvContent = '\uFEFF' + headers.join(';') + '\n' + rows.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `entreprise_${(company.name || 'export').replace(/\s+/g, '_')}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success('Données exportées en CSV !');
     };
 
     useEffect(() => {
@@ -113,11 +181,11 @@ export default function CompanyDetail() {
                         </div>
                     </div>
                     <div className="flex gap-3">
-                        <AdminButton variant="primary" onClick={() => toast('🚀 Bientôt disponible', { icon: '🚧' })} className="px-6 py-3 rounded-full flex items-center gap-2 shadow-xl shadow-primary/20">
+                        <AdminButton variant="primary" onClick={() => setIsEditModalOpen(true)} className="px-6 py-3 rounded-full flex items-center gap-2 shadow-xl shadow-primary/20">
                             <span className="material-symbols-outlined text-[20px]">edit_note</span>
                             Modifier Profil
                         </AdminButton>
-                        <AdminButton variant="secondary" onClick={() => toast('🚀 Bientôt disponible', { icon: '🚧' })} className="px-6 py-3 rounded-full border border-white/40 dark:border-white/10 flex items-center gap-2">
+                        <AdminButton variant="secondary" onClick={handleExportCompanyData} className="px-6 py-3 rounded-full border border-white/40 dark:border-white/10 flex items-center gap-2">
                             <span className="material-symbols-outlined text-[20px]">download</span>
                             Export Data
                         </AdminButton>
@@ -290,9 +358,9 @@ export default function CompanyDetail() {
                             <h3 className="text-lg font-bold text-apple-textDark dark:text-white mb-6 px-2 tracking-tight">Actions Administrateur</h3>
                             <div className="space-y-2">
                                 {[
-                                    { icon: 'group_add', label: 'Changer le quota', hover: 'hover:text-primary', action: () => toast('🚀 Bientôt disponible', { icon: '🚧' }) },
-                                    { icon: 'card_giftcard', label: 'Offrir 1 mois', hover: 'hover:text-primary', action: () => toast('🚀 Bientôt disponible', { icon: '🚧' }) },
-                                    { icon: 'flash_on', label: 'Forcer paiement', hover: 'hover:text-emerald-500', action: () => toast('🚀 Bientôt disponible', { icon: '🚧' }) }
+                                    { icon: 'edit_note', label: "Modifier le nom / profil", hover: 'hover:text-primary', action: () => setIsEditModalOpen(true) },
+                                    { icon: 'group_add', label: 'Changer le plan / quota', hover: 'hover:text-primary', action: () => router.push('/admin/plans') },
+                                    { icon: 'receipt_long', label: 'Facturation & Paiements', hover: 'hover:text-emerald-500', action: () => router.push('/admin/transactions') }
                                 ].map((action, idx) => (
                                     <button key={idx} onClick={action.action} className={`w-full flex items-center justify-between p-4 rounded-2xl hover:bg-white dark:hover:bg-white/5 transition-all group ${action.hover}`}>
                                         <div className="flex items-center gap-4">
@@ -331,6 +399,162 @@ export default function CompanyDetail() {
                     </div>
                 </div>
             </div>
+
+            {/* Modal Modifier Profil Entreprise */}
+            {isEditModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-[#1E293B] rounded-[32px] w-full max-w-xl shadow-2xl overflow-hidden border border-white/40 dark:border-white/10">
+                        <div className="p-8 border-b border-gray-100 dark:border-white/5 flex justify-between items-center bg-gray-50/50 dark:bg-white/5">
+                            <div>
+                                <h3 className="text-2xl font-bold text-apple-textDark dark:text-white tracking-tight">
+                                    Modifier le profil de l&apos;entreprise
+                                </h3>
+                                <p className="text-xs text-apple-secondary font-medium mt-1">
+                                    Le nouveau nom sera automatiquement propagé sur toutes les cartes collaborateurs.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsEditModalOpen(false)}
+                                className="w-10 h-10 rounded-full hover:bg-gray-200 dark:hover:bg-white/10 flex items-center justify-center text-apple-secondary transition-all"
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <form onSubmit={handleSaveProfile} className="p-8 space-y-5">
+                            <div>
+                                <label className="block text-xs font-bold text-apple-secondary uppercase tracking-widest mb-2">
+                                    Nom commercial / Raison sociale *
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={editForm.name}
+                                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                                    placeholder="Ex: YUZARPROD"
+                                    className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-apple-textDark dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-apple-secondary uppercase tracking-widest mb-2">
+                                        Email Administrateur
+                                    </label>
+                                    <input
+                                        type="email"
+                                        required
+                                        value={editForm.adminEmail}
+                                        onChange={(e) => setEditForm({ ...editForm, adminEmail: e.target.value })}
+                                        className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-medium text-apple-textDark dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-apple-secondary uppercase tracking-widest mb-2">
+                                        Téléphone
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editForm.phone}
+                                        onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                                        placeholder="+33 6 00 00 00 00"
+                                        className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-medium text-apple-textDark dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-apple-secondary uppercase tracking-widest mb-2">
+                                        SIRET (France)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editForm.siret}
+                                        onChange={(e) => setEditForm({ ...editForm, siret: e.target.value })}
+                                        className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-mono text-apple-textDark dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-apple-secondary uppercase tracking-widest mb-2">
+                                        ICE (Maroc)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editForm.ice}
+                                        onChange={(e) => setEditForm({ ...editForm, ice: e.target.value })}
+                                        className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-mono text-apple-textDark dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-apple-secondary uppercase tracking-widest mb-2">
+                                    Adresse
+                                </label>
+                                <input
+                                    type="text"
+                                    value={editForm.address}
+                                    onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                                    className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-medium text-apple-textDark dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                />
+                            </div>
+                            <div className="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-apple-secondary uppercase tracking-widest mb-2">
+                                        Code Postal
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editForm.postalCode}
+                                        onChange={(e) => setEditForm({ ...editForm, postalCode: e.target.value })}
+                                        className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-medium text-apple-textDark dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-apple-secondary uppercase tracking-widest mb-2">
+                                        Ville
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editForm.city}
+                                        onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                                        className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-medium text-apple-textDark dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-apple-secondary uppercase tracking-widest mb-2">
+                                        Pays
+                                    </label>
+                                    <select
+                                        value={editForm.country}
+                                        onChange={(e) => setEditForm({ ...editForm, country: e.target.value })}
+                                        className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-apple-textDark dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                    >
+                                        <option value="FR">France (FR)</option>
+                                        <option value="MA">Maroc (MA)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-white/5">
+                                <AdminButton
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={() => setIsEditModalOpen(false)}
+                                    className="px-6 py-3 rounded-xl border border-gray-200 dark:border-white/10"
+                                >
+                                    Annuler
+                                </AdminButton>
+                                <AdminButton
+                                    type="submit"
+                                    variant="primary"
+                                    disabled={isSavingEdit}
+                                    className="px-8 py-3 rounded-xl shadow-lg shadow-primary/30 font-bold uppercase tracking-widest text-xs"
+                                >
+                                    {isSavingEdit ? 'Enregistrement...' : 'Enregistrer'}
+                                </AdminButton>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </AdminLayout>
     );
 }

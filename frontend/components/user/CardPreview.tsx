@@ -110,7 +110,8 @@ export default function CardPreview({
 }: CardPreviewProps) {
     const socialLinksToDisplay = socialLinks.filter(l => l.isActive !== false);
     const activeCompanyLogo = companyLogoDarkUrl || companyLogoLightUrl;
-    const hasCorporateBanner = Boolean(activeCompanyLogo || forceLogo || companyName);
+    const displayCompanyName = companyName?.match(/^[^()]+\(([^()]+)\)\s*$/)?.[1]?.trim() || companyName;
+    const hasCorporateBanner = Boolean(activeCompanyLogo || forceLogo || displayCompanyName);
 
     return (
         <div
@@ -182,12 +183,12 @@ export default function CardPreview({
                             {activeCompanyLogo ? (
                                 <img
                                     src={activeCompanyLogo}
-                                    alt={companyName || 'Logo Entreprise'}
+                                    alt={displayCompanyName || 'Logo Entreprise'}
                                     className="h-8 max-w-[140px] object-contain drop-shadow-sm"
                                 />
                             ) : (
                                 <span className="text-white font-black text-xs uppercase tracking-[0.2em] opacity-90">
-                                    {companyName || 'KLIKNODE'}
+                                    {displayCompanyName || 'KLIKNODE'}
                                 </span>
                             )}
                             <div className="w-8 h-8 flex items-center justify-center text-white/80">
@@ -232,7 +233,7 @@ export default function CardPreview({
                     <div className="mt-6 text-center space-y-1.5">
                         <h1 className="text-2xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-white">{firstName} {lastName}</h1>
                         <p className="text-[#86868B] dark:text-gray-400 font-bold text-xs uppercase tracking-widest">
-                            {jobTitle || 'Collaborateur'}{companyName ? ` @ ${companyName}` : ''}
+                            {jobTitle || 'Collaborateur'}{displayCompanyName ? ` @ ${displayCompanyName}` : ''}
                         </p>
 
                         {(city || country) && (

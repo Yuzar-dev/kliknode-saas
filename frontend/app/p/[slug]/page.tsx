@@ -292,7 +292,8 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
     }
 
     const activeCompanyLogo = card.companyBranding?.logoDarkUrl || card.companyBranding?.logoLightUrl || card.user?.company?.branding?.logoDarkUrl || card.user?.company?.branding?.logoLightUrl;
-    const hasCorporateBanner = Boolean(activeCompanyLogo || card.companyBranding?.forceLogo || card.companyName);
+    const displayCompanyName = card.companyName?.match(/^[^()]+\(([^()]+)\)\s*$/)?.[1]?.trim() || card.companyName;
+    const hasCorporateBanner = Boolean(activeCompanyLogo || card.companyBranding?.forceLogo || displayCompanyName);
     const activeFontFamily = card.companyBranding?.fontFamily || card.user?.company?.branding?.fontFamily;
 
     return (
@@ -431,7 +432,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
                     <div className="mt-6 text-center space-y-2">
                         <h1 className="text-3xl font-extrabold tracking-tight text-apple-textDark dark:text-white">{card.firstName} {card.lastName}</h1>
                         <p className="text-apple-secondary dark:text-gray-400 font-bold text-xs uppercase tracking-widest">
-                            {card.jobTitle || 'Collaborateur'}{card.companyName ? ` @ ${card.companyName}` : ''}
+                            {card.jobTitle || 'Collaborateur'}{displayCompanyName ? ` @ ${displayCompanyName}` : ''}
                         </p>
 
                         {(card.city || card.country) && (

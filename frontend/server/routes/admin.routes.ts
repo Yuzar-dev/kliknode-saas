@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getAdminStats } from '../controllers/admin/dashboard.controller';
-import { getAdminCompanies, getAdminCompanyDetail, createAdminCompany, impersonateCompanyAdmin, toggleCompanyStatus, resendCompanyInvitation, deleteAdminCompany } from '../controllers/admin/company.controller';
+import { getAdminCompanies, getAdminCompanyDetail, createAdminCompany, updateAdminCompany, impersonateCompanyAdmin, toggleCompanyStatus, resendCompanyInvitation, deleteAdminCompany } from '../controllers/admin/company.controller';
 import { getAdminOperators, getAdminOperatorStats, createAdminOperator, revokeAdminOperator } from '../controllers/admin/operator.controller';
 import { getAdminInventory, getAdminInventoryStats, adjustStock, transferStock, deleteInventoryItem, resetAllInventory } from '../controllers/admin/inventory.controller';
 import { getAdminHardwareOrders, getAdminHardwareOrderStats, createAdminHardwareOrder, updateAdminHardwareOrder, deleteAdminHardwareOrder } from '../controllers/admin/hardware-order.controller';
@@ -26,6 +26,7 @@ router.get('/stats', getAdminStats);
 router.get('/companies', getAdminCompanies);
 router.post('/companies', createAdminCompany);
 router.get('/companies/:id', getAdminCompanyDetail);
+router.patch('/companies/:id', updateAdminCompany);
 router.post('/companies/:id/impersonate', impersonateCompanyAdmin);
 router.patch('/companies/:id/status', toggleCompanyStatus);
 router.post('/companies/:id/resend-invitation', resendCompanyInvitation);

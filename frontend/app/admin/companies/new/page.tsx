@@ -65,9 +65,17 @@ export default function NewCompanyOnboarding() {
                 const data = await res.json();
                 if (data.results && data.results.length > 0) {
                     const company = data.results[0];
+                    const rawComplet = company.nom_complet || '';
+                    const parenBrand = rawComplet.match(/^[^()]+\(([^()]+)\)\s*$/)?.[1]?.trim();
+                    const tradeName =
+                        company.siege?.nom_commercial ||
+                        company.siege?.liste_enseignes?.[0] ||
+                        parenBrand ||
+                        company.nom_raison_sociale ||
+                        rawComplet;
                     setFormData(prev => ({
                         ...prev,
-                        name: company.nom_complet || prev.name,
+                        name: tradeName || prev.name,
                         address: company.siege?.adresse || prev.address,
                         postalCode: company.siege?.code_postal || prev.postalCode,
                         city: company.siege?.libelle_commune || prev.city,

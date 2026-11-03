@@ -200,6 +200,390 @@ export default function HardwareOrdersPage() {
         }
     };
 
+    const formatCompanyName = (rawName?: string) => {
+        if (!rawName) return 'Entreprise';
+        const match = rawName.match(/^[^()]+\(([^()]+)\)\s*$/);
+        return match ? match[1].trim() : rawName;
+    };
+
+    const handlePrintDeliveryNote = (order: HardwareOrder) => {
+        const clientName = formatCompanyName(order.company?.name);
+        const warehouseName = order.warehouse === 'paris' ? 'Hub Logistique Paris Sud (France)' : 'Hub Logistique Oujda Port (Maroc)';
+        const orderDate = new Date(order.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+        const printDate = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+        const statusLabel = getStatusLabel(order.status).toUpperCase();
+
+        const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <title>Bon de Livraison #BL-${order.orderNumber} - ${clientName}</title>
+    <style>
+        @page { size: A4 portrait; margin: 14mm; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #0F172A;
+            background: #FFFFFF;
+            line-height: 1.5;
+            font-size: 13px;
+            padding: 10px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #0F172A;
+            padding-bottom: 20px;
+            margin-bottom: 28px;
+        }
+        .brand {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .brand-logo {
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            color: #0F172A;
+        }
+        .brand-sub {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.22em;
+            color: #64748B;
+        }
+        .doc-box {
+            text-align: right;
+        }
+        .doc-title {
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            color: #0F172A;
+            text-transform: uppercase;
+        }
+        .doc-ref {
+            font-size: 13px;
+            font-weight: 700;
+            color: #2563EB;
+            margin-top: 2px;
+        }
+        .doc-meta {
+            font-size: 11px;
+            color: #475569;
+            margin-top: 4px;
+        }
+        .badge {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            background: #F1F5F9;
+            color: #0F172A;
+            border: 1px solid #CBD5E1;
+        }
+        .parties {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 28px;
+        }
+        .party-card {
+            border: 1px solid #E2E8F0;
+            border-radius: 16px;
+            padding: 18px 20px;
+            background: #F8FAFC;
+        }
+        .party-card.client {
+            background: #FFFFFF;
+            border: 2px solid #0F172A;
+        }
+        .party-label {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: #64748B;
+            margin-bottom: 8px;
+        }
+        .party-name {
+            font-size: 16px;
+            font-weight: 900;
+            color: #0F172A;
+            margin-bottom: 6px;
+        }
+        .party-line {
+            font-size: 12px;
+            color: #334155;
+            margin-bottom: 3px;
+        }
+        .meta-strip {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+            background: #0F172A;
+            color: #FFFFFF;
+            padding: 14px 18px;
+            border-radius: 14px;
+        }
+        .meta-item-label {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: #94A3B8;
+        }
+        .meta-item-val {
+            font-size: 12px;
+            font-weight: 800;
+            color: #FFFFFF;
+            margin-top: 2px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 28px;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        th {
+            background: #F1F5F9;
+            color: #334155;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1px solid #E2E8F0;
+        }
+        td {
+            padding: 16px 14px;
+            border-bottom: 1px solid #E2E8F0;
+            vertical-align: top;
+            font-size: 12.5px;
+        }
+        .item-title {
+            font-weight: 800;
+            color: #0F172A;
+            font-size: 13.5px;
+            margin-bottom: 4px;
+        }
+        .item-desc {
+            font-size: 11px;
+            color: #64748B;
+        }
+        .qty-box {
+            font-weight: 900;
+            font-size: 15px;
+            text-align: center;
+            color: #0F172A;
+        }
+        .instructions {
+            border: 1px dashed #CBD5E1;
+            border-radius: 14px;
+            padding: 16px 20px;
+            margin-bottom: 32px;
+            background: #F8FAFC;
+        }
+        .instructions-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: #0F172A;
+            margin-bottom: 8px;
+        }
+        .instructions-list {
+            font-size: 11.5px;
+            color: #334155;
+            padding-left: 18px;
+        }
+        .instructions-list li {
+            margin-bottom: 4px;
+        }
+        .signatures {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 20px;
+        }
+        .sig-box {
+            border: 1px solid #CBD5E1;
+            border-radius: 14px;
+            padding: 16px;
+            min-height: 130px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .sig-title {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: #475569;
+        }
+        .stamp {
+            margin-top: 14px;
+            display: inline-block;
+            border: 2px solid #10B981;
+            color: #059669;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            width: fit-content;
+        }
+        .sig-footer {
+            font-size: 10px;
+            color: #94A3B8;
+        }
+        .footer {
+            margin-top: 36px;
+            padding-top: 14px;
+            border-top: 1px solid #E2E8F0;
+            text-align: center;
+            font-size: 10px;
+            color: #64748B;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="brand">
+            <div class="brand-logo">kliknode</div>
+            <div class="brand-sub">Hardware &amp; B2B Logistics Division</div>
+        </div>
+        <div class="doc-box">
+            <div class="doc-title">Bon de Livraison</div>
+            <div class="doc-ref">Réf : BL-${order.orderNumber}</div>
+            <div class="doc-meta">Date d'émission : ${printDate}</div>
+            <div class="badge">Statut : ${statusLabel}</div>
+        </div>
+    </div>
+
+    <div class="parties">
+        <div class="party-card">
+            <div class="party-label">Expéditeur / Centre Logistique</div>
+            <div class="party-name">KLIKNODE</div>
+            <div class="party-line"><strong>Entrepôt :</strong> ${warehouseName}</div>
+            <div class="party-line"><strong>Service :</strong> Production &amp; Encodage NFC B2B</div>
+            <div class="party-line"><strong>Contact :</strong> support@kliknode.com</div>
+            <div class="party-line"><strong>Plateforme :</strong> https://app.kliknode.com</div>
+        </div>
+
+        <div class="party-card client">
+            <div class="party-label">Destinataire (Client B2B)</div>
+            <div class="party-name">${clientName}</div>
+            <div class="party-line"><strong>Contact Admin :</strong> ${order.company?.adminEmail || '-'}</div>
+            <div class="party-line"><strong>Adresse de livraison :</strong> ${order.shippingAddress || 'Adresse enregistrée sur le compte client'}</div>
+            <div class="party-line"><strong>N° de suivi :</strong> ${order.trackingNumber || 'Remise directe / Suivi standard'}</div>
+        </div>
+    </div>
+
+    <div class="meta-strip">
+        <div>
+            <div class="meta-item-label">N° de Commande</div>
+            <div class="meta-item-val">#${order.orderNumber}</div>
+        </div>
+        <div>
+            <div class="meta-item-label">Date de Commande</div>
+            <div class="meta-item-val">${orderDate}</div>
+        </div>
+        <div>
+            <div class="meta-item-label">Entrepôt Source</div>
+            <div class="meta-item-val">${order.warehouse === 'paris' ? 'Paris Sud (FR)' : 'Oujda Port (MA)'}</div>
+        </div>
+        <div>
+            <div class="meta-item-label">Total Unités NFC</div>
+            <div class="meta-item-val">${order.quantity} Carte(s)</div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 16%;">Réf.</th>
+                <th style="width: 48%;">Désignation du Matériel</th>
+                <th style="width: 16%;">Contrôle NFC</th>
+                <th style="width: 10%; text-align: center;">Qté Cmd</th>
+                <th style="width: 10%; text-align: center;">Qté Livrée</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="font-family: monospace; font-weight: 700;">KN-NFC-B2B</td>
+                <td>
+                    <div class="item-title">Carte NFC Physique KlikNode Premium</div>
+                    <div class="item-desc">
+                        Puce haute fréquence NTAG213/215/216 (ISO 14443-A) pré-encodée et rattachée à l'espace entreprise <strong>${clientName}</strong>. Compatible iOS (iPhone) &amp; Android sans application.
+                    </div>
+                </td>
+                <td style="font-weight: 700; color: #059669;">Testée &amp; Validée ✓</td>
+                <td class="qty-box">${order.quantity}</td>
+                <td class="qty-box">${order.quantity}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="instructions">
+        <div class="instructions-title">Instructions de déploiement &amp; d'activation B2B</div>
+        <ol class="instructions-list">
+            <li>Connectez-vous à votre espace entreprise sur <strong>https://app.kliknode.com</strong> avec votre compte administrateur (<strong>${order.company?.adminEmail || ''}</strong>).</li>
+            <li>Configurez votre charte graphique dans <strong>Identité Visuelle</strong> et vos règles de gouvernance dans <strong>Master Lock</strong>.</li>
+            <li>Ajoutez vos collaborateurs dans l'onglet <strong>Annuaire</strong> : chaque carte NFC physique livrée s'associe automatiquement au profil du collaborateur lors du premier scan ou de sa connexion.</li>
+        </ol>
+    </div>
+
+    <div class="signatures">
+        <div class="sig-box">
+            <div class="sig-title">Visa Logistique &amp; Qualité KlikNode</div>
+            <div class="stamp">Encodage NFC &amp; Qualité Validés ✓</div>
+            <div class="sig-footer">Expédié depuis ${warehouseName}</div>
+        </div>
+        <div class="sig-box">
+            <div class="sig-title">Bon pour réception — Signature &amp; Cachet Client</div>
+            <div style="height: 50px;"></div>
+            <div class="sig-footer">Reçu le : ____ / ____ / 2026 &nbsp;&nbsp; Signature :</div>
+        </div>
+    </div>
+
+    <div class="footer">
+        KlikNode — Plateforme SaaS de Cartes de Visite NFC &amp; Gestion d'Identité Numérique B2B • Réf. #${order.orderNumber}
+    </div>
+
+    <script>
+        window.onload = function() {
+            setTimeout(function() {
+                window.print();
+            }, 250);
+        };
+    </script>
+</body>
+</html>`;
+
+        const printWin = window.open('', '_blank', 'width=900,height=1000');
+        if (!printWin) {
+            toast.error('Veuillez autoriser les pop-ups pour imprimer le Bon de Livraison');
+            return;
+        }
+        printWin.document.open();
+        printWin.document.write(html);
+        printWin.document.close();
+    };
+
     return (
         <AdminLayout>
             <div className="flex flex-col gap-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
@@ -361,9 +745,9 @@ export default function HardwareOrdersPage() {
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
                                                     <div className="h-9 w-9 rounded-full bg-primary/5 text-primary flex items-center justify-center text-xs font-bold border border-primary/10">
-                                                        {order.company.name.substring(0, 2).toUpperCase()}
+                                                        {formatCompanyName(order.company.name).substring(0, 2).toUpperCase()}
                                                     </div>
-                                                    <div className="text-sm font-semibold text-apple-textDark dark:text-white">{order.company.name}</div>
+                                                    <div className="text-sm font-semibold text-apple-textDark dark:text-white">{formatCompanyName(order.company.name)}</div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
@@ -387,7 +771,7 @@ export default function HardwareOrdersPage() {
                                             </td>
                                             <td className="px-8 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-2">
-                                                    <button onClick={() => window.print()} className="p-2.5 text-apple-secondary hover:text-primary bg-white dark:bg-white/10 shadow-sm border border-black/5 dark:border-white/5 rounded-full transition-all hover:scale-110 active:scale-90 cursor-pointer" title="Imprimer Bon de Livraison">
+                                                    <button onClick={() => handlePrintDeliveryNote(order)} className="p-2.5 text-apple-secondary hover:text-primary bg-white dark:bg-white/10 shadow-sm border border-black/5 dark:border-white/5 rounded-full transition-all hover:scale-110 active:scale-90 cursor-pointer" title="Imprimer Bon de Livraison">
                                                         <span className="material-symbols-outlined text-[20px]">print</span>
                                                     </button>
                                                     <button onClick={() => openEditModal(order)} className="p-2.5 text-apple-secondary hover:text-amber-500 bg-white dark:bg-white/10 shadow-sm border border-black/5 dark:border-white/5 rounded-full transition-all hover:scale-110 active:scale-90 cursor-pointer" title="Modifier la commande">

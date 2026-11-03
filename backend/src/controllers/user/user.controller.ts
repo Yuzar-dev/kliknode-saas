@@ -133,7 +133,13 @@ export const getMyCard = async (req: Request, res: Response<ApiResponse>) => {
         }
 
         const effectivePrimaryColor = branding?.primaryColor || card.primaryColor || '#0666EB';
-        const effectiveCompanyName = user.company?.name || card.companyName || '';
+        const rawCompanyName = user.company?.name || card.companyName || '';
+        const parenMatch = rawCompanyName.match(/^[^()]+\(([^()]+)\)\s*$/);
+        const effectiveCompanyName = parenMatch ? parenMatch[1].trim() : rawCompanyName;
+        if (parenMatch && user.companyId) {
+            prisma.company.update({ where: { id: user.companyId }, data: { name: effectiveCompanyName } }).catch(() => {});
+            prisma.card.updateMany({ where: { companyId: user.companyId }, data: { companyName: effectiveCompanyName } }).catch(() => {});
+        }
 
         return res.status(200).json({
             success: true,
@@ -142,7 +148,7 @@ export const getMyCard = async (req: Request, res: Response<ApiResponse>) => {
                 primaryColor: effectivePrimaryColor,
                 companyName: effectiveCompanyName,
                 bioVisible: card.bio_visible !== false,
-                companyBranding: branding,
+                companyBranding: branding ? { ...branding, companyName: effectiveCompanyName } : null,
             },
         });
     } catch (error: any) {

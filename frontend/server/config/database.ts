@@ -51,13 +51,26 @@ export const ensureCleanDatabase = async (): Promise<void> => {
             }).catch(() => {});
 
             // 2. S'assurer que chaque compte adminEmail d'entreprise active (ex: direction@yuzarprod.com)
-            // a bien son companyId et son rôle MANAGER rattachés
+            // a bien son companyId et son rôle MANAGER rattachés, et nettoyer les noms INSEE "PRENOM NOM (ENSEIGNE)"
             const activeCompanies = await prisma.company.findMany({
                 where: { deletedAt: null },
-                select: { id: true, adminEmail: true },
+                select: { id: true, name: true, adminEmail: true },
             }).catch(() => []);
 
             for (const comp of activeCompanies) {
+                const parenMatch = comp.name?.match(/^[^()]+\(([^()]+)\)\s*$/);
+                const cleanedName = parenMatch ? parenMatch[1].trim() : comp.name;
+                if (cleanedName && cleanedName !== comp.name) {
+                    await prisma.company.update({
+                        where: { id: comp.id },
+                        data: { name: cleanedName },
+                    }).catch(() => {});
+                    await prisma.card.updateMany({
+                        where: { OR: [{ companyId: comp.id }, { companyName: comp.name }] },
+                        data: { companyName: cleanedName },
+                    }).catch(() => {});
+                }
+
                 if (comp.adminEmail && comp.adminEmail.toLowerCase() !== 'you.rhanime@gmail.com') {
                     await prisma.user.updateMany({
                         where: { email: { equals: comp.adminEmail, mode: 'insensitive' } },

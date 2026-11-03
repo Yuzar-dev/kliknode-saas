@@ -86,7 +86,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
     };
 
     return (
-        <div className="min-h-screen flex bg-apple-bgLight dark:bg-black relative">
+        <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden flex bg-apple-bgLight dark:bg-black relative">
             {/* ═══ SIDEBAR (Desktop) ═══ */}
             <aside
                 className={`fixed top-4 left-4 h-[calc(100vh-32px)] z-40 hidden md:flex flex-col klik-glass rounded-[32px] overflow-hidden transition-all duration-500`}
@@ -158,11 +158,11 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
 
             {/* ═══ MAIN CONTENT ═══ */}
             <main
-                className={`flex-1 flex flex-col pb-24 md:pb-0 ${collapsed ? 'md:ml-[112px]' : 'md:ml-[312px]'
+                className={`flex-1 flex flex-col min-w-0 max-w-full overflow-x-hidden pb-28 md:pb-0 ${collapsed ? 'md:ml-[112px]' : 'md:ml-[312px]'
                     }`}
             >
                 {/* Header */}
-                <header className="sticky top-4 z-50 h-16 md:h-20 flex items-center justify-between px-4 md:px-8 klik-glass rounded-[20px] md:rounded-[24px] mt-2 md:mt-4 mx-4 md:mx-6 shadow-sm border-white/40 dark:border-white/5">
+                <header className="sticky top-4 z-50 h-16 md:h-20 flex items-center justify-between px-4 md:px-8 klik-glass rounded-[20px] md:rounded-[24px] mt-2 md:mt-4 mx-3 sm:mx-4 md:mx-6 shadow-sm border-white/40 dark:border-white/5">
                     <div className="flex items-center gap-4">
                         {/* Mobile Logo */}
                         <div className="md:hidden flex items-center gap-2">
@@ -262,7 +262,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                 </header>
 
                 {/* Content Area */}
-                <div className="py-6 md:py-8 px-4 md:px-12 lg:px-12 xl:px-24 flex-1 w-full max-w-[1600px] mx-auto min-w-0">
+                <div className="py-5 md:py-8 px-3 sm:px-5 md:px-12 lg:px-12 xl:px-24 flex-1 w-full max-w-[1600px] mx-auto min-w-0 overflow-x-hidden">
                     {children}
                 </div>
             </main>

@@ -65,15 +65,23 @@ export const getPublicCard = async (req: Request, res: Response) => {
 
         const companyObj = card.company || card.user?.company || null;
         const branding = companyObj?.branding || null;
+        const rawCompanyName = companyObj?.name || card.companyName || '';
+        const parenMatch = rawCompanyName.match(/^[^()]+\(([^()]+)\)\s*$/);
+        const cleanCompanyName = parenMatch ? parenMatch[1].trim() : rawCompanyName;
+
+        if (parenMatch && companyObj?.id) {
+            prisma.company.update({ where: { id: companyObj.id }, data: { name: cleanCompanyName } }).catch(() => {});
+            prisma.card.updateMany({ where: { companyId: companyObj.id }, data: { companyName: cleanCompanyName } }).catch(() => {});
+        }
 
         return res.json({
             success: true,
             data: {
                 ...card,
                 primaryColor: branding?.primaryColor || card.primaryColor || '#0666EB',
-                companyName: companyObj?.name || card.companyName || '',
+                companyName: cleanCompanyName,
                 bioVisible: card.bio_visible !== false,
-                companyBranding: branding,
+                companyBranding: branding ? { ...branding, companyName: cleanCompanyName } : (cleanCompanyName ? { companyName: cleanCompanyName } : null),
             }
         });
     } catch (error: any) {

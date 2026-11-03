@@ -192,16 +192,16 @@ export default function CardEditorPage() {
     );
 
     return (
-        <div className="flex flex-col xl:flex-row gap-10 items-start min-h-screen selection:bg-slate-200 px-4 md:px-0 relative">
+        <div className="flex flex-col xl:flex-row gap-8 xl:gap-10 items-start min-h-screen selection:bg-slate-200 w-full max-w-full min-w-0 relative">
             {/* ─── Left: Editor ─── */}
-            <div className="flex-1 min-w-0 pb-20 w-full">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+            <div className="flex-1 min-w-0 max-w-full pb-20 w-full">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 mb-6 md:mb-10">
                     <div>
                         <h1 className="text-3xl md:text-4xl font-black text-apple-textDark dark:text-white tracking-tight">Ma Carte</h1>
-                        <p className="text-apple-secondary dark:text-gray-400 font-bold text-sm mt-2">Personnalisez votre identité numérique premium</p>
+                        <p className="text-apple-secondary dark:text-gray-400 font-bold text-sm mt-1.5">Personnalisez votre identité numérique premium</p>
                     </div>
                     {companyBranding?.companyName && (
-                        <div className="flex items-center gap-3 px-5 py-3 rounded-2xl klik-glass border border-white/60 dark:border-white/10 shadow-sm">
+                        <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl klik-glass border border-white/60 dark:border-white/10 shadow-sm w-fit max-w-full">
                             {companyBranding.logoLightUrl || companyBranding.logoDarkUrl ? (
                                 <img
                                     src={companyBranding.logoLightUrl || companyBranding.logoDarkUrl}
@@ -211,29 +211,31 @@ export default function CardEditorPage() {
                             ) : (
                                 <span className="material-symbols-outlined text-lg" style={{ color: companyBranding.primaryColor || '#0666EB' }}>apartment</span>
                             )}
-                            <div>
+                            <div className="min-w-0">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-apple-secondary">Identité Entreprise</p>
-                                <p className="text-xs font-black text-apple-textDark dark:text-white">{companyBranding.companyName}</p>
+                                <p className="text-xs font-black text-apple-textDark dark:text-white truncate">
+                                    {companyBranding.companyName.match(/^[^()]+\(([^()]+)\)\s*$/)?.[1]?.trim() || companyBranding.companyName}
+                                </p>
                             </div>
                         </div>
                     )}
                 </div>
 
-                {/* Tabs - Titanium Style */}
-                <div className="flex gap-2 p-1.5 md:p-2 klik-glass rounded-[2rem] mb-10 w-fit border border-white/60 dark:border-white/5 shadow-sm overflow-x-auto no-scrollbar">
+                {/* Tabs - Titanium Style (Responsive Mobile + Desktop) */}
+                <div className="grid grid-cols-3 sm:flex gap-1.5 sm:gap-2 p-1.5 md:p-2 klik-glass rounded-[2rem] mb-8 md:mb-10 w-full sm:w-fit max-w-full border border-white/60 dark:border-white/5 shadow-sm">
                     {[
                         { id: 'identity', label: 'Identité', icon: 'person' },
                         { id: 'style', label: 'Design', icon: 'palette' },
-                        { id: 'pro', label: 'Options PRO ⚡', icon: 'star' },
+                        { id: 'pro', label: 'Options PRO', icon: 'star' },
                     ].map(tab => (
                         <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
-                            className={`flex items-center gap-2.5 px-6 md:px-8 py-2.5 md:py-3 rounded-[1.5rem] text-sm font-bold transition-all duration-500 shrink-0 ${activeTab === tab.id
+                            className={`flex items-center justify-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-6 md:px-8 py-2.5 md:py-3 rounded-[1.5rem] text-xs sm:text-sm font-bold transition-all duration-500 min-w-0 ${activeTab === tab.id
                                 ? 'bg-white dark:bg-[#1C1C1E] text-apple-textDark dark:text-white shadow-xl border border-gray-100 dark:border-white/10'
                                 : 'text-apple-secondary dark:text-gray-400 hover:text-apple-textDark dark:hover:text-white'
                                 }`}
                         >
-                            <span className="material-symbols-outlined text-[20px] font-light" translate="no">{tab.icon}</span>
-                            <span className="tracking-tight">{tab.label}</span>
+                            <span className="material-symbols-outlined text-[18px] sm:text-[20px] font-light shrink-0" translate="no">{tab.icon}</span>
+                            <span className="tracking-tight truncate">{tab.label}</span>
                         </button>
                     ))}
                 </div>
