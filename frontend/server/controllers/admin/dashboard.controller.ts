@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import prisma from '../../config/database';
+import prisma, { ensureCleanDatabase } from '../../config/database';
 import { ApiResponse } from '../../types/express';
 import logger from '../../utils/logger.util';
 
@@ -9,10 +9,12 @@ import logger from '../../utils/logger.util';
  */
 export const getAdminStats = async (_req: Request, res: Response<ApiResponse>) => {
     try {
+        await ensureCleanDatabase();
+
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-        // Run aggregations in parallel
+        // Run aggregations in parallel (exclure le SuperAdmin des inscrits clients)
         const [
             totalUsers, 
             activeCards, 
@@ -21,7 +23,13 @@ export const getAdminStats = async (_req: Request, res: Response<ApiResponse>) =
             hardwareOrders,
             recentLogs
         ] = await Promise.all([
-            prisma.user.count(),
+            prisma.user.count({
+                where: {
+                    role: { not: 'ADMIN' },
+                    isActive: true,
+                    deletedAt: null,
+                }
+            }),
             prisma.card.count({
                 where: { deletedAt: null }
             }),
