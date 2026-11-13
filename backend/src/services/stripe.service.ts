@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import Stripe from 'stripe';
+import prisma from '../config/database';
 import logger from '../utils/logger.util';
 
 export interface StripeConfigData {
@@ -12,6 +13,31 @@ export interface StripeConfigData {
 
 const DATA_DIR = process.env.VERCEL ? '/tmp/kliknode-data' : path.join(process.cwd(), 'data');
 const STRIPE_CONFIG_FILE = path.join(DATA_DIR, 'stripe-config.json');
+
+let dbLoadedInMemory = false;
+
+export async function ensureStripeConfigLoaded(): Promise<void> {
+    if (dbLoadedInMemory && (process.env.STRIPE_SECRET_KEY || fs.existsSync(STRIPE_CONFIG_FILE))) {
+        return;
+    }
+    try {
+        const log = await prisma.auditLog.findFirst({
+            where: { action: 'SYSTEM_STRIPE_CONFIG', entityType: 'system' },
+            orderBy: { createdAt: 'desc' },
+        });
+        if (log?.changes && typeof log.changes === 'object') {
+            const cfg = log.changes as Partial<StripeConfigData>;
+            if (cfg.secretKey) process.env.STRIPE_SECRET_KEY = cfg.secretKey;
+            if (cfg.publishableKey) process.env.STRIPE_PUBLISHABLE_KEY = cfg.publishableKey;
+            if (cfg.webhookSecret) process.env.STRIPE_WEBHOOK_SECRET = cfg.webhookSecret;
+            if (!fs.existsSync(DATA_DIR)) {
+                fs.mkdirSync(DATA_DIR, { recursive: true });
+            }
+            fs.writeFileSync(STRIPE_CONFIG_FILE, JSON.stringify(cfg, null, 2), 'utf8');
+        }
+        dbLoadedInMemory = true;
+    } catch {}
+}
 
 export function getStripeConfig(): {
     isConfigured: boolean;
@@ -53,11 +79,14 @@ export function getStripeConfig(): {
     };
 }
 
-export function saveStripeConfig(input: {
+export async function saveStripeConfig(input: {
     secretKey?: string;
     publishableKey?: string;
     webhookSecret?: string;
+    userId?: string;
 }) {
+    await ensureStripeConfigLoaded();
+
     if (!fs.existsSync(DATA_DIR)) {
         fs.mkdirSync(DATA_DIR, { recursive: true });
     }
@@ -88,6 +117,28 @@ export function saveStripeConfig(input: {
     if (updated.publishableKey) process.env.STRIPE_PUBLISHABLE_KEY = updated.publishableKey;
     if (updated.webhookSecret) process.env.STRIPE_WEBHOOK_SECRET = updated.webhookSecret;
 
+    try {
+        let actorId = input.userId;
+        if (!actorId) {
+            const adminUser = await prisma.user.findFirst({ where: { role: 'ADMIN' }, select: { id: true } });
+            actorId = adminUser?.id;
+        }
+        if (actorId) {
+            await prisma.auditLog.deleteMany({
+                where: { action: 'SYSTEM_STRIPE_CONFIG', entityType: 'system' },
+            }).catch(() => {});
+            await prisma.auditLog.create({
+                data: {
+                    userId: actorId,
+                    action: 'SYSTEM_STRIPE_CONFIG',
+                    entityType: 'system',
+                    entityId: 'stripe',
+                    changes: updated as any,
+                },
+            }).catch(() => {});
+        }
+    } catch {}
+
     return getStripeConfig();
 }
 
@@ -111,7 +162,7 @@ export function getStripeClient(): Stripe | null {
 }
 
 /**
- * Crée une session Stripe Checkout (Lien de paiement B2B ou B2C)
+ * Crée une session Stripe Checkout (Paiement unique ou Abonnement récurrent avec essai gratuit 7j)
  */
 export async function createStripeCheckoutLink(params: {
     amount: number;
@@ -122,7 +173,10 @@ export async function createStripeCheckoutLink(params: {
     metadata?: Record<string, string>;
     successUrl: string;
     cancelUrl: string;
+    recurringInterval?: 'month' | 'year';
+    trialPeriodDays?: number;
 }): Promise<{ url: string; sessionId: string }> {
+    await ensureStripeConfigLoaded();
     const stripe = getStripeClient();
     if (!stripe) {
         throw new Error('Clé secrète Stripe (sk_test_... ou sk_live_...) non configurée. Cliquez sur "Configurer Clés Stripe" pour l\'ajouter.');
@@ -130,9 +184,10 @@ export async function createStripeCheckoutLink(params: {
 
     const unitAmount = Math.round(Number(params.amount) * 100);
     const currencyCode = params.currency.toLowerCase();
+    const isSubscription = Boolean(params.recurringInterval);
 
     const session = await stripe.checkout.sessions.create({
-        mode: 'payment',
+        mode: isSubscription ? 'subscription' : 'payment',
         payment_method_types: ['card'],
         customer_email: params.customerEmail || undefined,
         line_items: [
@@ -140,6 +195,9 @@ export async function createStripeCheckoutLink(params: {
                 price_data: {
                     currency: currencyCode,
                     unit_amount: unitAmount,
+                    ...(isSubscription && params.recurringInterval
+                        ? { recurring: { interval: params.recurringInterval } }
+                        : {}),
                     product_data: {
                         name: params.title,
                         description: params.description || 'Commande & Abonnement KlikNode NFC',
@@ -148,6 +206,14 @@ export async function createStripeCheckoutLink(params: {
                 quantity: 1,
             },
         ],
+        ...(isSubscription && params.trialPeriodDays && params.trialPeriodDays > 0
+            ? {
+                subscription_data: {
+                    trial_period_days: params.trialPeriodDays,
+                    metadata: params.metadata || {},
+                },
+            }
+            : {}),
         metadata: params.metadata || {},
         success_url: params.successUrl,
         cancel_url: params.cancelUrl,
@@ -161,4 +227,65 @@ export async function createStripeCheckoutLink(params: {
         url: session.url,
         sessionId: session.id,
     };
+}
+
+export async function verifyStripeCheckoutSession(sessionId: string): Promise<{
+    paidOrTrialActive: boolean;
+    isTrial: boolean;
+    trialEndsAt: string | null;
+    subscriptionId: string | null;
+    metadata: Record<string, string>;
+}> {
+    await ensureStripeConfigLoaded();
+    const stripe = getStripeClient();
+    if (!stripe) {
+        throw new Error('Clé secrète Stripe non configurée.');
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+        expand: ['subscription'],
+    });
+
+    const sub = session.subscription && typeof session.subscription === 'object'
+        ? (session.subscription as Stripe.Subscription)
+        : null;
+
+    const paidOrTrialActive =
+        session.status === 'complete' ||
+        session.payment_status === 'paid' ||
+        session.payment_status === 'no_payment_required';
+
+    const isTrial = sub?.status === 'trialing';
+    const trialEndsAt = sub?.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null;
+    const subscriptionId = typeof session.subscription === 'string'
+        ? session.subscription
+        : (sub?.id || null);
+
+    return {
+        paidOrTrialActive,
+        isTrial,
+        trialEndsAt,
+        subscriptionId,
+        metadata: (session.metadata as Record<string, string>) || {},
+    };
+}
+
+export async function checkStripeSubscriptionStatus(subscriptionId: string): Promise<{
+    isActive: boolean;
+    status: string;
+    trialEndsAt: string | null;
+} | null> {
+    await ensureStripeConfigLoaded();
+    const stripe = getStripeClient();
+    if (!stripe || !subscriptionId) return null;
+    try {
+        const sub = await stripe.subscriptions.retrieve(subscriptionId);
+        return {
+            isActive: sub.status === 'active' || sub.status === 'trialing',
+            status: sub.status,
+            trialEndsAt: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
+        };
+    } catch {
+        return null;
+    }
 }

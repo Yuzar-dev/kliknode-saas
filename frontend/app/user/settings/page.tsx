@@ -32,6 +32,10 @@ export default function SettingsPage() {
     const [companyName, setCompanyName] = useState<string>(authUser?.companyName || '');
     const [companyAdminEmail, setCompanyAdminEmail] = useState<string>('');
     const [upgradeRequested, setUpgradeRequested] = useState<boolean>(false);
+    const [trialEligible, setTrialEligible] = useState<boolean>(false);
+    const [isTrialActive, setIsTrialActive] = useState<boolean>(false);
+    const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
+    const [trialDaysLeft, setTrialDaysLeft] = useState<number>(0);
     const [loading, setLoading] = useState(true);
     const [subscribingId, setSubscribingId] = useState<string | null>(null);
 
@@ -40,7 +44,41 @@ export default function SettingsPage() {
     const [pwLoading, setPwLoading] = useState(false);
 
     useEffect(() => {
-        loadProfileAndPlans();
+        const initSettings = async () => {
+            if (typeof window !== 'undefined') {
+                const params = new URLSearchParams(window.location.search);
+                const paymentStatus = params.get('payment');
+                const sessionId = params.get('session_id');
+                const planId = params.get('plan_id');
+
+                if (paymentStatus === 'success' && sessionId) {
+                    try {
+                        const verifyRes = await apiClient.post('/api/user/subscribe', {
+                            sessionId,
+                            ...(planId ? { planId } : {}),
+                        });
+                        if (verifyRes.data?.success && verifyRes.data?.data?.activated) {
+                            updateUser({ isPro: true });
+                            toast.success(
+                                verifyRes.data.data.message || 'Votre abonnement KlikNode PRO est maintenant actif ! ⚡',
+                                { duration: 5000 }
+                            );
+                        }
+                    } catch (err: any) {
+                        console.error('Stripe session verification failed:', err);
+                        toast.error(err.response?.data?.error?.message || 'Vérification du paiement en cours...');
+                    } finally {
+                        window.history.replaceState({}, '', '/user/settings');
+                    }
+                } else if (paymentStatus === 'cancelled') {
+                    toast('Souscription annulée.', { icon: 'ℹ️' });
+                    window.history.replaceState({}, '', '/user/settings');
+                }
+            }
+            await loadProfileAndPlans();
+        };
+
+        initSettings();
     }, []);
 
     const loadProfileAndPlans = async () => {
@@ -57,12 +95,20 @@ export default function SettingsPage() {
                     companyName: cName,
                     companyAdminEmail: cAdminEmail,
                     upgradeRequested: uReq,
+                    trialEligible: tEligible,
+                    isTrialActive: tActive,
+                    trialEndsAt: tEndsAt,
+                    trialDaysLeft: tDaysLeft,
                 } = res.data.data;
 
                 setIsCompanyMember(Boolean(companyMember || user?.companyId));
                 setCompanyName(cName || user?.companyName || authUser?.companyName || '');
                 setCompanyAdminEmail(cAdminEmail || '');
                 setUpgradeRequested(Boolean(uReq));
+                setTrialEligible(Boolean(tEligible));
+                setIsTrialActive(Boolean(tActive));
+                setTrialEndsAt(tEndsAt || null);
+                setTrialDaysLeft(Number(tDaysLeft || 0));
                 setB2cPlans(plans || []);
                 setCurrentPlan(activePlan || null);
                 setProfile({
@@ -134,7 +180,15 @@ export default function SettingsPage() {
                     updateUser({ isPro: newIsPro });
                     setProfile(prev => prev ? { ...prev, isPro: newIsPro } : prev);
                     setCurrentPlan(plan);
-                    toast.success(data?.message || `Offre ${plan.name} activée !`);
+                    if (data?.trialEndsAt) {
+                        setIsTrialActive(true);
+                        setTrialEligible(false);
+                        setTrialEndsAt(data.trialEndsAt);
+                        setTrialDaysLeft(Number(data?.trialDaysLeft || 7));
+                    } else if (!newIsPro) {
+                        setIsTrialActive(false);
+                    }
+                    toast.success(data?.message || `Offre ${plan.name} activée !`, { duration: 5000 });
                 }
             }
         } catch (err: any) {
@@ -192,13 +246,38 @@ export default function SettingsPage() {
                                     : (currentPlan?.name || (profile?.isPro ? 'KlikNode PRO' : 'Standard Gratuit'))}
                             </p>
                         </div>
-                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border self-start sm:self-auto ${profile?.isPro
-                            ? 'bg-amber-500/15 text-amber-600 border-amber-500/30'
-                            : 'bg-slate-100 dark:bg-white/10 text-apple-secondary border-transparent'
+                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border self-start sm:self-auto ${isTrialActive
+                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                            : profile?.isPro
+                                ? 'bg-amber-500/15 text-amber-600 border-amber-500/30'
+                                : 'bg-slate-100 dark:bg-white/10 text-apple-secondary border-transparent'
                             }`}>
-                            {profile?.isPro ? 'ACCÈS PRO ACTIF ⚡' : isCompanyMember ? `PLAN ENTREPRISE ${currentPlan?.name || 'FREE'}` : 'COMPTE STANDARD'}
+                            {isTrialActive
+                                ? `ESSAI GRATUIT ACTIF • ${trialDaysLeft}J RESTANT${trialDaysLeft > 1 ? 'S' : ''} ⚡`
+                                : profile?.isPro
+                                    ? 'ACCÈS PRO ACTIF ⚡'
+                                    : isCompanyMember
+                                        ? `PLAN ENTREPRISE ${currentPlan?.name || 'FREE'}`
+                                        : 'COMPTE STANDARD'}
                         </span>
                     </div>
+
+                    {!isCompanyMember && isTrialActive && trialEndsAt && (
+                        <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-start sm:items-center gap-3">
+                                <span className="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-xl shrink-0" translate="no">verified</span>
+                                <div>
+                                    <p className="text-xs sm:text-sm font-black text-apple-textDark dark:text-white">
+                                        Semaine d&apos;essai gratuit KlikNode PRO en cours ({trialDaysLeft} jour{trialDaysLeft > 1 ? 's' : ''} restant{trialDaysLeft > 1 ? 's' : ''})
+                                    </p>
+                                    <p className="text-[11px] sm:text-xs font-medium text-apple-secondary dark:text-gray-300 mt-0.5">
+                                        Profitez gratuitement de toutes les options PRO jusqu&apos;au{' '}
+                                        <strong>{new Date(trialEndsAt).toLocaleDateString('fr-FR')}</strong>. Passé ces 7 jours, l&apos;offre bascule en abonnement payant.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {isCompanyMember ? (
                         <div className="p-6 rounded-3xl border border-gray-200/80 dark:border-white/10 bg-white/50 dark:bg-white/5 space-y-5">
@@ -256,15 +335,19 @@ export default function SettingsPage() {
                                             }`}
                                     >
                                         <div>
-                                            <div className="flex items-center justify-between gap-2 mb-2">
+                                            <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
                                                 <h4 className="text-lg font-black text-apple-textDark dark:text-white">{plan.name}</h4>
-                                                {isCurrent && (
+                                                {isCurrent ? (
                                                     <span className="px-2.5 py-0.5 rounded-full bg-primary text-white text-[9px] font-black uppercase tracking-widest">
-                                                        Actuel
+                                                        {isTrialActive && isPaid ? 'Essai 7j Actif' : 'Actuel'}
                                                     </span>
-                                                )}
+                                                ) : (isPaid && trialEligible) ? (
+                                                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-[9px] font-black uppercase tracking-widest">
+                                                        🎁 7 Jours Gratuits
+                                                    </span>
+                                                ) : null}
                                             </div>
-                                            <div className="flex items-baseline gap-1.5 mb-4">
+                                            <div className="flex items-baseline gap-1.5 mb-1">
                                                 <span className="text-3xl font-black text-apple-textDark dark:text-white">
                                                     {Number(plan.priceEur) === 0 ? 'Gratuit' : `${Number(plan.priceEur).toFixed(2)}€`}
                                                 </span>
@@ -274,6 +357,12 @@ export default function SettingsPage() {
                                                     </span>
                                                 )}
                                             </div>
+                                            {isPaid && trialEligible && !isCurrent && (
+                                                <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mb-3">
+                                                    1 semaine d&apos;essai gratuit (0,00€ aujourd&apos;hui, puis {Number(plan.priceEur).toFixed(2)}€/{plan.billingPeriod === 'yearly' ? 'an' : 'mois'} après 7 jours)
+                                                </p>
+                                            )}
+                                            {(!isPaid || !trialEligible || isCurrent) && <div className="mb-3" />}
                                             <ul className="space-y-2 mb-6 text-xs font-semibold text-apple-secondary">
                                                 <li className="flex items-center gap-2">
                                                     <span className="material-symbols-outlined text-emerald-500 text-base">check_circle</span>
@@ -297,7 +386,7 @@ export default function SettingsPage() {
                                             type="button"
                                             disabled={isCurrent || subscribingId === plan.id}
                                             onClick={() => handleSubscribeB2C(plan)}
-                                            className={`w-full py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${isCurrent
+                                            className={`w-full py-3.5 px-4 rounded-full text-xs font-black uppercase tracking-widest transition-all ${isCurrent
                                                 ? 'bg-gray-100 dark:bg-white/10 text-apple-secondary cursor-default'
                                                 : 'btn-obsidian btn-obsidian-primary text-white shadow-lg cursor-pointer hover:scale-[1.02]'
                                                 }`}
@@ -305,9 +394,11 @@ export default function SettingsPage() {
                                             {subscribingId === plan.id
                                                 ? 'Traitement...'
                                                 : isCurrent
-                                                    ? 'Offre Active'
+                                                    ? (isTrialActive && isPaid ? `Essai en cours (${trialDaysLeft}j restants)` : 'Offre Active')
                                                     : isPaid
-                                                        ? `Souscrire & Payer (${Number(plan.priceEur).toFixed(2)}€) ⚡`
+                                                        ? (trialEligible
+                                                            ? 'Essayer 7 jours gratuitement ⚡'
+                                                            : `Souscrire & Payer (${Number(plan.priceEur).toFixed(2)}€) ⚡`)
                                                         : 'Revenir au plan Gratuit'}
                                         </button>
                                     </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,7 +14,6 @@ import toast from 'react-hot-toast';
 const loginSchema = z.object({
     email: z.string().email('Email invalide'),
     password: z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères'),
-    rememberMe: z.boolean().optional(),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -23,17 +22,44 @@ function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const login = useAuthStore(state => state.login);
+    const storedUser = useAuthStore(state => state.user);
+    const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
     const [showPassword, setShowPassword] = useState(false);
+    const [rememberMe, setRememberMe] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
 
     const {
         register,
         handleSubmit,
+        setValue,
         formState: { errors },
     } = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
     });
+
+    // Restaurer l'email mémorisé et rediriger automatiquement si "Rester connecté" est déjà actif sur l'appareil
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const savedEmail = localStorage.getItem('kliknode_saved_email');
+        const savedRemember = localStorage.getItem('rememberMe');
+        if (savedRemember === 'false') {
+            setRememberMe(false);
+        }
+        if (savedEmail) {
+            setValue('email', savedEmail);
+        }
+
+        const hasCardParam = Boolean(searchParams?.get('card_id'));
+        const activePersistentToken = localStorage.getItem('accessToken');
+        if (!hasCardParam && savedRemember === 'true' && activePersistentToken && isAuthenticated && storedUser) {
+            const role = storedUser.role || 'USER';
+            if (role === 'ADMIN') router.replace('/admin');
+            else if (role === 'MANAGER') router.replace('/company');
+            else if (role === 'OPERATOR') router.replace('/operator');
+            else router.replace('/user');
+        }
+    }, [isAuthenticated, storedUser, router, searchParams, setValue]);
 
     const onSubmit = async (data: LoginFormData) => {
         setIsLoading(true);
@@ -44,13 +70,22 @@ function LoginForm() {
             const response = await apiClient.post('/api/auth/login', {
                 email: data.email,
                 password: data.password,
+                rememberMe,
                 ...(cardIdFromUrl ? { cardId: cardIdFromUrl } : {}),
             });
 
             const { user: userData, tokens } = response.data.data;
             const role = userData?.role || 'USER';
 
-            // 2. Persister via Zustand et localStorage
+            if (typeof window !== 'undefined') {
+                if (rememberMe) {
+                    localStorage.setItem('kliknode_saved_email', data.email.trim());
+                } else {
+                    localStorage.removeItem('kliknode_saved_email');
+                }
+            }
+
+            // 2. Persister via Zustand (30j localStorage si rememberMe, sinon sessionStorage)
             login({
                 id: userData.id,
                 email: userData.email || '',
@@ -58,13 +93,14 @@ function LoginForm() {
                 lastName: userData.lastName || null,
                 role: role,
                 companyId: userData.companyId || null,
+                companyName: userData.companyName || null,
                 avatarUrl: userData.avatarUrl || null,
                 isActive: userData.isActive ?? true,
                 isPro: userData.isPro ?? false,
             }, {
                 accessToken: tokens.accessToken,
                 refreshToken: tokens.refreshToken,
-            });
+            }, rememberMe);
 
             // 3. Redirection immédiate selon le rôle
             if (role === 'ADMIN') {
@@ -188,18 +224,37 @@ function LoginForm() {
                             )}
                         </div>
 
-                        {/* Remember Me */}
+                        {/* Remember Me - Semantic Accessible Custom Checkbox */}
                         <div className="flex items-center ml-1">
-                            <div className="relative flex items-center">
-                                <input
-                                    {...register('rememberMe')}
-                                    id="remember-me"
-                                    type="checkbox"
-                                    className="h-4 w-4 rounded border-gray-300 dark:border-white/20 bg-white/50 dark:bg-black/50 text-spaceGray focus:ring-spaceGray/20 transition-all cursor-pointer"
-                                />
-                            </div>
-                            <label htmlFor="remember-me" className="ml-3 block text-xs font-medium text-apple-secondary cursor-pointer hover:text-apple-textDark dark:hover:text-apple-bgLight transition-colors">
-                                Rester connecté à cet appareil
+                            <label
+                                htmlFor="remember-me"
+                                className="group inline-flex items-center gap-3 min-h-[44px] cursor-pointer select-none text-left"
+                            >
+                                <span className="relative inline-flex items-center justify-center shrink-0">
+                                    <input
+                                        id="remember-me"
+                                        name="rememberMe"
+                                        type="checkbox"
+                                        checked={rememberMe}
+                                        onChange={(e) => setRememberMe(e.target.checked)}
+                                        className="peer appearance-none h-5 w-5 rounded-md border border-gray-300 dark:border-white/30 bg-white/80 dark:bg-black/40 checked:bg-[#1D1D1F] dark:checked:bg-white checked:border-[#1D1D1F] dark:checked:border-white transition-all duration-200 cursor-pointer group-hover:border-gray-500 dark:group-hover:border-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D1D1F] dark:focus-visible:outline-white"
+                                    />
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="3.5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        aria-hidden="true"
+                                        className="pointer-events-none absolute w-3.5 h-3.5 text-white dark:text-black scale-0 peer-checked:scale-100 transition-transform duration-150"
+                                    >
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                </span>
+                                <span className="text-xs font-semibold text-apple-secondary group-hover:text-apple-textDark dark:group-hover:text-white transition-colors">
+                                    Rester connecté à cet appareil
+                                </span>
                             </label>
                         </div>
 

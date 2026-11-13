@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import ProFeatureGuard from '@/components/user/ProFeatureGuard';
 import { apiClient } from '@/lib/api-client';
+import { useAuthStore } from '@/store/auth-store';
 import { Eye, Nfc, Users, MousePointer, Share2, Sparkles, TrendingUp, HelpCircle } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
@@ -66,14 +67,21 @@ interface AnalyticsData {
 const COLORS = ['#0666EB', '#7C3AED', '#10B981', '#F59E0B', '#F43F5E', '#14B8A6', '#8B5CF6'];
 
 export default function AnalyticsPage() {
+    const user = useAuthStore((s) => s.user);
+    const hasProAccess = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.isPro === true;
     const [stats, setStats] = useState<AnalyticsData | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(hasProAccess);
 
     useEffect(() => {
+        if (!hasProAccess) {
+            setLoading(false);
+            return;
+        }
         loadAnalytics();
-    }, []);
+    }, [hasProAccess]);
 
     const loadAnalytics = async () => {
+        setLoading(true);
         try {
             const response = await apiClient.get('/api/user/analytics');
             if (response.data.success) {
@@ -87,7 +95,7 @@ export default function AnalyticsPage() {
         }
     };
 
-    if (loading) {
+    if (loading && hasProAccess) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="animate-spin h-10 w-10 border-4 border-spaceGray dark:border-white border-t-transparent rounded-full" />

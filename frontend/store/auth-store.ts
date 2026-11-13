@@ -7,9 +7,10 @@ interface AuthState {
     tokens: AuthTokens | null;
     isAuthenticated: boolean;
     isLoading: boolean;
+    rememberMe: boolean;
 
     // Actions
-    login: (user: User, tokens: AuthTokens) => void;
+    login: (user: User, tokens: AuthTokens, rememberMe?: boolean) => void;
     logout: () => void;
     updateUser: (user: Partial<User>) => void;
     setLoading: (loading: boolean) => void;
@@ -22,30 +23,48 @@ export const useAuthStore = create<AuthState>()(
             tokens: null,
             isAuthenticated: false,
             isLoading: false,
+            rememberMe: true,
 
-            login: (user, tokens) => {
-                // Store tokens in localStorage
-                localStorage.setItem('accessToken', tokens.accessToken);
-                localStorage.setItem('refreshToken', tokens.refreshToken);
+            login: (user, tokens, rememberMe = true) => {
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('rememberMe', rememberMe ? 'true' : 'false');
+                    if (rememberMe) {
+                        localStorage.setItem('accessToken', tokens.accessToken);
+                        localStorage.setItem('refreshToken', tokens.refreshToken);
+                        sessionStorage.removeItem('accessToken');
+                        sessionStorage.removeItem('refreshToken');
+                    } else {
+                        sessionStorage.setItem('accessToken', tokens.accessToken);
+                        sessionStorage.setItem('refreshToken', tokens.refreshToken);
+                        localStorage.removeItem('accessToken');
+                        localStorage.removeItem('refreshToken');
+                    }
+                }
 
                 set({
                     user,
                     tokens,
                     isAuthenticated: true,
                     isLoading: false,
+                    rememberMe,
                 });
             },
 
             logout: () => {
-                // Clear tokens from localStorage
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('refreshToken');
+                if (typeof window !== 'undefined') {
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
+                    localStorage.removeItem('rememberMe');
+                    sessionStorage.removeItem('accessToken');
+                    sessionStorage.removeItem('refreshToken');
+                }
 
                 set({
                     user: null,
                     tokens: null,
                     isAuthenticated: false,
                     isLoading: false,
+                    rememberMe: false,
                 });
             },
 

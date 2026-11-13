@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { apiClient } from '@/lib/api-client';
+import { useAuthStore } from '@/store/auth-store';
 import toast from 'react-hot-toast';
 import CardPreview, { COVER_PRESETS } from '@/components/user/CardPreview';
 import ProFeatureGuard from '@/components/user/ProFeatureGuard';
@@ -51,6 +52,8 @@ const formatUrl = (url: string) => {
 };
 
 export default function CardEditorPage() {
+    const authUser = useAuthStore((s) => s.user);
+    const hasProAccess = authUser?.role === 'ADMIN' || authUser?.role === 'MANAGER' || authUser?.isPro === true;
     const [card, setCard] = useState<CardData | null>(null);
     const [form, setForm] = useState<Partial<CardData>>({});
     const [companyBranding, setCompanyBranding] = useState<CompanyBrandingData | null>(null);
@@ -221,23 +224,46 @@ export default function CardEditorPage() {
                     )}
                 </div>
 
-                {/* Tabs - Titanium Style (Responsive Mobile + Desktop) */}
+                {/* Tabs - Titanium Style avec mise en valeur distinctive pour Options PRO */}
                 <div className="grid grid-cols-3 sm:flex gap-1.5 sm:gap-2 p-1.5 md:p-2 klik-glass rounded-[2rem] mb-8 md:mb-10 w-full sm:w-fit max-w-full border border-white/60 dark:border-white/5 shadow-sm">
                     {[
-                        { id: 'identity', label: 'Identité', icon: 'person' },
-                        { id: 'style', label: 'Design', icon: 'palette' },
-                        { id: 'pro', label: 'Options PRO', icon: 'star' },
-                    ].map(tab => (
-                        <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
-                            className={`flex items-center justify-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-6 md:px-8 py-2.5 md:py-3 rounded-[1.5rem] text-xs sm:text-sm font-bold transition-all duration-500 min-w-0 ${activeTab === tab.id
-                                ? 'bg-white dark:bg-[#1C1C1E] text-apple-textDark dark:text-white shadow-xl border border-gray-100 dark:border-white/10'
-                                : 'text-apple-secondary dark:text-gray-400 hover:text-apple-textDark dark:hover:text-white'
+                        { id: 'identity', label: 'Identité', icon: 'person', isProTab: false },
+                        { id: 'style', label: 'Design', icon: 'palette', isProTab: false },
+                        { id: 'pro', label: 'Options PRO', icon: 'auto_awesome', isProTab: true },
+                    ].map(tab => {
+                        const isActive = activeTab === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                onClick={() => setActiveTab(tab.id as any)}
+                                className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-6 md:px-7 py-2.5 md:py-3 rounded-[1.5rem] text-xs sm:text-sm font-bold transition-all duration-300 min-w-0 cursor-pointer ${
+                                    tab.isProTab
+                                        ? isActive
+                                            ? 'bg-gradient-to-r from-[#0F172A] via-[#1E1B4B] to-[#0F172A] text-amber-300 border-2 border-amber-400/70 shadow-xl'
+                                            : 'bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-indigo-500/15 text-amber-800 dark:text-amber-300 border-2 border-amber-400/50 hover:border-amber-400 hover:from-amber-500/25 hover:to-indigo-500/25 shadow-sm'
+                                        : isActive
+                                            ? 'bg-white dark:bg-[#1C1C1E] text-apple-textDark dark:text-white shadow-xl border border-gray-100 dark:border-white/10'
+                                            : 'text-apple-secondary dark:text-gray-400 hover:text-apple-textDark dark:hover:text-white'
                                 }`}
-                        >
-                            <span className="material-symbols-outlined text-[18px] sm:text-[20px] font-light shrink-0" translate="no">{tab.icon}</span>
-                            <span className="tracking-tight truncate">{tab.label}</span>
-                        </button>
-                    ))}
+                            >
+                                <span
+                                    className={`material-symbols-outlined text-[18px] sm:text-[20px] shrink-0 ${
+                                        tab.isProTab ? 'text-amber-500 dark:text-amber-400' : 'font-light'
+                                    }`}
+                                    translate="no"
+                                >
+                                    {tab.icon}
+                                </span>
+                                <span className="tracking-tight truncate">{tab.label}</span>
+                                {tab.isProTab && (
+                                    <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 leading-none shrink-0">
+                                        PRO
+                                    </span>
+                                )}
+                            </button>
+                        );
+                    })}
                 </div>
 
                 {activeTab === 'identity' && (
@@ -458,6 +484,47 @@ export default function CardEditorPage() {
                                         className="w-10 h-10 rounded-full cursor-pointer bg-transparent border-none p-0 overflow-hidden shadow-sm shrink-0"
                                     />
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* Cadran exclusif Options PRO mis en valeur dans la partie Design */}
+                        <div className="p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] bg-gradient-to-br from-[#0F172A] via-[#1E1B4B] to-[#172554] text-white border-2 border-amber-400/50 shadow-2xl relative overflow-hidden">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                                <div className="space-y-3 max-w-xl">
+                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300 text-[10px] font-black uppercase tracking-widest">
+                                        <span className="material-symbols-outlined text-[15px]" translate="no">auto_awesome</span>
+                                        {hasProAccess
+                                            ? 'Options PRO Actives sur votre carte'
+                                            : authUser?.companyId
+                                                ? 'Options PRO Entreprise'
+                                                : 'Options PRO • 7 Jours d\'essai gratuit'}
+                                    </div>
+                                    <h3 className="text-xl md:text-2xl font-black tracking-tight text-white">
+                                        Sublimez votre Design avec les Options PRO
+                                    </h3>
+                                    <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
+                                        Ajoutez votre <strong className="text-amber-300">Pass Apple &amp; Google Wallet HD</strong> sur écran verrouillé et activez le bouton interactif <strong className="text-white">&quot;Échangeons nos contacts&quot;</strong> directement sur votre carte digitale.
+                                    </p>
+                                    <div className="flex flex-wrap gap-2.5 pt-1">
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-[11px] font-bold text-slate-200">
+                                            <span className="material-symbols-outlined text-[15px] text-amber-300" translate="no">account_balance_wallet</span>
+                                            Pass Wallet iPhone &amp; Android
+                                        </span>
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-[11px] font-bold text-slate-200">
+                                            <span className="material-symbols-outlined text-[15px] text-amber-300" translate="no">contact_page</span>
+                                            Capture de Prospects CRM
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('pro')}
+                                    className="px-6 py-4 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-black text-xs uppercase tracking-widest shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                                >
+                                    <span>{hasProAccess ? 'Configurer mes Options PRO' : 'Découvrir les Options PRO'}</span>
+                                    <span className="material-symbols-outlined text-[18px]" translate="no">arrow_forward</span>
+                                </button>
                             </div>
                         </div>
                     </div>

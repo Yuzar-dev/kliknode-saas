@@ -14,7 +14,7 @@ const axiosInstance: AxiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
     (config) => {
         config.baseURL = getBaseUrl();
-        const token = localStorage.getItem('accessToken');
+        const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -43,9 +43,11 @@ axiosInstance.interceptors.response.use(
             originalRequest._retry = true;
 
             try {
-                const refreshToken = localStorage.getItem('refreshToken');
+                const useLocal = Boolean(localStorage.getItem('refreshToken')) || localStorage.getItem('rememberMe') !== 'false';
+                const refreshToken = localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken');
                 if (!refreshToken) {
                     localStorage.removeItem('accessToken');
+                    sessionStorage.removeItem('accessToken');
                     localStorage.removeItem('auth-storage');
                     if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
                         window.location.replace('/login');
@@ -57,8 +59,14 @@ axiosInstance.interceptors.response.use(
                     refreshToken,
                 });
 
-                const { accessToken } = response.data.data.tokens;
-                localStorage.setItem('accessToken', accessToken);
+                const { accessToken, refreshToken: newRefreshToken } = response.data.data.tokens;
+                if (useLocal) {
+                    localStorage.setItem('accessToken', accessToken);
+                    if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken);
+                } else {
+                    sessionStorage.setItem('accessToken', accessToken);
+                    if (newRefreshToken) sessionStorage.setItem('refreshToken', newRefreshToken);
+                }
 
                 originalRequest.headers.Authorization = `Bearer ${accessToken}`;
                 return axiosInstance(originalRequest);
@@ -66,6 +74,8 @@ axiosInstance.interceptors.response.use(
                 // Échec du rafraîchissement
                 localStorage.removeItem('accessToken');
                 localStorage.removeItem('refreshToken');
+                sessionStorage.removeItem('accessToken');
+                sessionStorage.removeItem('refreshToken');
                 localStorage.removeItem('auth-storage');
                 if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
                     window.location.replace('/login');

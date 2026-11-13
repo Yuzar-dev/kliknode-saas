@@ -207,7 +207,8 @@ export const createManualInvoice = async (req: Request, res: Response<ApiRespons
  */
 export const getAdminStripeConfig = async (_req: Request, res: Response<ApiResponse>) => {
     try {
-        const { getStripeConfig } = await import('../../services/stripe.service');
+        const { ensureStripeConfigLoaded, getStripeConfig } = await import('../../services/stripe.service');
+        await ensureStripeConfigLoaded();
         return res.status(200).json({
             success: true,
             data: getStripeConfig()
@@ -228,7 +229,12 @@ export const saveAdminStripeConfig = async (req: Request, res: Response<ApiRespo
     try {
         const { secretKey, publishableKey, webhookSecret } = req.body;
         const { saveStripeConfig } = await import('../../services/stripe.service');
-        const updated = saveStripeConfig({ secretKey, publishableKey, webhookSecret });
+        const updated = await saveStripeConfig({
+            secretKey,
+            publishableKey,
+            webhookSecret,
+            userId: req.user?.id,
+        });
         return res.status(200).json({
             success: true,
             data: updated

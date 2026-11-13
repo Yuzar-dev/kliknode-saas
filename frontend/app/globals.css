@@ -93,6 +93,47 @@
   color: #FFFFFF;
 }
 
+@utility btn-obsidian {
+  border-radius: 9999px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+@utility btn-obsidian-primary {
+  background: linear-gradient(90deg, #1E293B 0%, #0F172A 100%);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.22);
+
+  &:hover {
+    background: linear-gradient(90deg, #334155 0%, #1E293B 100%);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.3);
+  }
+}
+
+.dark .btn-obsidian-primary {
+  background: linear-gradient(90deg, #F8FAFC 0%, #E2E8F0 100%);
+  color: #0F172A;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+@utility btn-obsidian-secondary {
+  background-color: rgba(255, 255, 255, 0.85);
+  color: #1D1D1F;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.dark .btn-obsidian-secondary {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
 
 /* Custom Scrollbar */
 @layer utilities {

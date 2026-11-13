@@ -14,7 +14,8 @@ import { emailService } from '../../services/email.service';
 export const login = async (req: Request, res: Response<ApiResponse>) => {
     try {
         await ensureCleanDatabase();
-        const { email, password, cardId } = req.body;
+        const { email, password, cardId, rememberMe } = req.body;
+        const isRememberMe = Boolean(rememberMe);
 
         // Rechercher l'utilisateur
         const user = await prisma.user.findUnique({
@@ -97,13 +98,13 @@ export const login = async (req: Request, res: Response<ApiResponse>) => {
             }).catch(() => {});
         }
 
-        // Générer les tokens
+        // Générer les tokens (30 jours si "Rester connecté", sinon 7 jours)
         const tokens = generateTokens({
             id: user.id,
             email: user.email,
             role: user.role as any,
             companyId: user.companyId || undefined,
-        });
+        }, isRememberMe);
 
         // Si l'utilisateur est un collaborateur d'entreprise (companyId défini),
         // son statut PRO dépend exclusivement du plan B2B actif de son entreprise
@@ -121,13 +122,15 @@ export const login = async (req: Request, res: Response<ApiResponse>) => {
             );
         }
 
+        const refreshDurationMs = (isRememberMe ? 30 : 7) * 24 * 60 * 60 * 1000;
+
         // Sauvegarder le refresh token et mettre à jour lastLoginAt (+ synchroniser isPro si besoin) en parallèle
         await Promise.all([
             prisma.refreshToken.create({
                 data: {
                     userId: user.id,
                     token: tokens.refreshToken,
-                    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 jours
+                    expiresAt: new Date(Date.now() + refreshDurationMs),
                 },
             }).catch(() => {}),
             prisma.user.update({
@@ -447,13 +450,16 @@ export const refreshToken = async (req: Request, res: Response<ApiResponse>) => 
             });
         }
 
+        // Préserver le mode "Rester connecté" (30 jours) si le token précédent avait > 8 jours de validité
+        const wasLongSession = (storedToken.expiresAt.getTime() - storedToken.createdAt.getTime()) > 8 * 24 * 60 * 60 * 1000;
+
         // Générer de nouveaux tokens
         const newTokens = generateTokens({
             id: storedToken.user.id,
             email: storedToken.user.email,
             role: storedToken.user.role,
             companyId: storedToken.user.companyId || undefined,
-        });
+        }, wasLongSession);
 
         // Révoquer l'ancien refresh token
         await prisma.refreshToken.update({
@@ -466,7 +472,7 @@ export const refreshToken = async (req: Request, res: Response<ApiResponse>) => 
             data: {
                 userId: storedToken.user.id,
                 token: newTokens.refreshToken,
-                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                expiresAt: new Date(Date.now() + (wasLongSession ? 30 : 7) * 24 * 60 * 60 * 1000),
             },
         });
 

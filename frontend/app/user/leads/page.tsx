@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import ProFeatureGuard from '@/components/user/ProFeatureGuard';
 import { apiClient } from '@/lib/api-client';
+import { useAuthStore } from '@/store/auth-store';
 import { Sparkles, Trash2, Edit3, X, Check, Download, Mail, Phone, Calendar, User, FileText } from 'lucide-react';
 
 interface Lead {
@@ -26,8 +27,10 @@ const getLeadFullName = (l: Lead) => {
 };
 
 export default function LeadsPage() {
+    const user = useAuthStore((s) => s.user);
+    const hasProAccess = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.isPro === true;
     const [leads, setLeads] = useState<Lead[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(hasProAccess);
     const [total, setTotal] = useState(0);
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
     const [editingNotes, setEditingNotes] = useState('');
@@ -49,13 +52,17 @@ export default function LeadsPage() {
     });
 
     useEffect(() => {
+        if (!hasProAccess) {
+            setLoading(false);
+            return;
+        }
         loadLeads();
         apiClient.get('/api/user/crm-config').then(res => {
             if (res.data.success && res.data.data) {
                 setCrmConfig(prev => ({ ...prev, ...res.data.data }));
             }
         }).catch(() => {});
-    }, []);
+    }, [hasProAccess]);
 
     const loadLeads = async () => {
         setLoading(true);
@@ -268,7 +275,7 @@ END:VCARD`;
         },
     ];
 
-    if (loading) return (
+    if (loading && hasProAccess) return (
         <div className="flex items-center justify-center min-h-[60vh]">
             <div className="animate-spin h-10 w-10 border-4 border-spaceGray dark:border-white border-t-transparent rounded-full" />
         </div>

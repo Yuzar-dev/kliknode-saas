@@ -16,7 +16,7 @@ export interface TokenPayload {
 /**
  * Génère un access token JWT
  */
-export const generateAccessToken = (user: AuthUser): string => {
+export const generateAccessToken = (user: AuthUser, rememberMe?: boolean): string => {
     const payload: TokenPayload = {
         userId: user.id,
         email: user.email,
@@ -24,14 +24,15 @@ export const generateAccessToken = (user: AuthUser): string => {
         companyId: user.companyId,
     };
 
+    const expiresIn = rememberMe ? '7d' : JWT_EXPIRES_IN;
     // @ts-ignore - TypeScript strict check on jwt.sign expiresIn
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    return jwt.sign(payload, JWT_SECRET, { expiresIn });
 };
 
 /**
  * Génère un refresh token JWT
  */
-export const generateRefreshToken = (user: AuthUser): string => {
+export const generateRefreshToken = (user: AuthUser, rememberMe?: boolean): string => {
     const payload: TokenPayload = {
         userId: user.id,
         email: user.email,
@@ -39,8 +40,9 @@ export const generateRefreshToken = (user: AuthUser): string => {
         companyId: user.companyId,
     };
 
+    const expiresIn = rememberMe ? '30d' : JWT_REFRESH_EXPIRES_IN;
     // @ts-ignore - TypeScript strict check on jwt.sign expiresIn
-    return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: JWT_REFRESH_EXPIRES_IN });
+    return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn });
 };
 
 /**
@@ -60,9 +62,9 @@ export const verifyRefreshToken = (token: string): TokenPayload => {
 /**
  * Génère les deux tokens (access + refresh)
  */
-export const generateTokens = (user: AuthUser) => {
+export const generateTokens = (user: AuthUser, rememberMe?: boolean) => {
     return {
-        accessToken: generateAccessToken(user),
-        refreshToken: generateRefreshToken(user),
+        accessToken: generateAccessToken(user, rememberMe),
+        refreshToken: generateRefreshToken(user, rememberMe),
     };
 };
