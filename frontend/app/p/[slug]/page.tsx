@@ -648,24 +648,26 @@ export default function PublicProfilePage({ params }: { params: Promise<{ slug: 
 
                 {/* Bottom Action Area (Regular Flow) */}
                 <div className="w-full px-8 mt-4 flex flex-col items-center gap-3">
-                    {!(card.user?.isPro && card.leadGenActive) && (
+                    {!(card.user?.isPro && card.leadGenActive) ? (
                         <button
-                            onClick={() => setShowModal(true)}
-                            className="w-full h-14 rounded-full shadow-xl active:scale-95 flex items-center justify-center gap-3 text-white transition-all hover:brightness-110"
+                            type="button"
+                            onClick={handleSaveContact}
+                            className="w-full h-14 rounded-full shadow-xl active:scale-95 flex items-center justify-center gap-3 text-white transition-all hover:brightness-110 cursor-pointer"
                             style={{ background: card.primaryColor || '#0666EB' }}
                         >
-                            <span className="font-extrabold tracking-tight text-base">Échanger le contact</span>
-                            <span className="material-symbols-outlined text-xl" translate="no">chevron_right</span>
+                            <span className="material-symbols-outlined text-xl" translate="no">person_add</span>
+                            <span className="font-extrabold tracking-tight text-base">Ajouter aux contacts</span>
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={handleSaveContact}
+                            className="inline-flex items-center gap-2 text-apple-secondary dark:text-gray-400 font-bold text-[11px] tracking-widest uppercase hover:text-apple-textDark dark:hover:text-white transition-colors cursor-pointer"
+                        >
+                            <span className="material-symbols-outlined text-lg font-light" translate="no">person_add</span>
+                            Ajouter aux contacts
                         </button>
                     )}
-
-                    <button
-                        onClick={handleSaveContact}
-                        className="inline-flex items-center gap-2 text-apple-secondary dark:text-gray-400 font-bold text-[11px] tracking-widest uppercase hover:text-apple-textDark dark:hover:text-white transition-colors"
-                    >
-                        <span className="material-symbols-outlined text-lg font-light" translate="no">person_add</span>
-                        Ajouter aux contacts
-                    </button>
                 </div>
 
                 {/* Exchange Modal Redesign (Apple/Clean Style) */}

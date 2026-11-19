@@ -7,6 +7,77 @@ import { generateSlug } from '../../utils/slug.util';
 import logger from '../../utils/logger.util';
 import { emailService } from '../../services/email.service';
 
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Synchronise automatiquement l'essai gratuit B2C de 7 jours :
+ * - Tout compte B2C créé il y a moins de 7 jours n'ayant jamais eu de log d'essai reçoit ses 7 jours automatiquement.
+ * - Tout essai local de 7 jours expiré sans abonnement payant bascule automatiquement `isPro -> false`.
+ */
+async function syncB2CTrialForUser(user: {
+    id: string;
+    role: string;
+    companyId: string | null;
+    isPro: boolean;
+    createdAt: Date;
+}): Promise<boolean> {
+    if (user.companyId || user.role !== 'USER') {
+        return Boolean(user.isPro);
+    }
+
+    const latestSubLog = await prisma.auditLog.findFirst({
+        where: {
+            userId: user.id,
+            action: 'B2C_TRIAL_SUBSCRIPTION',
+        },
+        orderBy: { createdAt: 'desc' },
+    }).catch(() => null);
+
+    if (!latestSubLog) {
+        const accountAgeMs = Date.now() - new Date(user.createdAt).getTime();
+        if (accountAgeMs < SEVEN_DAYS_MS) {
+            const trialEndsAt = new Date(new Date(user.createdAt).getTime() + SEVEN_DAYS_MS).toISOString();
+            await prisma.auditLog.create({
+                data: {
+                    userId: user.id,
+                    action: 'B2C_TRIAL_SUBSCRIPTION',
+                    entityType: 'user',
+                    entityId: user.id,
+                    changes: {
+                        planName: 'KlikNode PRO (Essai 7 jours)',
+                        isTrial: true,
+                        trialEndsAt,
+                        paidConfirmed: false,
+                        activatedAt: new Date().toISOString(),
+                    },
+                },
+            }).catch(() => {});
+            if (!user.isPro) {
+                await prisma.user.update({ where: { id: user.id }, data: { isPro: true } }).catch(() => {});
+            }
+            return true;
+        }
+        return Boolean(user.isPro);
+    }
+
+    const subMeta = (latestSubLog.changes && typeof latestSubLog.changes === 'object')
+        ? (latestSubLog.changes as any)
+        : null;
+
+    if (subMeta && !subMeta.stripeSubscriptionId && !subMeta.paidConfirmed && subMeta.trialEndsAt) {
+        const isStillInTrial = new Date(subMeta.trialEndsAt).getTime() > Date.now();
+        if (user.isPro !== isStillInTrial) {
+            await prisma.user.update({
+                where: { id: user.id },
+                data: { isPro: isStillInTrial },
+            }).catch(() => {});
+        }
+        return isStillInTrial;
+    }
+
+    return Boolean(user.isPro);
+}
+
 /**
  * POST /api/auth/login
  * Connexion utilisateur
@@ -120,6 +191,14 @@ export const login = async (req: Request, res: Response<ApiResponse>) => {
                 String(companyPlan.slug || '').toLowerCase() !== 'free' &&
                 String(companyPlan.name || '').toLowerCase() !== 'free'
             );
+        } else if (!user.companyId && user.role === 'USER') {
+            effectiveIsPro = await syncB2CTrialForUser({
+                id: user.id,
+                role: user.role,
+                companyId: user.companyId,
+                isPro: Boolean((user as any).isPro),
+                createdAt: user.createdAt,
+            });
         }
 
         const refreshDurationMs = (isRememberMe ? 30 : 7) * 24 * 60 * 60 * 1000;
@@ -201,7 +280,8 @@ export const register = async (req: Request, res: Response<ApiResponse>) => {
         // Hash du mot de passe
         const passwordHash = await hashPassword(password);
 
-        // Créer l'utilisateur (USER sans company)
+        // Créer l'utilisateur B2C avec sa semaine d'essai gratuit (7 jours) activée d'office
+        const trialEndsAt = new Date(Date.now() + SEVEN_DAYS_MS).toISOString();
         const user = await prisma.user.create({
             data: {
                 email: email.toLowerCase(),
@@ -209,9 +289,26 @@ export const register = async (req: Request, res: Response<ApiResponse>) => {
                 firstName,
                 lastName,
                 role: 'USER',
+                isPro: true,
                 language: 'fr',
             },
         });
+
+        await prisma.auditLog.create({
+            data: {
+                userId: user.id,
+                action: 'B2C_TRIAL_SUBSCRIPTION',
+                entityType: 'user',
+                entityId: user.id,
+                changes: {
+                    planName: 'KlikNode PRO (Essai 7 jours)',
+                    isTrial: true,
+                    trialEndsAt,
+                    paidConfirmed: false,
+                    activatedAt: new Date().toISOString(),
+                },
+            },
+        }).catch(() => {});
 
         await syncUserToSupabaseAuth({
             id: user.id,
@@ -282,7 +379,9 @@ export const register = async (req: Request, res: Response<ApiResponse>) => {
                     firstName: user.firstName,
                     lastName: user.lastName,
                     role: user.role as any,
+                    isPro: true,
                 },
+                trialEndsAt,
                 tokens,
                 card: {
                     publicSlug: card.publicSlug,
@@ -476,9 +575,18 @@ export const refreshToken = async (req: Request, res: Response<ApiResponse>) => 
             },
         });
 
+        // Synchroniser l'expiration éventuelle des 7 jours d'essai gratuit B2C lors du refresh token
+        const refreshedIsPro = await syncB2CTrialForUser({
+            id: storedToken.user.id,
+            role: storedToken.user.role,
+            companyId: storedToken.user.companyId,
+            isPro: Boolean((storedToken.user as any).isPro),
+            createdAt: storedToken.user.createdAt,
+        });
+
         return res.status(200).json({
             success: true,
-            data: { tokens: newTokens },
+            data: { tokens: newTokens, isPro: refreshedIsPro },
         });
     } catch (error: any) {
         logger.error('Refresh token error:', error);

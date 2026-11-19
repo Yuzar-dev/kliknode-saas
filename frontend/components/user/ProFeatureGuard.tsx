@@ -38,6 +38,8 @@ export default function ProFeatureGuard({
     const [companyPlanName, setCompanyPlanName] = useState<string>('Free');
     const [upgradeRequested, setUpgradeRequested] = useState<boolean>(false);
     const [trialEligible, setTrialEligible] = useState<boolean>(true);
+    const [pendingLeadsCount, setPendingLeadsCount] = useState<number>(0);
+    const [submitError, setSubmitError] = useState<string>('');
 
     // Les ADMIN, MANAGER et abonnés PRO validés ont accès
     const hasAccess = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.isPro === true;
@@ -68,6 +70,7 @@ export default function ProFeatureGuard({
 
                     setIsCompanyMember(false);
                     setTrialEligible(data?.trialEligible !== undefined ? Boolean(data.trialEligible) : true);
+                    setPendingLeadsCount(Number(data?.pendingLeadsCount || 0));
                     const allB2C: B2CPlan[] = data?.plans || [];
                     const paid = allB2C.filter(p => Number(p.priceEur) > 0 || p.features?.grantsPro === true);
                     setProPlans(paid);
@@ -84,6 +87,7 @@ export default function ProFeatureGuard({
 
     const handleSubscribePro = async () => {
         setIsSubmitting(true);
+        setSubmitError('');
         try {
             const response = await apiClient.post('/api/user/subscribe', {
                 planId: selectedPlanId || undefined,
@@ -120,10 +124,10 @@ export default function ProFeatureGuard({
                     return;
                 }
 
-                // Cas 3 : Activation effective confirmée par le serveur
+                // Cas 3 : Activation effective confirmée par le serveur (ex: essai gratuit 7 jours)
                 if (data?.activated && data?.user?.isPro) {
                     updateUser({ isPro: true });
-                    toast.success(data.message || "Félicitations ! Votre abonnement PRO est actif ⚡", {
+                    toast.success(data.message || "Félicitations ! Vos 7 jours d'essai PRO sont activés ⚡", {
                         icon: '🚀',
                         duration: 5000,
                     });
@@ -132,6 +136,7 @@ export default function ProFeatureGuard({
         } catch (error: any) {
             console.error('Upgrade error:', error);
             const msg = error.response?.data?.error?.message || "Paiement requis ou action non autorisée.";
+            setSubmitError(msg);
             toast.error(msg, { duration: 5000 });
         } finally {
             setIsSubmitting(false);
@@ -146,9 +151,9 @@ export default function ProFeatureGuard({
 
     return (
         <div className="relative w-full rounded-[32px] overflow-hidden group/guard border border-gray-200/60 dark:border-white/10">
-            {/* Contenu flouté coupé en arrière-plan afin de ne JAMAIS imposer de scroll ni d'espace vide */}
+            {/* Contenu flouté coupé en arrière-plan et rendu inerte pour empêcher tout focus clavier fantôme */}
             <div
-                aria-hidden="true"
+                {...({ inert: true } as any)}
                 className="absolute inset-0 overflow-hidden select-none pointer-events-none filter blur-xl opacity-25 saturate-50"
             >
                 {children}
@@ -227,6 +232,15 @@ export default function ProFeatureGuard({
                         </>
                     ) : (
                         <>
+                            {pendingLeadsCount > 0 && (
+                                <div className="w-full mb-3 p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-xs font-bold leading-snug">
+                                    📩 Vous avez {pendingLeadsCount} contact{pendingLeadsCount > 1 ? 's' : ''} reçu{pendingLeadsCount > 1 ? 's' : ''} en attente !{' '}
+                                    {trialEligible
+                                        ? 'Activez vos 7 jours gratuits ci-dessous pour afficher leurs coordonnées.'
+                                        : 'Activez votre offre PRO pour consulter leurs coordonnées.'}
+                                </div>
+                            )}
+
                             {trialEligible && (
                                 <span className="px-3.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-[10px] font-black uppercase tracking-widest mb-2.5">
                                     🎁 1 Semaine d&apos;essai gratuit (7 jours)
@@ -300,7 +314,14 @@ export default function ProFeatureGuard({
                                 </div>
                             </div>
 
+                            {submitError && (
+                                <div role="alert" className="w-full mb-3.5 p-3 rounded-2xl bg-red-500/10 border border-red-500/25 text-red-600 dark:text-red-400 text-xs font-bold">
+                                    {submitError}
+                                </div>
+                            )}
+
                             <button
+                                type="button"
                                 onClick={handleSubscribePro}
                                 disabled={isSubmitting}
                                 className="w-full h-13 rounded-full btn-titanium btn-titanium-primary flex items-center justify-center gap-2.5 text-xs font-black uppercase tracking-wider text-white shadow-xl disabled:opacity-50 disabled:cursor-not-allowed group/btn cursor-pointer px-4"

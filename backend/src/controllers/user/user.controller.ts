@@ -851,13 +851,44 @@ export const getB2CPlans = async (req: Request, res: Response<ApiResponse>) => {
         }
 
         // Vérifier l'état de l'essai gratuit B2C (7 jours) ou de l'abonnement Stripe actif
-        const latestSubLog = await prisma.auditLog.findFirst({
-            where: {
-                userId,
-                action: 'B2C_TRIAL_SUBSCRIPTION',
-            },
-            orderBy: { createdAt: 'desc' },
-        }).catch(() => null);
+        const [initialSubLog, pendingLeadsCount] = await Promise.all([
+            prisma.auditLog.findFirst({
+                where: {
+                    userId,
+                    action: 'B2C_TRIAL_SUBSCRIPTION',
+                },
+                orderBy: { createdAt: 'desc' },
+            }).catch(() => null),
+            prisma.contactLead.count({ where: { userId } }).catch(() => 0),
+        ]);
+
+        let latestSubLog = initialSubLog;
+
+        // Si le compte B2C a été créé il y a moins de 7 jours et n'a pas encore de log d'essai, démarrer automatiquement ses 7 jours gratuits
+        if (!latestSubLog && user && (Date.now() - new Date(user.createdAt).getTime()) < 7 * 24 * 60 * 60 * 1000) {
+            const autoTrialEndsAt = new Date(new Date(user.createdAt).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+            const defaultPaidPlan = b2cPlans.find(p => Number(p.priceEur) > 0);
+            latestSubLog = await prisma.auditLog.create({
+                data: {
+                    userId: user.id,
+                    action: 'B2C_TRIAL_SUBSCRIPTION',
+                    entityType: 'user',
+                    entityId: user.id,
+                    changes: {
+                        planId: defaultPaidPlan?.id || null,
+                        planName: defaultPaidPlan?.name || 'KlikNode PRO (Individuel)',
+                        isTrial: true,
+                        trialEndsAt: autoTrialEndsAt,
+                        paidConfirmed: false,
+                        activatedAt: new Date().toISOString(),
+                    },
+                },
+            }).catch(() => null);
+            if (!user.isPro) {
+                await prisma.user.update({ where: { id: user.id }, data: { isPro: true } }).catch(() => {});
+                user.isPro = true;
+            }
+        }
 
         const subMeta = (latestSubLog?.changes && typeof latestSubLog.changes === 'object')
             ? (latestSubLog.changes as any)
@@ -881,15 +912,14 @@ export const getB2CPlans = async (req: Request, res: Response<ApiResponse>) => {
                 }
             }
         } else if (subMeta && !subMeta.paidConfirmed && trialEndsAt) {
-            // Essai local de 7 jours sans paiement confirmé : expiration automatique après 7 jours
-            if (new Date(trialEndsAt).getTime() <= Date.now()) {
-                effectiveB2CIsPro = false;
-                if (user?.isPro) {
-                    await prisma.user.update({
-                        where: { id: user.id },
-                        data: { isPro: false },
-                    }).catch(() => {});
-                }
+            // Essai local de 7 jours sans paiement confirmé : actif tant que < J+7, puis expiration automatique
+            const stillInTrial = new Date(trialEndsAt).getTime() > Date.now();
+            effectiveB2CIsPro = stillInTrial;
+            if (user && user.isPro !== stillInTrial) {
+                await prisma.user.update({
+                    where: { id: user.id },
+                    data: { isPro: stillInTrial },
+                }).catch(() => {});
             }
         }
 
@@ -914,6 +944,7 @@ export const getB2CPlans = async (req: Request, res: Response<ApiResponse>) => {
                 isTrialActive,
                 trialEndsAt,
                 trialDaysLeft,
+                pendingLeadsCount,
                 plans: b2cPlans,
                 currentPlan,
                 isPro: effectiveB2CIsPro,
@@ -1104,18 +1135,23 @@ export const subscribeB2CPlan = async (req: Request, res: Response<ApiResponse>)
             });
         }
 
-        if (!planId) {
-            return res.status(400).json({
-                success: false,
-                error: { code: 'BAD_REQUEST', message: 'Identifiant du plan requis' },
+        let plan = planId
+            ? await prisma.subscriptionPlan.findUnique({ where: { id: planId } })
+            : null;
+
+        if (!plan) {
+            const { resolvePlanAudience } = await import('../admin/plan.controller');
+            const activePlans = await prisma.subscriptionPlan.findMany({
+                where: { isActive: true },
+                orderBy: { priceEur: 'desc' },
             });
+            plan = activePlans.find(p => resolvePlanAudience(p) === 'B2C' && Number(p.priceEur) > 0) || null;
         }
 
-        const plan = await prisma.subscriptionPlan.findUnique({ where: { id: planId } });
         if (!plan) {
             return res.status(404).json({
                 success: false,
-                error: { code: 'NOT_FOUND', message: 'Plan introuvable' },
+                error: { code: 'NOT_FOUND', message: 'Plan B2C introuvable' },
             });
         }
 
@@ -1155,49 +1191,58 @@ export const subscribeB2CPlan = async (req: Request, res: Response<ApiResponse>)
         const trialEligible = !existingTrialLog;
         const stripeConfig = getStripeConfig();
 
-        // Si Stripe est configuré : ouvrir Stripe Checkout en mode Abonnement avec 7 jours d'essai gratuit (0€ aujourd'hui, puis débit auto à J+7)
+        // Si Stripe est configuré avec une vraie clé API : ouvrir Stripe Checkout en mode Abonnement (avec 7j gratuits si éligible)
         if (stripeConfig.isConfigured) {
-            const reqOrigin = (req.headers.origin as string) || process.env.FRONTEND_URL || 'http://localhost:3001';
-            const interval: 'month' | 'year' = plan.billingPeriod === 'yearly' ? 'year' : 'month';
-            const checkout = await createStripeCheckoutLink({
-                amount: priceEur,
-                currency: 'EUR',
-                customerEmail: user.email,
-                title: trialEligible
-                    ? `${plan.name} — 7 jours d'essai gratuit`
-                    : `Abonnement ${plan.name} — KlikNode`,
-                description: trialEligible
-                    ? `7 jours gratuits (0,00 € aujourd'hui), puis ${priceEur.toFixed(2)}€/${interval === 'year' ? 'an' : 'mois'} automatiquement`
-                    : `Souscription à l'offre ${plan.name} (${user.email})`,
-                recurringInterval: interval,
-                trialPeriodDays: trialEligible ? 7 : undefined,
-                metadata: {
-                    userId: user.id,
-                    planId: plan.id,
-                    type: 'b2c_subscription',
-                },
-                successUrl: `${reqOrigin}/user/settings?payment=success&plan=${plan.id}&session_id={CHECKOUT_SESSION_ID}`,
-                cancelUrl: `${reqOrigin}/user/settings?payment=cancelled`,
-            });
-
-            return res.status(200).json({
-                success: true,
-                data: {
-                    requiresPayment: true,
-                    activated: false,
-                    checkoutUrl: checkout.url,
-                    message: trialEligible
-                        ? 'Redirection vers Stripe pour démarrer vos 7 jours d\'essai gratuit (0,00 € aujourd\'hui)...'
-                        : 'Redirection vers la page de paiement sécurisée Stripe...',
-                    plan,
-                    user: {
-                        id: user.id,
-                        email: user.email,
-                        isPro: user.isPro,
-                        role: user.role,
+            try {
+                const reqOrigin = (req.headers.origin as string) || process.env.FRONTEND_URL || 'http://localhost:3001';
+                const interval: 'month' | 'year' = plan.billingPeriod === 'yearly' ? 'year' : 'month';
+                const checkout = await createStripeCheckoutLink({
+                    amount: priceEur,
+                    currency: 'EUR',
+                    customerEmail: user.email,
+                    title: trialEligible
+                        ? `${plan.name} — 7 jours d'essai gratuit`
+                        : `Abonnement ${plan.name} — KlikNode`,
+                    description: trialEligible
+                        ? `7 jours gratuits (0,00 € aujourd'hui), puis ${priceEur.toFixed(2)}€/${interval === 'year' ? 'an' : 'mois'} automatiquement`
+                        : `Souscription à l'offre ${plan.name} (${user.email})`,
+                    recurringInterval: interval,
+                    trialPeriodDays: trialEligible ? 7 : undefined,
+                    metadata: {
+                        userId: user.id,
+                        planId: plan.id,
+                        type: 'b2c_subscription',
                     },
-                },
-            });
+                    successUrl: `${reqOrigin}/user/settings?payment=success&plan_id=${plan.id}&session_id={CHECKOUT_SESSION_ID}`,
+                    cancelUrl: `${reqOrigin}/user/settings?payment=cancelled`,
+                });
+
+                return res.status(200).json({
+                    success: true,
+                    data: {
+                        requiresPayment: true,
+                        activated: false,
+                        checkoutUrl: checkout.url,
+                        message: trialEligible
+                            ? 'Redirection vers Stripe pour démarrer vos 7 jours d\'essai gratuit (0,00 € aujourd\'hui)...'
+                            : 'Redirection vers la page de paiement sécurisée Stripe...',
+                        plan,
+                        user: {
+                            id: user.id,
+                            email: user.email,
+                            isPro: user.isPro,
+                            role: user.role,
+                        },
+                    },
+                });
+            } catch (stripeErr: any) {
+                logger.warn('Stripe checkout creation failed in subscribeB2CPlan:', stripeErr?.message);
+                // Si l'utilisateur est éligible à ses 7 jours d'essai gratuit et que la clé Stripe est invalide/indisponible,
+                // on active immédiatement l'essai gratuit local de 7 jours plutôt que de bloquer l'utilisateur.
+                if (!trialEligible) {
+                    throw stripeErr;
+                }
+            }
         }
 
         // Si Stripe n'est pas encore configuré mais que l'utilisateur n'a jamais utilisé ses 7 jours d'essai :

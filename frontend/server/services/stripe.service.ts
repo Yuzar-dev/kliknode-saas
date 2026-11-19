@@ -16,8 +16,21 @@ const STRIPE_CONFIG_FILE = path.join(DATA_DIR, 'stripe-config.json');
 
 let dbLoadedInMemory = false;
 
+export function isRealStripeSecretKey(rawKey?: string | null): boolean {
+    const key = (rawKey || '').trim();
+    if (!key) return false;
+    if (!key.startsWith('sk_test_') && !key.startsWith('sk_live_') && !key.startsWith('rk_test_') && !key.startsWith('rk_live_')) {
+        return false;
+    }
+    if (key.length < 32) return false;
+    if (/replace|placeholder|your_key|your-key|example|xxxx|12345|changeme|dummy|fake|mock|\.\.\./i.test(key)) {
+        return false;
+    }
+    return true;
+}
+
 export async function ensureStripeConfigLoaded(): Promise<void> {
-    if (dbLoadedInMemory && (process.env.STRIPE_SECRET_KEY || fs.existsSync(STRIPE_CONFIG_FILE))) {
+    if (dbLoadedInMemory && (isRealStripeSecretKey(process.env.STRIPE_SECRET_KEY) || fs.existsSync(STRIPE_CONFIG_FILE))) {
         return;
     }
     try {
@@ -27,7 +40,9 @@ export async function ensureStripeConfigLoaded(): Promise<void> {
         });
         if (log?.changes && typeof log.changes === 'object') {
             const cfg = log.changes as Partial<StripeConfigData>;
-            if (cfg.secretKey) process.env.STRIPE_SECRET_KEY = cfg.secretKey;
+            if (cfg.secretKey && isRealStripeSecretKey(cfg.secretKey)) {
+                process.env.STRIPE_SECRET_KEY = cfg.secretKey;
+            }
             if (cfg.publishableKey) process.env.STRIPE_PUBLISHABLE_KEY = cfg.publishableKey;
             if (cfg.webhookSecret) process.env.STRIPE_WEBHOOK_SECRET = cfg.webhookSecret;
             if (!fs.existsSync(DATA_DIR)) {
@@ -55,27 +70,28 @@ export function getStripeConfig(): {
         logger.error('Error reading stripe-config.json:', err);
     }
 
-    const secretKey = (fileConfig.secretKey || process.env.STRIPE_SECRET_KEY || '').trim();
+    const candidateSecret = (fileConfig.secretKey || process.env.STRIPE_SECRET_KEY || '').trim();
+    const isConfigured = isRealStripeSecretKey(candidateSecret);
+    const secretKey = isConfigured ? candidateSecret : '';
     const publishableKey = (fileConfig.publishableKey || process.env.STRIPE_PUBLISHABLE_KEY || '').trim();
     const webhookSecret = (fileConfig.webhookSecret || process.env.STRIPE_WEBHOOK_SECRET || '').trim();
 
-    const isConfigured = secretKey.startsWith('sk_test_') || secretKey.startsWith('sk_live_') || secretKey.startsWith('rk_');
-    const mode = secretKey.startsWith('sk_live_')
-        ? 'live'
-        : isConfigured
-            ? 'test'
-            : 'unconfigured';
+    const mode = !isConfigured
+        ? 'unconfigured'
+        : (secretKey.startsWith('sk_live_') || secretKey.startsWith('rk_live_'))
+            ? 'live'
+            : 'test';
 
-    const maskedSecretKey = secretKey.length > 12
+    const maskedSecretKey = isConfigured && secretKey.length > 12
         ? `${secretKey.slice(0, 8)}••••••••${secretKey.slice(-4)}`
         : '';
 
     return {
         isConfigured,
         mode,
-        publishableKey,
+        publishableKey: publishableKey.includes('...') || /replace|placeholder/i.test(publishableKey) ? '' : publishableKey,
         maskedSecretKey,
-        hasWebhookSecret: Boolean(webhookSecret),
+        hasWebhookSecret: Boolean(webhookSecret) && !/replace|placeholder|\.\.\./i.test(webhookSecret),
     };
 }
 
@@ -147,12 +163,14 @@ export function getStripeClient(): Stripe | null {
     try {
         if (fs.existsSync(STRIPE_CONFIG_FILE)) {
             const parsed = JSON.parse(fs.readFileSync(STRIPE_CONFIG_FILE, 'utf8') || '{}');
-            if (parsed.secretKey) secretKey = parsed.secretKey;
+            if (parsed.secretKey && isRealStripeSecretKey(parsed.secretKey)) {
+                secretKey = parsed.secretKey;
+            }
         }
     } catch {}
 
     secretKey = secretKey.trim();
-    if (!secretKey || (!secretKey.startsWith('sk_') && !secretKey.startsWith('rk_'))) {
+    if (!isRealStripeSecretKey(secretKey)) {
         return null;
     }
 

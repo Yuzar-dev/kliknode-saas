@@ -24,7 +24,8 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
     const pathname = usePathname();
     const router = useRouter();
     const [collapsed, setCollapsed] = useState(false);
-    const { user, logout } = useAuthStore();
+    const { user, logout, updateUser } = useAuthStore();
+    const hasProAccess = user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.isPro === true;
 
     // Notification State
     const [showNotifications, setShowNotifications] = useState(false);
@@ -33,7 +34,6 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        loadNotifications();
         function handleClickOutside(event: MouseEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setShowNotifications(false);
@@ -42,6 +42,22 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        if (!user?.id || user.role === 'ADMIN' || user.role === 'MANAGER') return;
+        apiClient.get('/api/user/plans').then((res) => {
+            if (res.data?.success && res.data?.data) {
+                const liveIsPro = Boolean(res.data.data.isPro);
+                if (user.isPro !== liveIsPro) {
+                    updateUser({ isPro: liveIsPro });
+                }
+            }
+        }).catch(() => {});
+    }, [user?.id, user?.role]);
+
+    useEffect(() => {
+        loadNotifications();
+    }, [user?.id, user?.isPro, pathname]);
 
     const loadNotifications = async () => {
         try {
@@ -192,21 +208,24 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                         {/* Notifications */}
                         <div className="relative flex items-center justify-center w-10 h-10 shrink-0" ref={dropdownRef}>
                             <button
+                                type="button"
+                                aria-label="Notifications"
+                                aria-expanded={showNotifications}
                                 onClick={() => setShowNotifications(!showNotifications)}
-                                className={`text-apple-secondary hover:text-apple-textDark dark:hover:text-white w-full h-full flex items-center justify-center rounded-xl relative transition-all hover:bg-white/40 dark:hover:bg-white/5 ${showNotifications ? 'bg-white/50 dark:bg-white/10' : ''}`}
+                                className={`text-apple-secondary hover:text-apple-textDark dark:hover:text-white w-full h-full flex items-center justify-center rounded-xl relative transition-all hover:bg-white/40 dark:hover:bg-white/5 cursor-pointer ${showNotifications ? 'bg-white/50 dark:bg-white/10' : ''}`}
                             >
-                                <span className="material-symbols-outlined text-[20px] md:text-[22px] font-light" translate="no">notifications</span>
+                                <span className="material-symbols-outlined text-[20px] md:text-[22px] font-light" aria-hidden="true" translate="no">notifications</span>
                                 {unreadCount > 0 && (
                                     <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500" />
                                 )}
                             </button>
 
                             {showNotifications && (
-                                <div className="absolute right-0 top-full mt-4 w-72 md:w-80 rounded-[20px] md:rounded-[24px] shadow-2xl border border-gray-200/50 dark:border-white/10 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl z-[100] overflow-hidden transform origin-top-right transition-all animate-in fade-in zoom-in duration-300">
+                                <div className="absolute right-0 top-full mt-4 w-72 md:w-80 rounded-[20px] md:rounded-[24px] shadow-2xl border border-gray-200/50 dark:border-white/10 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-[12px] z-[100] overflow-hidden transform origin-top-right transition-all animate-in fade-in zoom-in duration-300">
                                     <div className="p-4 md:p-5 border-b border-gray-100 dark:border-white/5 flex items-center justify-between">
                                         <h3 className="font-bold text-apple-textDark dark:text-white tracking-tight text-base">Notifications</h3>
                                         {unreadCount > 0 && (
-                                            <button onClick={markAsRead} className="text-[11px] font-bold text-spaceGray dark:text-titanium hover:underline">
+                                            <button type="button" onClick={markAsRead} className="text-[11px] font-bold text-spaceGray dark:text-titanium hover:underline cursor-pointer">
                                                 Marquer lu
                                             </button>
                                         )}
@@ -219,14 +238,17 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                                         ) : (
                                             <div className="divide-y divide-gray-50 dark:divide-white/5">
                                                 {notifications.map((notif) => (
-                                                    <div key={notif.id} className="p-3 md:p-4 hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors cursor-pointer group"
+                                                    <button
+                                                        key={notif.id}
+                                                        type="button"
+                                                        className="w-full text-left p-3 md:p-4 hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors cursor-pointer group"
                                                         onClick={() => {
                                                             router.push('/user/leads');
                                                             setShowNotifications(false);
                                                         }}
                                                     >
                                                         <div className="flex gap-3 md:gap-4">
-                                                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl flex items-center justify-center text-[10px] md:text-xs font-bold text-white bg-spaceGray dark:bg-titanium dark:text-black">
+                                                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl flex items-center justify-center text-[10px] md:text-xs font-bold text-white bg-spaceGray dark:bg-titanium dark:text-black shrink-0">
                                                                 {notif.first_name?.[0]}{notif.last_name?.[0]}
                                                             </div>
                                                             <div className="flex-1 min-w-0">
@@ -234,14 +256,14 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                                                                     {notif.first_name} {notif.last_name}
                                                                 </p>
                                                                 <p className="text-[10px] md:text-[11px] text-apple-secondary truncate mb-1 font-medium">
-                                                                    Contact reçu
+                                                                    {hasProAccess ? 'Contact reçu • Voir la fiche' : 'Contact reçu • Essai PRO requis'}
                                                                 </p>
                                                                 <p className="text-[9px] md:text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wide">
                                                                     {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true, locale: fr })}
                                                                 </p>
                                                             </div>
                                                         </div>
-                                                    </div>
+                                                    </button>
                                                 ))}
                                             </div>
                                         )}

@@ -68,7 +68,7 @@ function SignupContent() {
                     companyId: userData.companyId || null,
                     avatarUrl: null,
                     isActive: true,
-                    isPro: false,
+                    isPro: userData.isPro ?? true,
                 }, {
                     accessToken: tokens.accessToken,
                     refreshToken: tokens.refreshToken,
@@ -84,7 +84,7 @@ function SignupContent() {
                     // Non bloquant
                 }
 
-                toast.success(`Bienvenue ${data.firstName} !`);
+                toast.success(`Bienvenue ${data.firstName} ! Votre semaine d'essai gratuit PRO (7 jours) est active.`);
                 router.push('/user/card');
             }
         } catch (error: any) {

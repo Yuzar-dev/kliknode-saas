@@ -49,7 +49,7 @@ export default function SettingsPage() {
                 const params = new URLSearchParams(window.location.search);
                 const paymentStatus = params.get('payment');
                 const sessionId = params.get('session_id');
-                const planId = params.get('plan_id');
+                const planId = params.get('plan_id') || params.get('plan');
 
                 if (paymentStatus === 'success' && sessionId) {
                     try {

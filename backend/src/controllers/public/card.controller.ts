@@ -30,10 +30,14 @@ export const getPublicCard = async (req: Request, res: Response) => {
                         role: true,
                         avatarUrl: true,
                         isPro: true,
+                        createdAt: true,
                         companyId: true,
                         company: {
                             include: {
-                                branding: true
+                                branding: true,
+                                subscription: {
+                                    include: { plan: true },
+                                },
                             }
                         }
                     }
@@ -74,10 +78,49 @@ export const getPublicCard = async (req: Request, res: Response) => {
             prisma.card.updateMany({ where: { companyId: companyObj.id }, data: { companyName: cleanCompanyName } }).catch(() => {});
         }
 
+        // Calculer le statut PRO effectif en temps réel (plan B2B ou essai 7 jours B2C)
+        let effectiveOwnerIsPro = Boolean(card.user?.isPro);
+        if (card.user?.role === 'ADMIN' || card.user?.role === 'MANAGER') {
+            effectiveOwnerIsPro = true;
+        } else if (card.user?.companyId) {
+            const companySub = card.user.company?.subscription;
+            const companyPlan = companySub?.plan;
+            const isSubActive = !companySub || companySub.status === 'active' || companySub.status === 'trialing';
+            effectiveOwnerIsPro = Boolean(
+                companyPlan &&
+                isSubActive &&
+                Number(companyPlan.priceEur) > 0 &&
+                String(companyPlan.slug || '').toLowerCase() !== 'free' &&
+                String(companyPlan.name || '').toLowerCase() !== 'free'
+            );
+        } else if (card.user) {
+            const latestSubLog = await prisma.auditLog.findFirst({
+                where: { userId: card.user.id, action: 'B2C_TRIAL_SUBSCRIPTION' },
+                orderBy: { createdAt: 'desc' },
+            }).catch(() => null);
+            if (!latestSubLog) {
+                const ageMs = Date.now() - new Date(card.user.createdAt).getTime();
+                if (ageMs < 7 * 24 * 60 * 60 * 1000) {
+                    effectiveOwnerIsPro = true;
+                }
+            } else {
+                const subMeta = (latestSubLog.changes && typeof latestSubLog.changes === 'object')
+                    ? (latestSubLog.changes as any)
+                    : null;
+                if (subMeta && !subMeta.stripeSubscriptionId && !subMeta.paidConfirmed && subMeta.trialEndsAt) {
+                    effectiveOwnerIsPro = new Date(subMeta.trialEndsAt).getTime() > Date.now();
+                    if (card.user.isPro !== effectiveOwnerIsPro) {
+                        prisma.user.update({ where: { id: card.user.id }, data: { isPro: effectiveOwnerIsPro } }).catch(() => {});
+                    }
+                }
+            }
+        }
+
         return res.json({
             success: true,
             data: {
                 ...card,
+                user: card.user ? { ...card.user, isPro: effectiveOwnerIsPro } : card.user,
                 primaryColor: branding?.primaryColor || card.primaryColor || '#0666EB',
                 companyName: cleanCompanyName,
                 bioVisible: card.bio_visible !== false,
